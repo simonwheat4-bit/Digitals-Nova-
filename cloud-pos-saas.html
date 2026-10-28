@@ -1920,11 +1920,20 @@
       }
 
       // Persist auth user & subdomain in localStorage for DigitalsNova Portal
+      const demoNames = {
+        'alshifa': 'Al-Shifa Dental & Aesthetic Clinic',
+        'citymed': 'CityMed Specialist Polyclinic',
+        'lifecare': 'LifeCare Hospital & Pharmacy'
+      };
+      const resolvedTenantName = demoNames[subdomain] || (subdomain.charAt(0).toUpperCase() + subdomain.slice(1) + ' Healthcare Center');
+
       localStorage.setItem('digitalsnova_subdomain', subdomain);
       localStorage.setItem('digitalsnova_auth_user', JSON.stringify({
         username: username,
         role: username.includes('superadmin') ? 'SUPER_ADMIN' : (username.includes('admin') ? 'CLINIC_ADMIN' : 'STAFF'),
         tenantId: 'tenant_' + subdomain,
+        tenantName: resolvedTenantName,
+        clinicName: resolvedTenantName,
         subdomain: subdomain
       }));
 
@@ -2002,6 +2011,8 @@
         localStorage.setItem('digitalsnova_auth_user', JSON.stringify({
           username: 'admin.' + slug,
           name: name,
+          tenantName: business,
+          clinicName: business,
           role: 'CLINIC_ADMIN',
           tenantId: 'tenant_' + slug,
           licenseKey: licenseKey

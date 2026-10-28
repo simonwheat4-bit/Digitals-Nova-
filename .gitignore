@@ -1,0 +1,12 @@
+node_modules/
+.npm
+*.log
+preview-*.png
+verify-*.png
+test-*.cjs
+find-*.cjs
+replace-*.cjs
+check-*.cjs
+verify-*.cjs
+screenshot-*.cjs
+*.ps1

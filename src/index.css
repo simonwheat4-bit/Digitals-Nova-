@@ -1,0 +1,121 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --bg-deep: #040711;
+    --bg-card: rgba(10, 16, 39, 0.75);
+    --border-cyan: rgba(0, 242, 254, 0.25);
+    --border-blue: rgba(59, 130, 246, 0.25);
+  }
+
+  body {
+    background-color: #040711;
+    background-image: 
+      radial-gradient(circle at 50% 0%, rgba(29, 78, 216, 0.15) 0%, transparent 60%),
+      radial-gradient(circle at 100% 50%, rgba(121, 40, 202, 0.1) 0%, transparent 50%),
+      radial-gradient(circle at 0% 100%, rgba(6, 182, 212, 0.1) 0%, transparent 50%);
+    background-attachment: fixed;
+    color: #e2e8f0;
+    overflow-x: hidden;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #040711;
+}
+::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 4px;
+  border: 1px solid rgba(0, 242, 254, 0.2);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #0ea5e9;
+}
+
+/* Glass and Cards */
+.card-glass {
+  background: linear-gradient(135deg, rgba(14, 22, 48, 0.85) 0%, rgba(7, 12, 28, 0.95) 100%);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(34, 211, 238, 0.2);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.card-glass:hover {
+  border-color: rgba(34, 211, 238, 0.45);
+  box-shadow: 0 10px 30px -10px rgba(0, 242, 254, 0.25), 0 0 20px 0 rgba(37, 99, 235, 0.2);
+  transform: translateY(-2px);
+}
+
+/* Featured Large Service Card */
+.service-card-featured {
+  background: radial-gradient(circle at 90% 10%, rgba(37, 99, 235, 0.18) 0%, transparent 60%),
+              linear-gradient(135deg, rgba(12, 19, 43, 0.92) 0%, rgba(6, 10, 24, 0.98) 100%);
+  border: 1px solid rgba(34, 211, 238, 0.22);
+}
+
+.service-card-featured:hover {
+  border-color: rgba(34, 211, 238, 0.5);
+  box-shadow: 0 12px 36px -8px rgba(6, 182, 212, 0.28), 0 0 25px 2px rgba(37, 99, 235, 0.22);
+}
+
+/* Primary Gradient Button */
+.btn-primary {
+  background: linear-gradient(90deg, #00f2fe 0%, #4facfe 35%, #6366f1 75%, #8b5cf6 100%);
+  background-size: 200% auto;
+  color: #040711;
+  font-weight: 600;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 0 20px rgba(0, 242, 254, 0.35);
+}
+
+.btn-primary:hover {
+  background-position: right center;
+  box-shadow: 0 0 30px rgba(0, 242, 254, 0.6), 0 0 15px rgba(139, 92, 246, 0.4);
+  transform: translateY(-1px);
+}
+
+/* Outline Secondary Button */
+.btn-outline {
+  background: rgba(10, 16, 39, 0.6);
+  border: 1px solid rgba(34, 211, 238, 0.35);
+  color: #e2e8f0;
+  backdrop-filter: blur(8px);
+  transition: all 0.25s ease;
+}
+
+.btn-outline:hover {
+  border-color: rgba(34, 211, 238, 0.8);
+  background: rgba(14, 165, 233, 0.12);
+  color: #38bdf8;
+  box-shadow: 0 0 18px rgba(56, 189, 248, 0.25);
+  transform: translateY(-1px);
+}
+
+/* Badge styling */
+.badge-pill {
+  background: rgba(14, 22, 48, 0.8);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.15);
+}
+
+/* Subtle wave background for Process section */
+.wave-bg {
+  background-image: radial-gradient(ellipse at center, rgba(37, 99, 235, 0.15) 0%, transparent 70%);
+}
+
+/* Accessibility: prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -1,0 +1,2270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>About Us — Think Digital. Go Global. | DigitalSnove</title>
+  <meta name="description" content="Learn about DigitalSnove, our mission, technical leadership, core values, and global impact across modern web engineering and digital marketing.">
+  <link rel="icon" type="image/png" href="assets/logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="css/style.css">
+
+  <!-- Embedded Fallback Stylesheet -->
+  <style>
+/* ==========================================================================
+   DIGITALSNOVE — OFFICIAL STYLESHEET
+   Brand: DigitalSnove | Tagline: Think Digital. Go Global.
+   Designed for Hostinger / cPanel / Standard Web Hosting File Manager
+   ========================================================================== */
+
+/* 1. Global Reset & Theme Variables */
+:root {
+  --bg-deep: #030611;
+  --bg-navy-dark: #050b1d;
+  --bg-card: #08102a;
+  --bg-card-hover: #0b173c;
+  --border-cyan: rgba(0, 229, 255, 0.25);
+  --border-cyan-glow: rgba(0, 229, 255, 0.6);
+  --border-blue: #1a3875;
+  --border-divider: #122044;
+  --accent-cyan: #00e5ff;
+  --accent-blue: #2563eb;
+  --accent-purple: #8b5cf6;
+  --text-primary: #ffffff;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --font-main: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+  font-family: var(--font-main);
+  background-color: var(--bg-deep);
+  color: var(--text-primary);
+}
+
+body {
+  background-color: var(--bg-deep);
+  background-image: 
+    radial-gradient(circle at 50% 0%, rgba(37, 99, 235, 0.12) 0%, transparent 60%),
+    radial-gradient(circle at 100% 40%, rgba(139, 92, 246, 0.08) 0%, transparent 50%),
+    radial-gradient(circle at 0% 80%, rgba(0, 229, 255, 0.08) 0%, transparent 50%);
+  background-attachment: fixed;
+  overflow-x: hidden;
+  line-height: 1.6;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #030611;
+}
+::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 4px;
+  border: 1px solid rgba(0, 229, 255, 0.2);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-cyan);
+}
+
+/* Selection */
+::selection {
+  background-color: var(--accent-cyan);
+  color: #030611;
+}
+
+/* 2. Container & Grid Layout */
+.container {
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.section-divider {
+  border-bottom: 1px solid var(--border-divider);
+}
+
+/* 3. Typography & Badges */
+.eyebrow {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--accent-cyan);
+  margin-bottom: 8px;
+}
+
+.text-cyan {
+  color: var(--accent-cyan) !important;
+}
+
+.text-gradient {
+  background: linear-gradient(135deg, #00e5ff 0%, #3b82f6 50%, #8b5cf6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* 4. Buttons */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 28px;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, #00b4d8 0%, #2563eb 50%, #7c3aed 100%);
+  background-size: 200% auto;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 0 20px rgba(0, 229, 255, 0.35);
+  transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+  background-position: right center;
+  box-shadow: 0 0 30px rgba(0, 229, 255, 0.6), 0 0 15px rgba(124, 58, 237, 0.4);
+  transform: translateY(-1px);
+}
+
+.btn-outline {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 24px;
+  border-radius: 9999px;
+  background: #070e24;
+  border: 1px solid #1e3a78;
+  color: #e2e8f0;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.btn-outline:hover {
+  border-color: var(--accent-cyan);
+  color: var(--accent-cyan);
+  background: rgba(0, 229, 255, 0.08);
+  box-shadow: 0 0 15px rgba(0, 229, 255, 0.25);
+  transform: translateY(-1px);
+}
+
+/* 5. Header & Navigation */
+header.site-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background: rgba(3, 6, 17, 0.88);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border-divider);
+  padding: 16px 0;
+  transition: all 0.3s ease;
+}
+
+header.site-header.scrolled {
+  padding: 12px 0;
+  background: rgba(3, 6, 17, 0.96);
+  border-bottom-color: rgba(0, 229, 255, 0.2);
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.8);
+}
+
+.nav-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.brand-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: inherit;
+}
+
+.logo-badge {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #00e5ff, #3b82f6, #8b5cf6);
+  padding: 1.5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 15px rgba(0, 229, 255, 0.3);
+}
+
+.logo-inner {
+  width: 100%;
+  height: 100%;
+  background: #040714;
+  border-radius: 8.5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 15px;
+  color: var(--accent-cyan);
+}
+
+.brand-text h1 {
+  font-size: 18px;
+  font-weight: 800;
+  color: #ffffff;
+  line-height: 1.1;
+}
+
+.brand-text span {
+  font-size: 9px;
+  font-weight: 600;
+  color: #94a3b8;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  display: block;
+}
+
+.main-nav {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.nav-link {
+  font-size: 13px;
+  font-weight: 600;
+  color: #cbd5e1;
+  text-decoration: none;
+  position: relative;
+  padding: 6px 0;
+  transition: color 0.2s ease;
+}
+
+.nav-link:hover, .nav-link.active {
+  color: var(--accent-cyan);
+}
+
+.nav-link.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--accent-cyan);
+  border-radius: 2px;
+}
+
+/* Mega Dropdown */
+.dropdown-parent {
+  position: relative;
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%) translateY(10px);
+  width: 480px;
+  background: #060b1e;
+  border: 1px solid rgba(0, 229, 255, 0.3);
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.8), 0 0 25px rgba(0, 229, 255, 0.15);
+  display: none;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  z-index: 1000;
+}
+
+.dropdown-parent:hover .dropdown-menu {
+  display: grid;
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 10px;
+  text-decoration: none;
+  color: #cbd5e1;
+  transition: all 0.2s;
+  background: transparent;
+  border: 1px solid transparent;
+}
+
+.dropdown-item:hover {
+  background: #0b1536;
+  border-color: rgba(0, 229, 255, 0.2);
+  color: var(--accent-cyan);
+}
+
+.dropdown-item .icon-box {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: #0d1a42;
+  color: var(--accent-cyan);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+}
+
+/* Mobile Hamburger Toggle */
+.mobile-toggle {
+  display: none;
+  background: none;
+  border: none;
+  color: #ffffff;
+  font-size: 22px;
+  cursor: pointer;
+}
+
+/* 6. Hero Section & 3D Interactive Devices */
+.hero-section {
+  position: relative;
+  padding-top: 140px;
+  padding-bottom: 80px;
+  overflow: hidden;
+}
+
+.hero-grid {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: 40px;
+  align-items: center;
+}
+
+.hero-content h2.hero-title {
+  font-size: 54px;
+  font-weight: 900;
+  line-height: 1.12;
+  letter-spacing: -0.02em;
+  margin: 16px 0;
+  color: #ffffff;
+}
+
+.hero-desc {
+  font-size: 15px;
+  color: #94a3b8;
+  line-height: 1.6;
+  margin-bottom: 28px;
+  max-width: 520px;
+}
+
+.hero-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 36px;
+}
+
+.hero-badges-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  padding-top: 24px;
+  border-top: 1px solid #13234d;
+}
+
+.trust-badge-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.badge-icon-circle {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #0a1435;
+  border: 1px solid rgba(0, 229, 255, 0.4);
+  color: var(--accent-cyan);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  flex-shrink: 0;
+  box-shadow: 0 0 10px rgba(0, 229, 255, 0.2);
+}
+
+.trust-badge-item h5 {
+  font-size: 12px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.trust-badge-item p {
+  font-size: 10px;
+  color: #94a3b8;
+}
+
+/* 3D Hero Canvas Container & Devices Composition */
+.hero-3d-wrapper {
+  position: relative;
+  width: 100%;
+  height: 480px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#hero-globe-canvas-container {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* 3D Devices Container */
+.devices-3d-scene {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: 500px;
+  perspective: 1200px;
+  transform-style: preserve-3d;
+}
+
+/* CSS 3D Angled Laptop */
+.laptop-3d {
+  position: relative;
+  width: 380px;
+  margin: 0 auto;
+  transform: rotateX(8deg) rotateY(-12deg);
+  transition: transform 0.4s ease;
+}
+
+.laptop-screen {
+  background: #060b19;
+  border: 4px solid #1e293b;
+  border-radius: 12px 12px 2px 2px;
+  height: 230px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-shadow: 0 0 35px rgba(0, 229, 255, 0.25), inset 0 0 30px rgba(11, 23, 58, 0.9);
+  position: relative;
+  overflow: hidden;
+}
+
+.laptop-screen::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 50%, rgba(0, 229, 255, 0.15) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.laptop-logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 25px;
+}
+
+.laptop-logo .ds-icon {
+  font-size: 24px;
+  font-weight: 900;
+  color: var(--accent-cyan);
+}
+
+.laptop-logo .ds-name {
+  font-size: 20px;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.laptop-screen .screen-cta {
+  align-self: center;
+  padding: 6px 18px;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, #00d2ff, #7928ca);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 700;
+  border: none;
+  box-shadow: 0 0 15px rgba(0, 229, 255, 0.4);
+  margin-bottom: 20px;
+}
+
+.laptop-base {
+  height: 12px;
+  background: linear-gradient(180deg, #334155 0%, #0f172a 100%);
+  border-radius: 0 0 16px 16px;
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.8);
+  position: relative;
+}
+
+.laptop-base::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 4px;
+  background: #475569;
+  border-radius: 0 0 4px 4px;
+}
+
+/* 3D Angled Phone */
+.phone-3d {
+  position: absolute;
+  right: 10px;
+  bottom: -20px;
+  width: 140px;
+  height: 260px;
+  background: #020617;
+  border: 4px solid #1e293b;
+  border-radius: 24px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transform: rotateX(6deg) rotateY(-8deg) translateZ(40px);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.9), 0 0 25px rgba(0, 229, 255, 0.3);
+  z-index: 5;
+}
+
+.phone-speaker {
+  width: 30px;
+  height: 3px;
+  background: #334155;
+  border-radius: 2px;
+  margin: 0 auto;
+}
+
+.phone-content {
+  text-align: center;
+  margin-top: 15px;
+}
+
+.phone-content h6 {
+  font-size: 10px;
+  color: var(--accent-cyan);
+  font-weight: 700;
+}
+
+.phone-content h4 {
+  font-size: 13px;
+  font-weight: 800;
+  color: #ffffff;
+  margin: 8px 0;
+  line-height: 1.2;
+}
+
+.phone-btn {
+  padding: 5px 12px;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, #00d2ff, #7928ca);
+  color: #ffffff;
+  font-size: 9px;
+  font-weight: 700;
+  border: none;
+}
+
+/* 4 Floating Badges around devices */
+.floating-badge {
+  position: absolute;
+  background: rgba(8, 16, 42, 0.85);
+  border: 1px solid rgba(0, 229, 255, 0.35);
+  border-radius: 12px;
+  padding: 8px 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6), 0 0 15px rgba(0, 229, 255, 0.2);
+  z-index: 6;
+  font-size: 11px;
+  font-weight: 700;
+  color: #ffffff;
+  white-space: nowrap;
+  animation: floatSlow 5s ease-in-out infinite;
+}
+
+.floating-badge.badge-marketing {
+  top: 15px;
+  left: -20px;
+  animation-delay: 0s;
+}
+
+.floating-badge.badge-ai {
+  bottom: 80px;
+  left: -30px;
+  animation-delay: 1.5s;
+}
+
+.floating-badge.badge-web {
+  top: 30px;
+  right: -25px;
+  background: linear-gradient(135deg, rgba(8, 16, 42, 0.9), rgba(124, 58, 237, 0.35));
+  border-color: rgba(139, 92, 246, 0.5);
+  animation-delay: 2.5s;
+}
+
+.floating-badge.badge-services {
+  bottom: 60px;
+  right: -35px;
+  animation-delay: 3.5s;
+}
+
+@keyframes floatSlow {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+/* 7. Services Section (2 Featured + Supporting Cards) */
+.services-section {
+  padding: 80px 0;
+  background: #040714;
+}
+
+.section-header-flex {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: 40px;
+  gap: 20px;
+}
+
+.section-title {
+  font-size: 36px;
+  font-weight: 800;
+  color: #ffffff;
+  line-height: 1.2;
+}
+
+.services-grid {
+  display: grid;
+  grid-template-columns: 5fr 4fr 3fr;
+  gap: 20px;
+}
+
+.service-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-blue);
+  border-radius: 20px;
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  transition: all 0.3s ease;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+}
+
+.service-card:hover {
+  border-color: var(--border-cyan-glow);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6), 0 0 20px rgba(0, 229, 255, 0.2);
+  transform: translateY(-2px);
+}
+
+.card-num-badge {
+  display: inline-block;
+  font-family: monospace;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: rgba(0, 229, 255, 0.1);
+  color: var(--accent-cyan);
+  border: 1px solid rgba(0, 229, 255, 0.3);
+  margin-bottom: 14px;
+}
+
+.service-card h3 {
+  font-size: 22px;
+  font-weight: 800;
+  color: #ffffff;
+  margin-bottom: 8px;
+}
+
+.service-card p.card-desc {
+  font-size: 12px;
+  color: #94a3b8;
+  line-height: 1.6;
+  margin-bottom: 18px;
+}
+
+.subservice-list {
+  list-style: none;
+  margin-bottom: 24px;
+}
+
+.subservice-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #cbd5e1;
+  margin-bottom: 8px;
+}
+
+.subservice-list li .check-icon {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: rgba(0, 229, 255, 0.2);
+  color: var(--accent-cyan);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  font-weight: 900;
+}
+
+.card-footer {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  padding-top: 16px;
+  border-top: 1px solid #13234d;
+}
+
+.card-link {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--accent-cyan);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: gap 0.2s;
+}
+
+.card-link:hover {
+  gap: 9px;
+  color: #ffffff;
+}
+
+.card-art-img {
+  max-width: 90px;
+  max-height: 90px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 10px rgba(0, 229, 255, 0.3));
+}
+
+.supporting-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.supporting-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-blue);
+  border-radius: 18px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  flex: 1;
+  transition: all 0.25s ease;
+  text-decoration: none;
+  color: inherit;
+}
+
+.supporting-card:hover {
+  border-color: var(--border-cyan-glow);
+  transform: translateY(-2px);
+}
+
+.supporting-card h4 {
+  font-size: 15px;
+  font-weight: 800;
+  color: #ffffff;
+  margin: 8px 0 4px;
+}
+
+.supporting-card p {
+  font-size: 11px;
+  color: #94a3b8;
+  line-height: 1.5;
+}
+
+.tag-pill {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  background: rgba(139, 92, 246, 0.2);
+  color: #c084fc;
+  border: 1px solid rgba(139, 92, 246, 0.4);
+}
+
+/* 8. About Section */
+.about-section {
+  padding: 80px 0;
+  background: #030611;
+}
+
+.about-grid {
+  display: grid;
+  grid-template-columns: 4fr 3fr 5fr;
+  gap: 40px;
+  align-items: center;
+}
+
+.stats-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.stat-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.stat-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #0a1538;
+  border: 1px solid rgba(0, 229, 255, 0.4);
+  color: var(--accent-cyan);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+  box-shadow: 0 0 12px rgba(0, 229, 255, 0.25);
+}
+
+.stat-item h3 {
+  font-size: 24px;
+  font-weight: 900;
+  color: #ffffff;
+  line-height: 1.1;
+}
+
+.stat-item span {
+  font-size: 12px;
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+.office-img-wrapper {
+  border-radius: 20px;
+  overflow: hidden;
+  border: 1px solid var(--border-blue);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.8);
+}
+
+.office-img-wrapper img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* 9. Featured Projects Section */
+.projects-section {
+  padding: 80px 0;
+  background: #030611;
+}
+
+.projects-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+}
+
+.project-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-blue);
+  border-radius: 16px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  text-decoration: none;
+  color: inherit;
+  transition: all 0.3s ease;
+}
+
+.project-card:hover {
+  border-color: var(--border-cyan-glow);
+  transform: translateY(-3px);
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.6), 0 0 15px rgba(0, 229, 255, 0.2);
+}
+
+.project-art {
+  height: 150px;
+  background: #050b1d;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.project-art img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.project-info {
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid #13234d;
+  gap: 10px;
+}
+
+.project-info h4 {
+  font-size: 13px;
+  font-weight: 700;
+  color: #ffffff;
+  line-height: 1.3;
+}
+
+.round-arrow-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #00e5ff, #3b82f6);
+  color: #030611;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+/* 10. Our Process Section */
+.process-section {
+  padding: 80px 0;
+  background: #040714;
+  position: relative;
+  overflow: hidden;
+}
+
+.wave-background-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+.process-timeline {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 20px;
+  position: relative;
+  z-index: 2;
+  margin-top: 30px;
+}
+
+.process-timeline::before {
+  content: '';
+  position: absolute;
+  top: 40px;
+  left: 60px;
+  right: 60px;
+  height: 2px;
+  background: linear-gradient(90deg, #00e5ff, #3b82f6, #8b5cf6);
+  box-shadow: 0 0 10px rgba(0, 229, 255, 0.4);
+  z-index: 1;
+}
+
+.process-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  position: relative;
+  z-index: 2;
+}
+
+.step-circle {
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  background: #060b1d;
+  border: 2px solid #1a2d5a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  color: #38bdf8;
+  margin-bottom: 14px;
+  box-shadow: 0 0 15px rgba(0, 229, 255, 0.2);
+  transition: all 0.3s;
+}
+
+.process-step:hover .step-circle {
+  border-color: var(--accent-cyan);
+  color: var(--accent-cyan);
+  box-shadow: 0 0 25px rgba(0, 229, 255, 0.5);
+  transform: scale(1.08);
+}
+
+.step-num {
+  font-family: monospace;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent-cyan);
+  margin-bottom: 4px;
+}
+
+.process-step h4 {
+  font-size: 15px;
+  font-weight: 800;
+  color: #ffffff;
+  margin-bottom: 6px;
+}
+
+.process-step p {
+  font-size: 11px;
+  color: #94a3b8;
+  line-height: 1.5;
+  max-width: 180px;
+}
+
+/* 11. Why Choose Us Section with 3D Canvas Cubes */
+.why-section {
+  padding: 80px 0;
+  background: #030611;
+}
+
+.why-grid {
+  display: grid;
+  grid-template-columns: 4fr 4fr 4fr;
+  gap: 30px;
+  align-items: center;
+}
+
+.why-benefits {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.benefit-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.benefit-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: #0a1538;
+  border: 1px solid rgba(0, 229, 255, 0.4);
+  color: var(--accent-cyan);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.benefit-row h4 {
+  font-size: 14px;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 2px;
+}
+
+.benefit-row p {
+  font-size: 11px;
+  color: #94a3b8;
+  line-height: 1.4;
+}
+
+/* 3D Cubes Canvas container */
+.cubes-canvas-wrapper {
+  position: relative;
+  width: 100%;
+  height: 280px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#why-choose-cubes-canvas {
+  width: 100%;
+  height: 100%;
+}
+
+/* 12. Testimonials Section */
+.testimonials-section {
+  padding: 80px 0;
+  background: #030611;
+  text-align: center;
+}
+
+.testimonials-slider-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 800px;
+  margin: 36px auto 0;
+  gap: 20px;
+}
+
+.slider-nav-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #08102a;
+  border: 1px solid #1e3a78;
+  color: var(--accent-cyan);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 16px;
+  transition: all 0.25s;
+}
+
+.slider-nav-btn:hover {
+  border-color: var(--accent-cyan);
+  box-shadow: 0 0 15px rgba(0, 229, 255, 0.3);
+}
+
+.testimonial-card {
+  flex: 1;
+  background: #08102a;
+  border: 1px solid var(--border-blue);
+  border-radius: 20px;
+  padding: 28px 32px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  text-align: left;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.8);
+}
+
+.testimonial-avatar {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  border: 2px solid var(--accent-cyan);
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.testimonial-text {
+  font-size: 13px;
+  color: #e2e8f0;
+  line-height: 1.6;
+  margin-bottom: 12px;
+  font-style: italic;
+}
+
+.author-name {
+  font-size: 14px;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.author-role {
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.star-rating {
+  color: #f59e0b;
+  font-size: 12px;
+  letter-spacing: 2px;
+  margin-top: 2px;
+}
+
+.slider-dots {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 24px;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 9999px;
+  background: #334155;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.dot.active {
+  width: 24px;
+  background: linear-gradient(90deg, #00e5ff, #3b82f6);
+  box-shadow: 0 0 8px rgba(0, 229, 255, 0.5);
+}
+
+/* 13. CTA Banner with 3D Cyber Earth Canvas */
+.cta-banner-section {
+  padding: 60px 0;
+  background: #030611;
+}
+
+.cta-banner-box {
+  background: linear-gradient(90deg, #0d1e56 0%, #081338 60%, #030718 100%);
+  border: 1px solid var(--border-blue);
+  border-radius: 24px;
+  padding: 48px;
+  display: grid;
+  grid-template-columns: 1.3fr 1fr;
+  align-items: center;
+  gap: 40px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.8);
+}
+
+.cta-banner-box h2 {
+  font-size: 42px;
+  font-weight: 900;
+  color: #ffffff;
+  line-height: 1.15;
+  margin: 12px 0 10px;
+}
+
+.cta-banner-box p {
+  font-size: 14px;
+  color: #cbd5e1;
+  margin-bottom: 24px;
+}
+
+.cta-contact-row {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  margin-top: 28px;
+  padding-top: 24px;
+  border-top: 1px solid #132b5e;
+}
+
+.cta-contact-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #e2e8f0;
+  text-decoration: none;
+  font-size: 12px;
+}
+
+.cta-contact-item:hover {
+  color: var(--accent-cyan);
+}
+
+.contact-icon-box {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #0d1f4d;
+  border: 1px solid rgba(0, 229, 255, 0.3);
+  color: var(--accent-cyan);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.cta-3d-globe-wrapper {
+  position: relative;
+  width: 100%;
+  height: 280px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#cta-globe-canvas {
+  width: 100%;
+  height: 100%;
+}
+
+/* 14. FAQ Accordion Section */
+.faq-section {
+  padding: 80px 0;
+  background: #030611;
+}
+
+.faq-grid {
+  display: grid;
+  grid-template-columns: 5fr 7fr;
+  gap: 48px;
+  align-items: flex-start;
+}
+
+.faq-artwork-box {
+  margin-top: 24px;
+  max-width: 260px;
+}
+
+.faq-artwork-box img {
+  width: 100%;
+  height: auto;
+  filter: drop-shadow(0 0 20px rgba(0, 229, 255, 0.4));
+}
+
+.accordion-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.accordion-item {
+  background: var(--bg-card);
+  border: 1px solid var(--border-blue);
+  border-radius: 14px;
+  overflow: hidden;
+  transition: all 0.25s ease;
+}
+
+.accordion-item:hover {
+  border-color: rgba(0, 229, 255, 0.5);
+}
+
+.accordion-trigger {
+  width: 100%;
+  padding: 18px 20px;
+  background: none;
+  border: none;
+  color: #f1f5f9;
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  text-align: left;
+  cursor: pointer;
+}
+
+.trigger-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #0f1c42;
+  color: var(--accent-cyan);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 700;
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.accordion-content {
+  display: none;
+  padding: 0 20px 20px;
+  font-size: 12px;
+  color: #94a3b8;
+  line-height: 1.6;
+  border-top: 1px solid #13234d;
+  padding-top: 12px;
+}
+
+.accordion-item.open .accordion-content {
+  display: block;
+}
+
+.accordion-item.open .trigger-icon {
+  transform: rotate(45deg);
+  background: rgba(0, 229, 255, 0.2);
+}
+
+/* 15. Single-Tier Compact Footer */
+footer.site-footer {
+  background: #030611;
+  border-top: 1px solid var(--border-divider);
+  padding: 32px 0;
+}
+
+.footer-flex {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.footer-brand-wrap {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.social-links {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding-left: 20px;
+  border-left: 1px solid #1e293b;
+}
+
+.social-links a {
+  color: #94a3b8;
+  font-size: 14px;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.social-links a:hover {
+  color: var(--accent-cyan);
+}
+
+.footer-nav {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.footer-nav a {
+  font-size: 12px;
+  font-weight: 600;
+  color: #cbd5e1;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.footer-nav a:hover {
+  color: var(--accent-cyan);
+}
+
+.footer-legal {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  font-size: 11px;
+  color: #64748b;
+  gap: 4px;
+}
+
+.footer-legal-links {
+  display: flex;
+  gap: 16px;
+}
+
+.footer-legal-links a {
+  color: #64748b;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.footer-legal-links a:hover {
+  color: #cbd5e1;
+}
+
+/* 16. Responsive Media Queries */
+@media (max-width: 1024px) {
+  .hero-grid, .about-grid, .why-grid, .cta-banner-box, .faq-grid {
+    grid-template-columns: 1fr;
+    gap: 40px;
+  }
+  .services-grid {
+    grid-template-columns: 1fr;
+  }
+  .projects-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .process-timeline {
+    grid-template-columns: 1fr;
+    gap: 30px;
+  }
+  .process-timeline::before {
+    display: none;
+  }
+  .footer-flex {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 20px;
+  }
+  .footer-brand-wrap {
+    flex-direction: column;
+    gap: 16px;
+  }
+  .social-links {
+    padding-left: 0;
+    border-left: none;
+  }
+  .footer-legal {
+    align-items: center;
+  }
+}
+
+@media (max-width: 768px) {
+  .main-nav, .header-cta {
+    display: none;
+  }
+  .mobile-toggle {
+    display: block;
+  }
+  .hero-content h2.hero-title {
+    font-size: 38px;
+  }
+  .hero-badges-row {
+    grid-template-columns: 1fr;
+  }
+  .projects-grid {
+    grid-template-columns: 1fr;
+  }
+  .cta-contact-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+  .laptop-3d {
+    width: 290px;
+  }
+  .laptop-screen {
+    height: 180px;
+  }
+  .phone-3d {
+    width: 110px;
+    height: 200px;
+    right: -10px;
+    bottom: -15px;
+  }
+}
+
+/* ==========================================================================
+   17. Inner Pages, Drawer, Forms & Subpage Components
+   ========================================================================== */
+
+/* Mobile Navigation Drawer & Overlay */
+.mobile-nav-drawer {
+  position: fixed;
+  top: 0;
+  right: -320px;
+  width: 300px;
+  height: 100vh;
+  background: #04091d;
+  border-left: 1px solid var(--border-cyan);
+  box-shadow: -10px 0 30px rgba(0, 0, 0, 0.85);
+  z-index: 1001;
+  padding: 30px 24px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: right 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow-y: auto;
+}
+
+.mobile-nav-drawer.open {
+  right: 0;
+}
+
+.mobile-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(3, 6, 17, 0.75);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 1000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.mobile-overlay.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 28px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #13234d;
+}
+
+.drawer-close-btn {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  font-size: 24px;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.drawer-close-btn:hover {
+  color: var(--accent-cyan);
+}
+
+.drawer-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.drawer-nav a {
+  color: #cbd5e1;
+  text-decoration: none;
+  font-size: 15px;
+  font-weight: 600;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  transition: color 0.2s;
+}
+
+.drawer-nav a:hover, .drawer-nav a.active {
+  color: var(--accent-cyan);
+}
+
+.drawer-sub-services {
+  padding-left: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 6px 0 10px;
+}
+
+.drawer-sub-services a {
+  font-size: 13px;
+  color: #94a3b8;
+  border: none;
+  padding: 4px 0;
+}
+
+/* Page Hero Banner */
+.page-hero {
+  padding: 130px 0 60px;
+  background: radial-gradient(circle at 50% 20%, rgba(37, 99, 235, 0.15) 0%, transparent 60%), #030611;
+  border-bottom: 1px solid var(--border-divider);
+  text-align: center;
+  position: relative;
+}
+
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 14px;
+}
+
+.breadcrumb a {
+  color: var(--accent-cyan);
+  text-decoration: none;
+}
+
+.breadcrumb a:hover {
+  text-decoration: underline;
+}
+
+.page-hero-title {
+  font-size: 42px;
+  font-weight: 900;
+  color: #ffffff;
+  margin-bottom: 12px;
+}
+
+.page-hero-desc {
+  font-size: 15px;
+  color: #94a3b8;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+/* Forms & Inputs */
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  color: #cbd5e1;
+  margin-bottom: 8px;
+}
+
+.form-control {
+  width: 100%;
+  padding: 13px 16px;
+  background: #060c22;
+  border: 1px solid var(--border-blue);
+  border-radius: 10px;
+  color: #ffffff;
+  font-size: 13px;
+  font-family: inherit;
+  transition: all 0.25s;
+}
+
+.form-control:focus {
+  outline: none;
+  border-color: var(--accent-cyan);
+  box-shadow: 0 0 15px rgba(0, 229, 255, 0.25);
+  background: #08112e;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+@media (max-width: 640px) {
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+textarea.form-control {
+  min-height: 130px;
+  resize: vertical;
+}
+
+/* Alert Notification Feedback */
+.alert-box {
+  display: none;
+  padding: 16px 20px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  align-items: center;
+  gap: 12px;
+}
+
+.alert-success {
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  color: #34d399;
+}
+
+/* Portfolio Filters */
+.portfolio-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  margin-bottom: 40px;
+}
+
+.filter-btn {
+  padding: 8px 20px;
+  border-radius: 9999px;
+  background: #070e24;
+  border: 1px solid #1e3a78;
+  color: #94a3b8;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.filter-btn:hover, .filter-btn.active {
+  background: linear-gradient(90deg, #00d2ff, #2563eb);
+  color: #ffffff;
+  border-color: transparent;
+  box-shadow: 0 0 15px rgba(0, 229, 255, 0.4);
+}
+
+/* Interactive Quote Options Grid */
+.quote-options-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 14px;
+  margin-top: 8px;
+}
+
+.quote-option-label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  background: #060c22;
+  border: 1px solid var(--border-blue);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.quote-option-label:hover {
+  border-color: var(--accent-cyan);
+  background: rgba(0, 229, 255, 0.05);
+}
+
+.quote-option-label input[type="checkbox"],
+.quote-option-label input[type="radio"] {
+  accent-color: var(--accent-cyan);
+  width: 16px;
+  height: 16px;
+}
+
+/* Blog Cards */
+.blog-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 28px;
+}
+
+@media (max-width: 900px) {
+  .blog-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.blog-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-blue);
+  border-radius: 18px;
+  overflow: hidden;
+  transition: all 0.3s;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.blog-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--border-cyan-glow);
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.7), 0 0 20px rgba(0, 229, 255, 0.2);
+}
+
+.blog-card-img {
+  width: 100%;
+  height: 180px;
+  background: #070e28;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 38px;
+  color: var(--accent-cyan);
+}
+
+.blog-card-body {
+  padding: 24px;
+}
+
+.blog-date {
+  font-size: 11px;
+  color: #64748b;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.blog-card-body h3 {
+  font-size: 18px;
+  font-weight: 800;
+  color: #ffffff;
+  margin-bottom: 10px;
+  line-height: 1.35;
+}
+
+.blog-card-body p {
+  font-size: 12px;
+  color: #94a3b8;
+  line-height: 1.6;
+  margin-bottom: 16px;
+}
+
+
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header class="site-header">
+    <div class="container nav-wrapper">
+      <a href="index.html" class="brand-logo" aria-label="DigitalSnove Home">
+        <div class="logo-badge"><div class="logo-inner">DS</div></div>
+        <div class="brand-text">
+          <h1>DigitalSnove</h1>
+          <span>Think Digital. Go Global.</span>
+        </div>
+      </a>
+
+      <nav class="main-nav">
+        <a href="index.html" class="nav-link">Home</a>
+        <!-- Services with Mega Dropdown -->
+        <div class="dropdown-parent">
+          <a href="services.html" class="nav-link">Services &#9662;</a>
+          <div class="dropdown-menu">
+            <!-- 01. Digital Marketing -->
+            <a href="service-digital-marketing.html" class="dropdown-item">
+              <span class="icon-box">&#128227;</span>
+              <div class="dropdown-item-content">
+                <div class="dropdown-item-title">Digital Marketing</div>
+                <div class="dropdown-item-sub">SEO, PPC, Social Ads &amp; CRO</div>
+                <div class="dropdown-subtags">
+                  <span class="dropdown-subtag">SEO</span>
+                  <span class="dropdown-subtag">Google Ads</span>
+                  <span class="dropdown-subtag">Meta Ads</span>
+                  <span class="dropdown-subtag">CRO</span>
+                </div>
+              </div>
+            </a>
+
+            <!-- 02. Web Development -->
+            <a href="service-web-development.html" class="dropdown-item">
+              <span class="icon-box">&lt;/&gt;</span>
+              <div class="dropdown-item-content">
+                <div class="dropdown-item-title">Web Development</div>
+                <div class="dropdown-item-sub">Custom Web Apps &amp; WordPress</div>
+                <div class="dropdown-subtags">
+                  <span class="dropdown-subtag">Custom Apps</span>
+                  <span class="dropdown-subtag">Corporate</span>
+                  <span class="dropdown-subtag">WordPress</span>
+                  <span class="dropdown-subtag">UI/UX</span>
+                </div>
+              </div>
+            </a>
+
+            <!-- 03. Graphic Design & Branding -->
+            <a href="service-graphic-design.html" class="dropdown-item">
+              <span class="icon-box">&#9670;</span>
+              <div class="dropdown-item-content">
+                <div class="dropdown-item-title">Graphic Design &amp; Branding</div>
+                <div class="dropdown-item-sub">Logos, Guidelines &amp; Creatives</div>
+                <div class="dropdown-subtags">
+                  <span class="dropdown-subtag">Logo Design</span>
+                  <span class="dropdown-subtag">Branding</span>
+                  <span class="dropdown-subtag">Packaging</span>
+                </div>
+              </div>
+            </a>
+
+            <!-- 04. AI Tools & Automation -->
+            <a href="service-ai-automation.html" class="dropdown-item">
+              <span class="icon-box">&#9881;</span>
+              <div class="dropdown-item-content">
+                <div class="dropdown-item-title">AI Tools &amp; Automation</div>
+                <div class="dropdown-item-sub">Chatbots, CRM &amp; Workflows</div>
+                <div class="dropdown-subtags">
+                  <span class="dropdown-subtag">AI Bots</span>
+                  <span class="dropdown-subtag">Workflows</span>
+                  <span class="dropdown-subtag">APIs</span>
+                </div>
+              </div>
+            </a>
+
+            <!-- 05. Content Creation -->
+            <a href="service-content-creation.html" class="dropdown-item">
+              <span class="icon-box">&#9998;</span>
+              <div class="dropdown-item-content">
+                <div class="dropdown-item-title">Content Creation</div>
+                <div class="dropdown-item-sub">Copywriting &amp; SEO Blogs</div>
+                <div class="dropdown-subtags">
+                  <span class="dropdown-subtag">Website Copy</span>
+                  <span class="dropdown-subtag">SEO Blogs</span>
+                  <span class="dropdown-subtag">Email Funnels</span>
+                </div>
+              </div>
+            </a>
+
+            <!-- 06. E-Commerce Solutions -->
+            <a href="service-ecommerce.html" class="dropdown-item">
+              <span class="icon-box">&#128722;</span>
+              <div class="dropdown-item-content">
+                <div class="dropdown-item-title">E-Commerce Solutions</div>
+                <div class="dropdown-item-sub">Shopify &amp; WooCommerce</div>
+                <div class="dropdown-subtags">
+                  <span class="dropdown-subtag">Shopify</span>
+                  <span class="dropdown-subtag">WooCommerce</span>
+                  <span class="dropdown-subtag">Checkout</span>
+                </div>
+              </div>
+            </a>
+
+            <!-- Footer link to all services -->
+            <div class="dropdown-footer">
+              <a href="services.html">View All 6 Services &amp; Sub-Categories &rarr;</a>
+            </div>
+          </div>
+        </div>
+
+        <!-- NEW SaaS & Cloud POS Portal Link -->
+        <a href="cloud-pos-saas.html" class="nav-link" style="color: #00e5ff; font-weight: 700; display: inline-flex; align-items: center; gap: 5px;">
+          Cloud POS &amp; SaaS
+          <span style="background: linear-gradient(90deg, #00e5ff, #3b82f6); color: #020617; font-size: 9px; padding: 2px 6px; border-radius: 9999px; font-weight: 900; letter-spacing: 0.05em;">PORTAL</span>
+        </a>
+
+        <a href="about.html" class="nav-link active">About Us</a>
+        <a href="portfolio.html" class="nav-link">Portfolio</a>
+        <a href="blog.html" class="nav-link">Blog</a>
+        <a href="contact.html" class="nav-link">Contact</a>
+      </nav>
+
+      <div style="display: flex; align-items: center; gap: 16px;">
+        <a href="cloud-pos-saas.html#pricing" class="btn-primary header-cta" style="background: linear-gradient(90deg, #00e5ff, #2563eb); color: #020617; font-weight: 800; box-shadow: 0 0 15px rgba(0, 229, 255, 0.35);">Get Started / Free Trial &rarr;</a>
+        <button class="mobile-toggle" aria-label="Toggle navigation menu">&#9776;</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Mobile Drawer -->
+  <div class="mobile-overlay"></div>
+  <aside class="mobile-nav-drawer" aria-label="Mobile Navigation Drawer">
+    <div>
+      <div class="drawer-header">
+        <a href="index.html" class="brand-logo">
+          <div class="logo-badge"><div class="logo-inner">DS</div></div>
+          <div class="brand-text"><h1 style="font-size: 16px;">DigitalSnove</h1></div>
+        </a>
+        <button class="drawer-close-btn" aria-label="Close menu">&times;</button>
+      </div>
+      <nav class="drawer-nav">
+        <a href="index.html">Home</a>
+        <a href="cloud-pos-saas.html" style="color: #00e5ff; font-weight: 700; display: flex; align-items: center; justify-content: space-between;">
+          Cloud POS &amp; SaaS (Portal)
+          <span style="background: linear-gradient(90deg, #00e5ff, #3b82f6); color: #020617; font-size: 9px; padding: 2px 6px; border-radius: 9999px; font-weight: 900;">NEW</span>
+        </a>
+        <a href="services.html">All Services</a>
+        <div class="drawer-sub-services">
+          <a href="service-digital-marketing.html">&bull; Digital Marketing</a>
+          <a href="service-web-development.html">&bull; Web Development</a>
+          <a href="service-graphic-design.html">&bull; Graphic Design &amp; Branding</a>
+          <a href="service-ai-automation.html">&bull; AI Tools &amp; Automation</a>
+          <a href="service-content-creation.html">&bull; Content Creation</a>
+          <a href="service-ecommerce.html">&bull; E-commerce Solutions</a>
+        </div>
+        <a href="about.html" class="active">About Us</a>
+        <a href="portfolio.html">Portfolio</a>
+        <a href="blog.html">Blog</a>
+        <a href="contact.html">Contact</a>
+      </nav>
+    </div>
+    <div>
+      <a href="cloud-pos-saas.html#pricing" class="btn-primary" style="width: 100%; justify-content: center; margin-top: 24px; background: linear-gradient(90deg, #00e5ff, #2563eb); color: #020617; font-weight: 800;">Get Started / Free Trial &rarr;</a>
+      <p style="font-size: 11px; color: #64748b; text-align: center; margin-top: 14px;">&copy; 2026 DigitalSnove</p>
+    </div>
+  </aside>
+
+  <!-- PAGE HERO -->
+  <section class="page-hero">
+    <div class="container">
+      <nav class="breadcrumb">
+        <a href="index.html">Home</a>
+        <span>/</span>
+        <span style="color: #cbd5e1;">About Us</span>
+      </nav>
+      <span class="card-num-badge">WHO WE ARE</span>
+      <h1 class="page-hero-title">Architects of <span class="text-gradient">Digital Success</span></h1>
+      <p class="page-hero-desc">
+        We bridge the gap between creative artistry and technical precision, engineering global digital experiences that leave a lasting mark.
+      </p>
+    </div>
+  </section>
+
+  <!-- ABOUT STORY & VALUES -->
+  <section class="section-divider" style="padding: 80px 0; background: #030611;">
+    <div class="container about-grid">
+      <div>
+        <span class="eyebrow">OUR STORY</span>
+        <h2 style="font-size: 34px; font-weight: 800; color: #ffffff; line-height: 1.2; margin-bottom: 18px;">
+          Empowering Brands In The <span class="text-cyan">Global Marketplace</span>
+        </h2>
+        <p style="font-size: 13px; color: #94a3b8; line-height: 1.7; margin-bottom: 16px;">
+          Founded with a clear vision — <em>"Think Digital. Go Global."</em> — DigitalSnove was established to help forward-thinking companies transcend regional limits and capture market share worldwide.
+        </p>
+        <p style="font-size: 13px; color: #94a3b8; line-height: 1.7; margin-bottom: 24px;">
+          Our multidisciplinary teams of software engineers, growth marketers, and UI/UX designers operate in synchrony, ensuring every project is delivered with obsessive quality, rigorous speed, and unmatched aesthetic polish.
+        </p>
+        <div style="display: flex; gap: 16px;">
+          <a href="services.html" class="btn-primary">Our Services &rarr;</a>
+          <a href="contact.html" class="btn-outline">Contact Us</a>
+        </div>
+      </div>
+
+      <!-- Stats in Center -->
+      <div class="stats-list">
+        <div class="stat-item">
+          <div class="stat-icon">&#10004;</div>
+          <div>
+            <h3 class="stat-count" data-target="500" data-suffix="+">500+</h3>
+            <span>Delivered Projects</span>
+          </div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-icon">&#9733;</div>
+          <div>
+            <h3 class="stat-count" data-target="98" data-suffix="%">98%</h3>
+            <span>Client Satisfaction</span>
+          </div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-icon">&#127758;</div>
+          <div>
+            <h3 class="stat-count" data-target="25" data-suffix="+">25+</h3>
+            <span>Global Jurisdictions</span>
+          </div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-icon">&#9881;</div>
+          <div>
+            <h3>24/7</h3>
+            <span>Global Operations</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Office Photo -->
+      <div class="office-img-wrapper">
+        <img src="assets/about-office.png" alt="DigitalSnove Innovation Center" loading="lazy">
+      </div>
+    </div>
+  </section>
+
+  <!-- CORE VALUES -->
+  <section class="section-divider" style="padding: 80px 0; background: #040714;">
+    <div class="container">
+      <div style="text-align: center; margin-bottom: 48px;">
+        <span class="eyebrow">WHAT DRIVES US</span>
+        <h2 class="section-title">Our Guiding Principles</h2>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 24px;">
+        <div class="service-card" style="padding: 24px;">
+          <span style="font-size: 24px; color: var(--accent-cyan); display: block; margin-bottom: 12px;">&#128161;</span>
+          <h4 style="font-size: 18px; color: #fff; margin-bottom: 8px;">Radical Innovation</h4>
+          <p style="font-size: 12px; color: #94a3b8; line-height: 1.6;">
+            We continuously adopt next-generation technologies, from generative AI to headless architectures, to keep our clients ahead of the curve.
+          </p>
+        </div>
+
+        <div class="service-card" style="padding: 24px;">
+          <span style="font-size: 24px; color: var(--accent-cyan); display: block; margin-bottom: 12px;">&lt;/&gt;</span>
+          <h4 style="font-size: 18px; color: #fff; margin-bottom: 8px;">Engineering Precision</h4>
+          <p style="font-size: 12px; color: #94a3b8; line-height: 1.6;">
+            We write clean, modular, scalable code that stands the test of time, passing rigorous security audits and Core Web Vitals checks.
+          </p>
+        </div>
+
+        <div class="service-card" style="padding: 24px;">
+          <span style="font-size: 24px; color: var(--accent-cyan); display: block; margin-bottom: 12px;">&#128200;</span>
+          <h4 style="font-size: 18px; color: #fff; margin-bottom: 8px;">Measurable ROI</h4>
+          <p style="font-size: 12px; color: #94a3b8; line-height: 1.6;">
+            Every strategy, design element, and campaign is engineered with a laser focus on customer acquisition, conversion, and business revenue.
+          </p>
+        </div>
+
+        <div class="service-card" style="padding: 24px;">
+          <span style="font-size: 24px; color: var(--accent-cyan); display: block; margin-bottom: 12px;">&#127758;</span>
+          <h4 style="font-size: 18px; color: #fff; margin-bottom: 8px;">Global Perspective</h4>
+          <p style="font-size: 12px; color: #94a3b8; line-height: 1.6;">
+            We design for international accessibility, multi-currency commerce, and cross-cultural resonance from day one.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA STRIP -->
+  <section class="cta-banner-section">
+    <div class="container">
+      <div class="cta-banner-box" style="grid-template-columns: 1fr; text-align: center; padding: 48px 24px;">
+        <div>
+          <span class="eyebrow">JOIN OUR JOURNEY</span>
+          <h2 style="font-size: 36px; margin: 12px 0;">Let's Build Your Digital Legacy Together</h2>
+          <p style="max-width: 600px; margin: 0 auto 24px;">
+            Whether you are launching a new startup or upgrading a multinational enterprise, DigitalSnove is your trusted partner.
+          </p>
+          <a href="quote.html" class="btn-primary" style="font-size: 14px; padding: 14px 36px;">Start Your Project &rarr;</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+    <!-- FOOTER -->
+  <footer class="site-footer">
+    <div class="container footer-grid-wrap">
+      <!-- Brand & Socials -->
+      <div class="footer-col-brand">
+        <a href="index.html" class="brand-logo">
+          <div class="logo-badge"><div class="logo-inner">DS</div></div>
+          <div class="brand-text">
+            <h1 style="font-size: 15px;">DigitalSnove</h1>
+            <span style="font-size: 8px;">Think Digital. Go Global.</span>
+          </div>
+        </a>
+        <p style="font-size: 12px; color: #94a3b8; margin: 12px 0 16px; line-height: 1.6; max-width: 320px;">
+          Premier digital agency &amp; SaaS provider empowering healthcare clinics, pharmacies, and high-growth businesses.
+        </p>
+        <div class="social-links" style="padding-left: 0; border-left: none;">
+          <a href="https://facebook.com" target="_blank" rel="noopener" aria-label="Facebook">&#9670; Facebook</a>
+          <a href="https://twitter.com" target="_blank" rel="noopener" aria-label="Twitter">&#9670; X</a>
+          <a href="https://linkedin.com" target="_blank" rel="noopener" aria-label="LinkedIn">&#9670; LinkedIn</a>
+          <a href="https://instagram.com" target="_blank" rel="noopener" aria-label="Instagram">&#9670; Instagram</a>
+        </div>
+      </div>
+
+      <!-- Quick Nav Links -->
+      <div class="footer-col">
+        <h4 style="font-size: 13px; font-weight: 800; color: #fff; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px;">Company</h4>
+        <nav class="footer-nav-vertical">
+          <a href="index.html">Home</a>
+          <a href="about.html">About Us</a>
+          <a href="portfolio.html">Portfolio</a>
+          <a href="blog.html">Blog</a>
+          <a href="contact.html">Contact Us</a>
+          <a href="quote.html">Get a Quote</a>
+        </nav>
+      </div>
+
+      <!-- Services & Solutions Column -->
+      <div class="footer-col">
+        <h4 style="font-size: 13px; font-weight: 800; color: #fff; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px;">Services &amp; Solutions</h4>
+        <nav class="footer-nav-vertical">
+          <a href="cloud-pos-saas.html" style="color: #00e5ff; font-weight: 700;">&#9889; Cloud POS &amp; Business SaaS</a>
+          <a href="cloud-pos-saas.html#clinic">&bull; Clinic &amp; Hospital Management</a>
+          <a href="cloud-pos-saas.html#pharmacy">&bull; Pharmacy &amp; Retail POS</a>
+          <a href="service-web-development.html">&bull; Web &amp; Custom Software</a>
+          <a href="service-digital-marketing.html">&bull; Digital Marketing &amp; SEO</a>
+          <a href="service-ai-automation.html">&bull; AI Tools &amp; Automation</a>
+        </nav>
+      </div>
+    </div>
+
+    <!-- Legal & Copyright -->
+    <div class="container footer-bottom-strip">
+      <p>&copy; 2026 DigitalSnove. All rights reserved.</p>
+      <div class="footer-legal-links">
+        <a href="privacy-policy.html">Privacy Policy</a>
+        <span>&bull;</span>
+        <a href="terms-conditions.html">Terms &amp; Conditions</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="js/main.js"></script>
+</body>
+</html>
