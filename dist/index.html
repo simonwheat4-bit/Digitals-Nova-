@@ -1,28 +1,4209 @@
 <!DOCTYPE html>
-<html lang="en" class="scroll-smooth">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/png" href="/assets/logo.png" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>DigitalSnove — Think Digital. Go Global. | Full-Service Digital Agency</title>
-    <meta name="description" content="DigitalSnove is a leading digital agency empowering businesses worldwide through digital marketing, custom web development, branding, AI automation, content creation, and e-commerce solutions." />
-    
-    <!-- Open Graph / Social Sharing -->
-    <meta property="og:type" content="website" />
-    <meta property="og:title" content="DigitalSnove — Think Digital. Go Global." />
-    <meta property="og:description" content="We help businesses grow globally with innovative digital marketing, powerful web solutions, AI tools and a wide range of digital services." />
-    <meta property="og:image" content="/assets/about-office.png" />
-    
-    <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    
-    <meta name="theme-color" content="#060b1a" />
-    <script type="module" crossorigin src="/assets/index-C1B2Rd3t.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-7cmjpOl7.css">
-  </head>
-  <body class="bg-navy-950 text-slate-100 font-sans antialiased selection:bg-cyan-500 selection:text-navy-950 min-h-screen overflow-x-hidden">
-    <div id="root"></div>
-  </body>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DigitalSnove — Think Digital. Go Global. | Your Growth Partner in the Digital World</title>
+  <meta name="description" content="At DigitalSnove, we help businesses grow globally with innovative digital marketing, powerful web solutions, AI tools and a wide range of digital services.">
+  <link rel="icon" type="image/png" href="assets/logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="css/style.css">
+
+  <style>
+/* ==========================================================================
+   DIGITALSNOVE — OFFICIAL STYLESHEET
+   Brand: DigitalSnove | Tagline: Think Digital. Go Global.
+   Designed for Hostinger / cPanel / Standard Web Hosting File Manager
+   ========================================================================== */
+
+/* 1. Global Reset & Theme Variables */
+:root {
+  --bg-deep: #030611;
+  --bg-navy-dark: #050b1d;
+  --bg-card: #08102a;
+  --bg-card-hover: #0b173c;
+  --border-cyan: rgba(0, 229, 255, 0.25);
+  --border-cyan-glow: rgba(0, 229, 255, 0.6);
+  --border-blue: #1a3875;
+  --border-divider: #122044;
+  --accent-cyan: #00e5ff;
+  --accent-blue: #2563eb;
+  --accent-purple: #8b5cf6;
+  --text-primary: #ffffff;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --font-main: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+  font-family: var(--font-main);
+  background-color: var(--bg-deep);
+  color: var(--text-primary);
+}
+
+body {
+  background-color: var(--bg-deep);
+  background-image: 
+    radial-gradient(circle at 50% 0%, rgba(37, 99, 235, 0.12) 0%, transparent 60%),
+    radial-gradient(circle at 100% 40%, rgba(139, 92, 246, 0.08) 0%, transparent 50%),
+    radial-gradient(circle at 0% 80%, rgba(0, 229, 255, 0.08) 0%, transparent 50%);
+  background-attachment: fixed;
+  overflow-x: hidden;
+  line-height: 1.6;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #030611;
+}
+::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 4px;
+  border: 1px solid rgba(0, 229, 255, 0.2);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-cyan);
+}
+
+/* Selection */
+::selection {
+  background-color: var(--accent-cyan);
+  color: #030611;
+}
+
+/* 2. Container & Grid Layout */
+.container {
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.section-divider {
+  border-bottom: 1px solid var(--border-divider);
+}
+
+/* 3. Typography & Badges */
+.eyebrow {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--accent-cyan);
+  margin-bottom: 8px;
+}
+
+.text-cyan {
+  color: var(--accent-cyan) !important;
+}
+
+.text-gradient {
+  background: linear-gradient(135deg, #00e5ff 0%, #3b82f6 50%, #8b5cf6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* 4. Buttons */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 28px;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, #00b4d8 0%, #2563eb 50%, #7c3aed 100%);
+  background-size: 200% auto;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 0 20px rgba(0, 229, 255, 0.35);
+  transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+  background-position: right center;
+  box-shadow: 0 0 30px rgba(0, 229, 255, 0.6), 0 0 15px rgba(124, 58, 237, 0.4);
+  transform: translateY(-1px);
+}
+
+.btn-outline {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 24px;
+  border-radius: 9999px;
+  background: #070e24;
+  border: 1px solid #1e3a78;
+  color: #e2e8f0;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.btn-outline:hover {
+  border-color: var(--accent-cyan);
+  color: var(--accent-cyan);
+  background: rgba(0, 229, 255, 0.08);
+  box-shadow: 0 0 15px rgba(0, 229, 255, 0.25);
+  transform: translateY(-1px);
+}
+
+/* 5. Header & Navigation */
+header.site-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background: rgba(3, 6, 17, 0.88);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border-divider);
+  padding: 16px 0;
+  transition: all 0.3s ease;
+}
+
+header.site-header.scrolled {
+  padding: 12px 0;
+  background: rgba(3, 6, 17, 0.96);
+  border-bottom-color: rgba(0, 229, 255, 0.2);
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.8);
+}
+
+.nav-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.brand-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: inherit;
+}
+
+.logo-badge {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #00e5ff, #3b82f6, #8b5cf6);
+  padding: 1.5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 15px rgba(0, 229, 255, 0.3);
+}
+
+.logo-inner {
+  width: 100%;
+  height: 100%;
+  background: #040714;
+  border-radius: 8.5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 15px;
+  color: var(--accent-cyan);
+}
+
+.brand-text h1 {
+  font-size: 18px;
+  font-weight: 800;
+  color: #ffffff;
+  line-height: 1.1;
+}
+
+.brand-text span {
+  font-size: 9px;
+  font-weight: 600;
+  color: #94a3b8;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  display: block;
+}
+
+.main-nav {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.nav-link {
+  font-size: 13px;
+  font-weight: 600;
+  color: #cbd5e1;
+  text-decoration: none;
+  position: relative;
+  padding: 6px 0;
+  transition: color 0.2s ease;
+}
+
+.nav-link:hover, .nav-link.active {
+  color: var(--accent-cyan);
+}
+
+.nav-link.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--accent-cyan);
+  border-radius: 2px;
+}
+
+/* Mega Dropdown */
+.dropdown-parent {
+  position: relative;
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%) translateY(12px);
+  width: 640px;
+  background: rgba(6, 11, 30, 0.98);
+  border: 1px solid rgba(0, 229, 255, 0.45);
+  border-radius: 18px;
+  padding: 22px;
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.9), 0 0 35px rgba(0, 229, 255, 0.25);
+  display: none;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  z-index: 1000;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.dropdown-parent:hover .dropdown-menu {
+  display: grid;
+  animation: fadeInDown 0.25s ease forwards;
+}
+
+@keyframes fadeInDown {
+  from { opacity: 0; transform: translateX(-50%) translateY(18px); }
+  to { opacity: 1; transform: translateX(-50%) translateY(12px); }
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  text-decoration: none;
+  color: #cbd5e1;
+  transition: all 0.25s ease;
+  background: rgba(8, 16, 42, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.dropdown-item:hover {
+  background: #0d1a45;
+  border-color: rgba(0, 229, 255, 0.5);
+  color: #ffffff;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6), 0 0 15px rgba(0, 229, 255, 0.25);
+}
+
+.dropdown-item .icon-box {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: #0f2256;
+  color: var(--accent-cyan);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  flex-shrink: 0;
+  transition: all 0.25s;
+}
+
+.dropdown-item:hover .icon-box {
+  background: linear-gradient(135deg, #00e5ff, #3b82f6);
+  color: #030611;
+  box-shadow: 0 0 12px rgba(0, 229, 255, 0.5);
+}
+
+.dropdown-item-content {
+  flex: 1;
+}
+
+.dropdown-item-title {
+  font-size: 13px;
+  font-weight: 800;
+  color: #ffffff;
+  margin-bottom: 2px;
+}
+
+.dropdown-item-sub {
+  font-size: 10px;
+  color: #94a3b8;
+  margin-bottom: 6px;
+}
+
+.dropdown-subtags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.dropdown-subtag {
+  font-size: 9.5px;
+  color: #94a3b8;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 2px 7px;
+  border-radius: 4px;
+  transition: all 0.2s;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.dropdown-item:hover .dropdown-subtag {
+  color: var(--accent-cyan);
+  background: rgba(0, 229, 255, 0.12);
+  border-color: rgba(0, 229, 255, 0.3);
+}
+
+.dropdown-footer {
+  grid-column: span 2;
+  text-align: center;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.dropdown-footer a {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent-cyan);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dropdown-footer a:hover {
+  text-decoration: underline;
+  color: #ffffff;
+}
+
+/* Mobile Hamburger Toggle */
+.mobile-toggle {
+  display: none;
+  background: none;
+  border: none;
+  color: #ffffff;
+  font-size: 22px;
+  cursor: pointer;
+}
+
+/* 6. Hero Section & 3D Interactive Devices */
+.hero-section {
+  position: relative;
+  padding-top: 140px;
+  padding-bottom: 80px;
+  overflow: hidden;
+}
+
+.hero-grid {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: 40px;
+  align-items: center;
+}
+
+.hero-content h2.hero-title {
+  font-size: 54px;
+  font-weight: 900;
+  line-height: 1.12;
+  letter-spacing: -0.02em;
+  margin: 16px 0;
+  color: #ffffff;
+}
+
+.hero-desc {
+  font-size: 15px;
+  color: #94a3b8;
+  line-height: 1.6;
+  margin-bottom: 28px;
+  max-width: 520px;
+}
+
+.hero-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 36px;
+}
+
+.hero-badges-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  padding-top: 24px;
+  border-top: 1px solid #13234d;
+}
+
+.trust-badge-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.badge-icon-circle {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #0a1435;
+  border: 1px solid rgba(0, 229, 255, 0.4);
+  color: var(--accent-cyan);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  flex-shrink: 0;
+  box-shadow: 0 0 10px rgba(0, 229, 255, 0.2);
+}
+
+.trust-badge-item h5 {
+  font-size: 12px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.trust-badge-item p {
+  font-size: 10px;
+  color: #94a3b8;
+}
+
+/* 3D Hero Canvas Container & Devices Composition */
+.hero-3d-wrapper {
+  position: relative;
+  width: 100%;
+  height: 480px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#hero-globe-canvas-container {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* 3D Devices Stage & Pure Code Devices (No Flat Image) */
+.devices-3d-scene,
+.devices-3d-stage {
+  position: relative;
+  z-index: 5;
+  width: 100%;
+  max-width: 530px;
+  height: 420px;
+  perspective: 1300px;
+  transform-style: preserve-3d;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* 3D Laptop */
+.laptop-3d {
+  position: absolute;
+  left: 20px;
+  bottom: 35px;
+  width: 380px;
+  transform-style: preserve-3d;
+  transform: rotateY(-14deg) rotateX(7deg) translateZ(10px);
+  animation: laptopFloat 6s ease-in-out infinite alternate;
+  z-index: 4;
+}
+
+@keyframes laptopFloat {
+  0% { transform: rotateY(-14deg) rotateX(7deg) translateY(0) translateZ(10px); }
+  100% { transform: rotateY(-11deg) rotateX(9deg) translateY(-10px) translateZ(15px); }
+}
+
+.laptop-screen {
+  background: #050a1b;
+  border: 5px solid #1c2744;
+  border-bottom: 2px solid #131d36;
+  border-radius: 14px 14px 2px 2px;
+  height: 235px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.9), 0 0 35px rgba(0, 229, 255, 0.25), inset 0 0 25px rgba(0, 229, 255, 0.08);
+  position: relative;
+  overflow: hidden;
+}
+
+.laptop-camera {
+  position: absolute;
+  top: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 4px;
+  background: #00e5ff;
+  border-radius: 50%;
+  box-shadow: 0 0 6px #00e5ff;
+  z-index: 10;
+}
+
+.laptop-top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.window-dots {
+  display: flex;
+  gap: 5px;
+}
+
+.window-dots .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+
+.dot.red { background: #ef4444; }
+.dot.yellow { background: #eab308; }
+.dot.green { background: #10b981; }
+
+.laptop-url-pill {
+  font-family: monospace;
+  font-size: 9px;
+  color: #64748b;
+  background: rgba(15, 23, 42, 0.8);
+  padding: 2px 10px;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.live-status-pill {
+  font-size: 8px;
+  font-weight: 800;
+  color: #00e5ff;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(0, 229, 255, 0.12);
+  padding: 2px 7px;
+  border-radius: 9999px;
+  border: 1px solid rgba(0, 229, 255, 0.3);
+}
+
+.pulse-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #00e5ff;
+  box-shadow: 0 0 8px #00e5ff;
+  animation: pulseDot 1.5s infinite;
+}
+
+@keyframes pulseDot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.8); }
+}
+
+.laptop-display-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding-top: 10px;
+}
+
+.laptop-logo-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.laptop-logo-row .ds-icon {
+  font-size: 18px;
+  font-weight: 900;
+  color: #00e5ff;
+  background: linear-gradient(135deg, rgba(0, 229, 255, 0.2), rgba(124, 58, 237, 0.2));
+  border: 1px solid rgba(0, 229, 255, 0.4);
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+
+.laptop-logo-row .ds-text strong {
+  display: block;
+  font-size: 13px;
+  color: #ffffff;
+  letter-spacing: 0.02em;
+}
+
+.laptop-logo-row .ds-text small {
+  font-size: 9px;
+  color: #94a3b8;
+}
+
+.laptop-metrics-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(8, 16, 40, 0.7);
+  border: 1px solid rgba(0, 229, 255, 0.2);
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin: 6px 0;
+}
+
+.screen-stat-card .stat-label {
+  display: block;
+  font-size: 9px;
+  color: #94a3b8;
+}
+
+.screen-stat-card .stat-val {
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.screen-mini-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  height: 24px;
+}
+
+.chart-bar {
+  width: 5px;
+  background: linear-gradient(180deg, #00e5ff 0%, #3b82f6 100%);
+  border-radius: 2px;
+}
+
+.chart-bar.b1 { height: 45%; animation: barPulse 2s ease-in-out infinite alternate 0.1s; }
+.chart-bar.b2 { height: 75%; animation: barPulse 2s ease-in-out infinite alternate 0.4s; }
+.chart-bar.b3 { height: 60%; animation: barPulse 2s ease-in-out infinite alternate 0.2s; }
+.chart-bar.b4 { height: 95%; animation: barPulse 2s ease-in-out infinite alternate 0.6s; }
+.chart-bar.b5 { height: 80%; animation: barPulse 2s ease-in-out infinite alternate 0.3s; }
+
+@keyframes barPulse {
+  0% { transform: scaleY(0.7); }
+  100% { transform: scaleY(1.15); }
+}
+
+.screen-cta {
+  align-self: flex-start;
+  padding: 5px 14px;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, #00e5ff, #7c3aed);
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 800;
+  text-decoration: none;
+  box-shadow: 0 0 14px rgba(0, 229, 255, 0.4);
+  display: inline-block;
+}
+
+.laptop-base {
+  height: 12px;
+  background: linear-gradient(180deg, #2b3956 0%, #0d1628 100%);
+  border-radius: 0 0 16px 16px;
+  box-shadow: 0 18px 35px rgba(0, 0, 0, 0.9);
+  position: relative;
+  width: 104%;
+  left: -2%;
+}
+
+.laptop-base::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 50px;
+  height: 3px;
+  background: #475569;
+  border-radius: 0 0 4px 4px;
+}
+
+/* 3D Floating Smartphone */
+.phone-3d {
+  position: absolute;
+  right: 75px;
+  bottom: 15px;
+  width: 135px;
+  height: 260px;
+  background: #040816;
+  border: 5px solid #1e2b4d;
+  border-radius: 26px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transform: rotateY(-18deg) rotateX(4deg) translateZ(50px);
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.95), 0 0 30px rgba(0, 229, 255, 0.3);
+  z-index: 8;
+  animation: phoneFloat 5s ease-in-out infinite alternate;
+}
+
+@keyframes phoneFloat {
+  0% { transform: rotateY(-18deg) rotateX(4deg) translateY(0) translateZ(60px); }
+  100% { transform: rotateY(-15deg) rotateX(6deg) translateY(-12px) translateZ(75px); }
+}
+
+.phone-speaker {
+  width: 32px;
+  height: 3px;
+  background: #334155;
+  border-radius: 2px;
+  margin: 0 auto;
+}
+
+.phone-status-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 8px;
+  color: #94a3b8;
+  font-weight: 700;
+  padding: 4px 4px 0;
+}
+
+.phone-content {
+  text-align: center;
+  padding: 10px 4px;
+}
+
+.phone-badge {
+  font-size: 8px;
+  font-weight: 800;
+  color: #00e5ff;
+  background: rgba(0, 229, 255, 0.15);
+  border: 1px solid rgba(0, 229, 255, 0.3);
+  padding: 2px 8px;
+  border-radius: 9999px;
+  display: inline-block;
+  margin-bottom: 6px;
+}
+
+.phone-content h4 {
+  font-size: 13px;
+  font-weight: 800;
+  color: #ffffff;
+  margin-bottom: 8px;
+  line-height: 1.25;
+}
+
+.phone-mini-stat {
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(0, 229, 255, 0.2);
+  border-radius: 6px;
+  padding: 4px 6px;
+  margin-bottom: 10px;
+}
+
+.phone-mini-stat span {
+  font-size: 11px;
+  font-weight: 900;
+  display: block;
+}
+
+.phone-mini-stat small {
+  font-size: 8px;
+  color: #94a3b8;
+}
+
+.phone-btn {
+  display: inline-block;
+  padding: 5px 14px;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, #00e5ff, #7c3aed);
+  color: #ffffff;
+  font-size: 9px;
+  font-weight: 800;
+  text-decoration: none;
+  box-shadow: 0 0 12px rgba(0, 229, 255, 0.4);
+}
+
+.phone-home-indicator {
+  width: 40px;
+  height: 3px;
+  background: #334155;
+  border-radius: 2px;
+  margin: 0 auto;
+}
+
+/* 5 Floating Holographic Badges with Individual Depths */
+.floating-badge {
+  position: absolute;
+  background: rgba(6, 14, 38, 0.94);
+  border: 1px solid rgba(0, 229, 255, 0.45);
+  border-radius: 12px;
+  padding: 8px 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.7), 0 0 16px rgba(0, 229, 255, 0.25);
+  z-index: 12;
+  font-size: 11px;
+  font-weight: 700;
+  color: #ffffff;
+  white-space: nowrap;
+  text-decoration: none;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease, border-color 0.3s ease;
+}
+
+.floating-badge:hover {
+  transform: translateY(-6px) scale(1.08) !important;
+  border-color: #00e5ff !important;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.85), 0 0 25px rgba(0, 229, 255, 0.75) !important;
+  z-index: 25;
+}
+
+.floating-badge.badge-marketing {
+  top: 15px;
+  left: -25px;
+  animation: floatSlow 5s ease-in-out infinite;
+  animation-delay: 0s;
+}
+
+.floating-badge.badge-web {
+  top: 35px;
+  right: -45px;
+  background: linear-gradient(135deg, rgba(8, 16, 42, 0.96), rgba(124, 58, 237, 0.45));
+  border-color: rgba(139, 92, 246, 0.7);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.7), 0 0 20px rgba(139, 92, 246, 0.45);
+  animation: floatSlow 5s ease-in-out infinite;
+  animation-delay: 2.2s;
+  z-index: 26;
+}
+
+.floating-badge.badge-web:hover {
+  border-color: #c084fc !important;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.85), 0 0 28px rgba(192, 132, 252, 0.8) !important;
+}
+
+.floating-badge.badge-ai {
+  bottom: 25px;
+  left: -25px;
+  animation: floatSlow 5.5s ease-in-out infinite;
+  animation-delay: 1.2s;
+}
+
+.floating-badge.badge-services {
+  bottom: 65px;
+  right: -55px;
+  animation: floatSlow 4.8s ease-in-out infinite;
+  animation-delay: 3.4s;
+  z-index: 26;
+}
+
+.floating-badge.badge-design {
+  top: 140px;
+  left: -45px;
+  background: linear-gradient(135deg, rgba(8, 16, 42, 0.96), rgba(236, 72, 153, 0.25));
+  border-color: rgba(236, 72, 153, 0.5);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.7), 0 0 18px rgba(236, 72, 153, 0.35);
+  animation: floatSlow 5.2s ease-in-out infinite;
+  animation-delay: 1.8s;
+}
+
+@keyframes floatSlow {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-9px); }
+}
+
+/* 7. Services Section (2 Featured + Supporting Cards) */
+.services-section {
+  padding: 80px 0;
+  background: #040714;
+}
+
+.section-header-flex {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: 40px;
+  gap: 20px;
+}
+
+.section-title {
+  font-size: 36px;
+  font-weight: 800;
+  color: #ffffff;
+  line-height: 1.2;
+}
+
+.services-grid {
+  display: grid;
+  grid-template-columns: 5fr 4fr 3fr;
+  gap: 20px;
+}
+
+.service-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-blue);
+  border-radius: 20px;
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  transition: all 0.3s ease;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+}
+
+.service-card:hover {
+  border-color: var(--border-cyan-glow);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6), 0 0 20px rgba(0, 229, 255, 0.2);
+  transform: translateY(-2px);
+}
+
+.card-num-badge {
+  display: inline-block;
+  font-family: monospace;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: rgba(0, 229, 255, 0.1);
+  color: var(--accent-cyan);
+  border: 1px solid rgba(0, 229, 255, 0.3);
+  margin-bottom: 14px;
+}
+
+.service-card h3 {
+  font-size: 22px;
+  font-weight: 800;
+  color: #ffffff;
+  margin-bottom: 8px;
+}
+
+.service-card p.card-desc {
+  font-size: 12px;
+  color: #94a3b8;
+  line-height: 1.6;
+  margin-bottom: 18px;
+}
+
+.subservice-list {
+  list-style: none;
+  margin-bottom: 24px;
+}
+
+.subservice-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #cbd5e1;
+  margin-bottom: 8px;
+}
+
+.subservice-list li .check-icon {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: rgba(0, 229, 255, 0.2);
+  color: var(--accent-cyan);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  font-weight: 900;
+}
+
+.card-footer {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  padding-top: 16px;
+  border-top: 1px solid #13234d;
+}
+
+.card-link {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--accent-cyan);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: gap 0.2s;
+}
+
+.card-link:hover {
+  gap: 9px;
+  color: #ffffff;
+}
+
+.card-art-img {
+  max-width: 90px;
+  max-height: 90px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 10px rgba(0, 229, 255, 0.3));
+}
+
+.supporting-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.supporting-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-blue);
+  border-radius: 18px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  flex: 1;
+  transition: all 0.25s ease;
+  text-decoration: none;
+  color: inherit;
+}
+
+.supporting-card:hover {
+  border-color: var(--border-cyan-glow);
+  transform: translateY(-2px);
+}
+
+.supporting-card h4 {
+  font-size: 15px;
+  font-weight: 800;
+  color: #ffffff;
+  margin: 8px 0 4px;
+}
+
+.supporting-card p {
+  font-size: 11px;
+  color: #94a3b8;
+  line-height: 1.5;
+}
+
+.tag-pill {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  background: rgba(139, 92, 246, 0.2);
+  color: #c084fc;
+  border: 1px solid rgba(139, 92, 246, 0.4);
+}
+
+/* Services Dynamic Animated Carousel & Tabs Showcase */
+.services-nav-tabs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  margin-bottom: 24px;
+  scrollbar-width: none;
+}
+.services-nav-tabs::-webkit-scrollbar { display: none; }
+
+.services-nav-pill {
+  padding: 8px 18px;
+  border-radius: 9999px;
+  background: rgba(13, 27, 62, 0.7);
+  border: 1px solid rgba(0, 229, 255, 0.22);
+  color: #94a3b8;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.25s ease;
+  user-select: none;
+}
+
+.services-nav-pill:hover,
+.services-nav-pill.active {
+  background: rgba(0, 229, 255, 0.16);
+  border-color: #00e5ff;
+  color: #ffffff;
+  box-shadow: 0 0 16px rgba(0, 229, 255, 0.35);
+}
+
+.services-carousel-wrapper {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  border-radius: 20px;
+}
+
+.services-carousel-track {
+  display: flex;
+  transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  gap: 20px;
+  width: 100%;
+}
+
+.service-slide-card {
+  flex: 0 0 calc((100% - 40px) / 3);
+  min-width: 290px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-blue);
+  border-radius: 20px;
+  padding: 26px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  transition: all 0.3s ease;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+}
+
+.service-slide-card:hover {
+  border-color: var(--border-cyan-glow);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6), 0 0 25px rgba(0, 229, 255, 0.25);
+  transform: translateY(-4px);
+}
+
+.services-controls-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 24px;
+}
+
+.services-carousel-dots {
+  display: flex;
+  gap: 8px;
+}
+
+.services-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #1e293b;
+  border: 1px solid #334155;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.services-dot.active {
+  width: 28px;
+  border-radius: 9999px;
+  background: #00e5ff;
+  border-color: #00e5ff;
+  box-shadow: 0 0 10px #00e5ff;
+}
+
+.services-nav-arrows {
+  display: flex;
+  gap: 10px;
+}
+
+.services-arrow-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: #0d1b3e;
+  border: 1px solid rgba(0, 229, 255, 0.35);
+  color: #00e5ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.services-arrow-btn:hover {
+  background: #00e5ff;
+  color: #040816;
+  box-shadow: 0 0 15px #00e5ff;
+}
+
+/* 8. About Section */
+.about-section {
+  padding: 80px 0;
+  background: #030611;
+}
+
+.about-grid {
+  display: grid;
+  grid-template-columns: 4fr 3fr 5fr;
+  gap: 40px;
+  align-items: center;
+}
+
+.stats-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.stat-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.stat-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #0a1538;
+  border: 1px solid rgba(0, 229, 255, 0.4);
+  color: var(--accent-cyan);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+  box-shadow: 0 0 12px rgba(0, 229, 255, 0.25);
+}
+
+.stat-item h3 {
+  font-size: 24px;
+  font-weight: 900;
+  color: #ffffff;
+  line-height: 1.1;
+}
+
+.stat-item span {
+  font-size: 12px;
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+.office-img-wrapper {
+  border-radius: 20px;
+  overflow: hidden;
+  border: 1px solid var(--border-blue);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.8);
+}
+
+.office-img-wrapper img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* 9. Featured Projects Section */
+.projects-section {
+  padding: 80px 0;
+  background: #030611;
+}
+
+.projects-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+}
+
+.project-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-blue);
+  border-radius: 16px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  text-decoration: none;
+  color: inherit;
+  transition: all 0.3s ease;
+}
+
+.project-card:hover {
+  border-color: var(--border-cyan-glow);
+  transform: translateY(-3px);
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.6), 0 0 15px rgba(0, 229, 255, 0.2);
+}
+
+.project-art {
+  height: 150px;
+  background: #050b1d;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.project-art img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.project-info {
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid #13234d;
+  gap: 10px;
+}
+
+.project-info h4 {
+  font-size: 13px;
+  font-weight: 700;
+  color: #ffffff;
+  line-height: 1.3;
+}
+
+.round-arrow-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #00e5ff, #3b82f6);
+  color: #030611;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+/* 10. Our Process Section */
+.process-section {
+  padding: 80px 0;
+  background: #040714;
+  position: relative;
+  overflow: hidden;
+}
+
+.wave-background-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+.process-timeline {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 20px;
+  position: relative;
+  z-index: 2;
+  margin-top: 30px;
+}
+
+/* 1. Continuous Flowing Gradient Stream Line */
+.process-timeline::before {
+  content: '';
+  position: absolute;
+  top: 40px;
+  left: 60px;
+  right: 60px;
+  height: 3px;
+  background: linear-gradient(90deg, #00e5ff 0%, #3b82f6 25%, #a855f7 50%, #00e5ff 75%, #3b82f6 100%);
+  background-size: 200% 100%;
+  box-shadow: 0 0 14px rgba(0, 229, 255, 0.7);
+  z-index: 1;
+  animation: processFlowGradient 3s linear infinite;
+}
+
+@keyframes processFlowGradient {
+  0% { background-position: 0% 0%; }
+  100% { background-position: -200% 0%; }
+}
+
+/* 2. Constantly Travelling Laser Packet of Light */
+.process-timeline::after {
+  content: '';
+  position: absolute;
+  top: 38px;
+  left: 60px;
+  width: 90px;
+  height: 7px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, transparent 0%, #00e5ff 60%, #ffffff 100%);
+  box-shadow: 0 0 20px #00e5ff, 0 0 35px #00e5ff, 0 0 50px rgba(0, 229, 255, 0.9);
+  z-index: 2;
+  animation: processLaserRun 4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  pointer-events: none;
+}
+
+@keyframes processLaserRun {
+  0% {
+    left: 40px;
+    opacity: 0;
+    transform: scaleX(0.5);
+  }
+  15% {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+  85% {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+  100% {
+    left: calc(100% - 100px);
+    opacity: 0;
+    transform: scaleX(0.5);
+  }
+}
+
+.process-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  position: relative;
+  z-index: 3;
+}
+
+.step-circle {
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  background: #060b1d;
+  border: 2px solid #1a2d5a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  color: #38bdf8;
+  margin-bottom: 14px;
+  box-shadow: 0 0 15px rgba(0, 229, 255, 0.2);
+  transition: all 0.3s;
+}
+
+/* Sequential Pulse on Each Step */
+.process-step:nth-child(1) .step-circle { animation: stepCirclePulse 4s ease-in-out infinite 0s; }
+.process-step:nth-child(2) .step-circle { animation: stepCirclePulse 4s ease-in-out infinite 0.8s; }
+.process-step:nth-child(3) .step-circle { animation: stepCirclePulse 4s ease-in-out infinite 1.6s; }
+.process-step:nth-child(4) .step-circle { animation: stepCirclePulse 4s ease-in-out infinite 2.4s; }
+.process-step:nth-child(5) .step-circle { animation: stepCirclePulse 4s ease-in-out infinite 3.2s; }
+
+@keyframes stepCirclePulse {
+  0%, 100% {
+    border-color: #1a2d5a;
+    box-shadow: 0 0 0 rgba(0, 229, 255, 0);
+    transform: scale(1);
+    color: #cbd5e1;
+  }
+  20% {
+    border-color: #00e5ff;
+    box-shadow: 0 0 25px rgba(0, 229, 255, 0.7), inset 0 0 15px rgba(0, 229, 255, 0.4);
+    transform: scale(1.1);
+    color: #00e5ff;
+  }
+  40% {
+    border-color: #1a2d5a;
+    box-shadow: 0 0 0 rgba(0, 229, 255, 0);
+    transform: scale(1);
+    color: #cbd5e1;
+  }
+}
+
+.process-step:hover .step-circle {
+  border-color: var(--accent-cyan) !important;
+  color: var(--accent-cyan) !important;
+  box-shadow: 0 0 25px rgba(0, 229, 255, 0.6) !important;
+  transform: scale(1.12) !important;
+}
+
+.step-num {
+  font-family: monospace;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent-cyan);
+  margin-bottom: 4px;
+}
+
+.process-step h4 {
+  font-size: 15px;
+  font-weight: 800;
+  color: #ffffff;
+  margin-bottom: 6px;
+}
+
+.process-step p {
+  font-size: 11px;
+  color: #94a3b8;
+  line-height: 1.5;
+  max-width: 180px;
+}
+
+/* 11. Why Choose Us Section with 3D Canvas Cubes */
+.why-section {
+  padding: 80px 0;
+  background: #030611;
+}
+
+.why-grid {
+  display: grid;
+  grid-template-columns: 4fr 4fr 4fr;
+  gap: 30px;
+  align-items: center;
+}
+
+.why-benefits {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.benefit-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.benefit-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: #0a1538;
+  border: 1px solid rgba(0, 229, 255, 0.4);
+  color: var(--accent-cyan);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.benefit-row h4 {
+  font-size: 14px;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 2px;
+}
+
+.benefit-row p {
+  font-size: 11px;
+  color: #94a3b8;
+  line-height: 1.4;
+}
+
+/* 3D Cubes Canvas container */
+.cubes-canvas-wrapper {
+  position: relative;
+  width: 100%;
+  height: 420px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#why-choose-cubes-canvas {
+  width: 100%;
+  height: 100%;
+}
+
+/* 12. Testimonials Section */
+.testimonials-section {
+  padding: 80px 0;
+  background: #030611;
+  text-align: center;
+}
+
+.testimonials-slider-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 800px;
+  margin: 36px auto 0;
+  gap: 20px;
+}
+
+.slider-nav-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #08102a;
+  border: 1px solid #1e3a78;
+  color: var(--accent-cyan);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 16px;
+  transition: all 0.25s;
+}
+
+.slider-nav-btn:hover {
+  border-color: var(--accent-cyan);
+  box-shadow: 0 0 15px rgba(0, 229, 255, 0.3);
+}
+
+.testimonial-card {
+  flex: 1;
+  background: #08102a;
+  border: 1px solid var(--border-blue);
+  border-radius: 20px;
+  padding: 28px 32px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  text-align: left;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.8);
+}
+
+.testimonial-avatar {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  border: 2px solid var(--accent-cyan);
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.testimonial-text {
+  font-size: 13px;
+  color: #e2e8f0;
+  line-height: 1.6;
+  margin-bottom: 12px;
+  font-style: italic;
+}
+
+.author-name {
+  font-size: 14px;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.author-role {
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.star-rating {
+  color: #f59e0b;
+  font-size: 12px;
+  letter-spacing: 2px;
+  margin-top: 2px;
+}
+
+.slider-dots {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 24px;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 9999px;
+  background: #334155;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.dot.active {
+  width: 24px;
+  background: linear-gradient(90deg, #00e5ff, #3b82f6);
+  box-shadow: 0 0 8px rgba(0, 229, 255, 0.5);
+}
+
+/* 13. CTA Banner with 3D Cyber Earth Canvas */
+.cta-banner-section {
+  padding: 60px 0;
+  background: #030611;
+}
+
+.cta-banner-box {
+  background: linear-gradient(90deg, #0d1e56 0%, #081338 60%, #030718 100%);
+  border: 1px solid var(--border-blue);
+  border-radius: 24px;
+  padding: 48px;
+  display: grid;
+  grid-template-columns: 1.3fr 1fr;
+  align-items: center;
+  gap: 40px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.8);
+}
+
+.cta-banner-box h2 {
+  font-size: 42px;
+  font-weight: 900;
+  color: #ffffff;
+  line-height: 1.15;
+  margin: 12px 0 10px;
+}
+
+.cta-banner-box p {
+  font-size: 14px;
+  color: #cbd5e1;
+  margin-bottom: 24px;
+}
+
+.cta-contact-row {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  margin-top: 28px;
+  padding-top: 24px;
+  border-top: 1px solid #132b5e;
+}
+
+.cta-contact-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #e2e8f0;
+  text-decoration: none;
+  font-size: 12px;
+}
+
+.cta-contact-item:hover {
+  color: var(--accent-cyan);
+}
+
+.contact-icon-box {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #0d1f4d;
+  border: 1px solid rgba(0, 229, 255, 0.3);
+  color: var(--accent-cyan);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.cta-3d-globe-wrapper {
+  position: relative;
+  width: 100%;
+  height: 360px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
+}
+
+#cta-globe-canvas {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
+}
+
+/* 14. FAQ Accordion Section */
+.faq-section {
+  padding: 80px 0;
+  background: #030611;
+}
+
+.faq-grid {
+  display: grid;
+  grid-template-columns: 5fr 7fr;
+  gap: 48px;
+  align-items: flex-start;
+}
+
+.faq-support-card {
+  margin-top: 24px;
+  background: rgba(13, 27, 62, 0.65);
+  border: 1px solid rgba(0, 229, 255, 0.25);
+  border-radius: 18px;
+  padding: 24px;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6), 0 0 25px rgba(0, 229, 255, 0.12);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.support-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.live-dot-pulse {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 10px #10b981;
+  animation: pulseGreen 2s infinite;
+}
+
+@keyframes pulseGreen {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.85); }
+}
+
+.faq-perks-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 16px 0 20px;
+}
+
+.faq-perk-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.faq-perk-item .perk-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: rgba(0, 229, 255, 0.12);
+  border: 1px solid rgba(0, 229, 255, 0.25);
+  color: var(--accent-cyan);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  flex-shrink: 0;
+}
+
+.support-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.btn-whatsapp {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(37, 211, 102, 0.15);
+  border: 1px solid rgba(37, 211, 102, 0.4);
+  color: #25d366;
+  border-radius: 9999px;
+  padding: 10px 18px;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: all 0.25s ease;
+}
+
+.btn-whatsapp:hover {
+  background: #25d366;
+  color: #030718;
+  box-shadow: 0 0 15px rgba(37, 211, 102, 0.5);
+}
+
+.accordion-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.accordion-item {
+  background: var(--bg-card);
+  border: 1px solid var(--border-blue);
+  border-radius: 14px;
+  overflow: hidden;
+  transition: all 0.25s ease;
+}
+
+.accordion-item:hover {
+  border-color: rgba(0, 229, 255, 0.5);
+}
+
+.accordion-trigger {
+  width: 100%;
+  padding: 18px 20px;
+  background: none;
+  border: none;
+  color: #f1f5f9;
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  text-align: left;
+  cursor: pointer;
+}
+
+.trigger-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #0f1c42;
+  color: var(--accent-cyan);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 700;
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.accordion-content {
+  display: none;
+  padding: 0 20px 20px;
+  font-size: 12px;
+  color: #94a3b8;
+  line-height: 1.6;
+  border-top: 1px solid #13234d;
+  padding-top: 12px;
+}
+
+.accordion-item.open .accordion-content {
+  display: block;
+}
+
+.accordion-item.open .trigger-icon {
+  transform: rotate(45deg);
+  background: rgba(0, 229, 255, 0.2);
+}
+
+/* 15. Single-Tier Compact Footer */
+footer.site-footer {
+  background: #030611;
+  border-top: 1px solid var(--border-divider);
+  padding: 32px 0;
+}
+
+.footer-flex {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.footer-brand-wrap {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.social-links {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding-left: 20px;
+  border-left: 1px solid #1e293b;
+}
+
+.social-links a {
+  color: #94a3b8;
+  font-size: 14px;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.social-links a:hover {
+  color: var(--accent-cyan);
+}
+
+.footer-nav {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+/* Multi-column Footer with Services & Solutions */
+.footer-grid-wrap {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr 1.5fr;
+  gap: 40px;
+  padding-bottom: 28px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.footer-col-brand p {
+  font-size: 13px;
+  color: #94a3b8;
+  margin: 12px 0 16px;
+  line-height: 1.6;
+  max-width: 320px;
+}
+
+.footer-col h4 {
+  font-size: 13px;
+  font-weight: 800;
+  color: #ffffff;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin: 0 0 14px;
+}
+
+.footer-nav-vertical {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.footer-nav-vertical a {
+  font-size: 13px;
+  color: #94a3b8;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.footer-nav-vertical a:hover {
+  color: var(--accent-cyan);
+  transform: translateX(3px);
+}
+
+.footer-bottom-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 20px;
+  font-size: 12px;
+  color: #64748b;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+@media (max-width: 768px) {
+  .footer-grid-wrap {
+    grid-template-columns: 1fr;
+    gap: 30px;
+  }
+  .footer-bottom-strip {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+.footer-nav a {
+  font-size: 12px;
+  font-weight: 600;
+  color: #cbd5e1;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.footer-nav a:hover {
+  color: var(--accent-cyan);
+}
+
+.footer-legal {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  font-size: 11px;
+  color: #64748b;
+  gap: 4px;
+}
+
+.footer-legal-links {
+  display: flex;
+  gap: 16px;
+}
+
+.footer-legal-links a {
+  color: #64748b;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.footer-legal-links a:hover {
+  color: #cbd5e1;
+}
+
+/* 16. Responsive Media Queries */
+@media (max-width: 1024px) {
+  .hero-grid, .about-grid, .why-grid, .cta-banner-box, .faq-grid {
+    grid-template-columns: 1fr;
+    gap: 40px;
+  }
+  .services-grid {
+    grid-template-columns: 1fr;
+  }
+  .projects-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .process-timeline {
+    grid-template-columns: 1fr;
+    gap: 30px;
+  }
+  .process-timeline::before {
+    display: none;
+  }
+  .footer-flex {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 20px;
+  }
+  .footer-brand-wrap {
+    flex-direction: column;
+    gap: 16px;
+  }
+  .social-links {
+    padding-left: 0;
+    border-left: none;
+  }
+  .footer-legal {
+    align-items: center;
+  }
+}
+
+@media (max-width: 768px) {
+  .main-nav, .header-cta {
+    display: none;
+  }
+  .mobile-toggle {
+    display: block;
+  }
+  .hero-content h2.hero-title {
+    font-size: 38px;
+  }
+  .hero-badges-row {
+    grid-template-columns: 1fr;
+  }
+  .projects-grid {
+    grid-template-columns: 1fr;
+  }
+  .cta-contact-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+  .laptop-3d {
+    width: 290px;
+  }
+  .laptop-screen {
+    height: 180px;
+  }
+  .phone-3d {
+    width: 110px;
+    height: 200px;
+    right: -10px;
+    bottom: -15px;
+  }
+}
+
+/* ==========================================================================
+   17. Inner Pages, Drawer, Forms & Subpage Components
+   ========================================================================== */
+
+/* Mobile Navigation Drawer & Overlay */
+.mobile-nav-drawer {
+  position: fixed;
+  top: 0;
+  right: -320px;
+  width: 300px;
+  height: 100vh;
+  background: #04091d;
+  border-left: 1px solid var(--border-cyan);
+  box-shadow: -10px 0 30px rgba(0, 0, 0, 0.85);
+  z-index: 1001;
+  padding: 30px 24px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: right 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow-y: auto;
+}
+
+.mobile-nav-drawer.open {
+  right: 0;
+}
+
+.mobile-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(3, 6, 17, 0.75);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 1000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.mobile-overlay.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 28px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #13234d;
+}
+
+.drawer-close-btn {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  font-size: 24px;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.drawer-close-btn:hover {
+  color: var(--accent-cyan);
+}
+
+.drawer-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.drawer-nav a {
+  color: #cbd5e1;
+  text-decoration: none;
+  font-size: 15px;
+  font-weight: 600;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  transition: color 0.2s;
+}
+
+.drawer-nav a:hover, .drawer-nav a.active {
+  color: var(--accent-cyan);
+}
+
+.drawer-sub-services {
+  padding-left: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 6px 0 10px;
+}
+
+.drawer-sub-services a {
+  font-size: 13px;
+  color: #94a3b8;
+  border: none;
+  padding: 4px 0;
+}
+
+/* Page Hero Banner */
+.page-hero {
+  padding: 130px 0 60px;
+  background: radial-gradient(circle at 50% 20%, rgba(37, 99, 235, 0.15) 0%, transparent 60%), #030611;
+  border-bottom: 1px solid var(--border-divider);
+  text-align: center;
+  position: relative;
+}
+
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 14px;
+}
+
+.breadcrumb a {
+  color: var(--accent-cyan);
+  text-decoration: none;
+}
+
+.breadcrumb a:hover {
+  text-decoration: underline;
+}
+
+.page-hero-title {
+  font-size: 42px;
+  font-weight: 900;
+  color: #ffffff;
+  margin-bottom: 12px;
+}
+
+.page-hero-desc {
+  font-size: 15px;
+  color: #94a3b8;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+/* Forms & Inputs */
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  color: #cbd5e1;
+  margin-bottom: 8px;
+}
+
+.form-control {
+  width: 100%;
+  padding: 13px 16px;
+  background: #060c22;
+  border: 1px solid var(--border-blue);
+  border-radius: 10px;
+  color: #ffffff;
+  font-size: 13px;
+  font-family: inherit;
+  transition: all 0.25s;
+}
+
+.form-control:focus {
+  outline: none;
+  border-color: var(--accent-cyan);
+  box-shadow: 0 0 15px rgba(0, 229, 255, 0.25);
+  background: #08112e;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+@media (max-width: 640px) {
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+textarea.form-control {
+  min-height: 130px;
+  resize: vertical;
+}
+
+/* Alert Notification Feedback */
+.alert-box {
+  display: none;
+  padding: 16px 20px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  align-items: center;
+  gap: 12px;
+}
+
+.alert-success {
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  color: #34d399;
+}
+
+/* Portfolio Filters */
+.portfolio-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  margin-bottom: 40px;
+}
+
+.filter-btn {
+  padding: 8px 20px;
+  border-radius: 9999px;
+  background: #070e24;
+  border: 1px solid #1e3a78;
+  color: #94a3b8;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.filter-btn:hover, .filter-btn.active {
+  background: linear-gradient(90deg, #00d2ff, #2563eb);
+  color: #ffffff;
+  border-color: transparent;
+  box-shadow: 0 0 15px rgba(0, 229, 255, 0.4);
+}
+
+/* Interactive Quote Options Grid */
+.quote-options-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 14px;
+  margin-top: 8px;
+}
+
+.quote-option-label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  background: #060c22;
+  border: 1px solid var(--border-blue);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.quote-option-label:hover {
+  border-color: var(--accent-cyan);
+  background: rgba(0, 229, 255, 0.05);
+}
+
+.quote-option-label input[type="checkbox"],
+.quote-option-label input[type="radio"] {
+  accent-color: var(--accent-cyan);
+  width: 16px;
+  height: 16px;
+}
+
+/* Blog Cards */
+.blog-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 28px;
+}
+
+@media (max-width: 900px) {
+  .blog-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.blog-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-blue);
+  border-radius: 18px;
+  overflow: hidden;
+  transition: all 0.3s;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.blog-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--border-cyan-glow);
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.7), 0 0 20px rgba(0, 229, 255, 0.2);
+}
+
+.blog-card-img {
+  width: 100%;
+  height: 180px;
+  background: #070e28;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 38px;
+  color: var(--accent-cyan);
+}
+
+.blog-card-body {
+  padding: 24px;
+}
+
+.blog-date {
+  font-size: 11px;
+  color: #64748b;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.blog-card-body h3 {
+  font-size: 18px;
+  font-weight: 800;
+  color: #ffffff;
+  margin-bottom: 10px;
+  line-height: 1.35;
+}
+
+.blog-card-body p {
+  font-size: 12px;
+  color: #94a3b8;
+  line-height: 1.6;
+  margin-bottom: 16px;
+}
+
+
+  </style>
+</head>
+<body>
+
+  <!-- HEADER & NAVIGATION BAR (With Mega Menu) -->
+  <header class="site-header">
+    <div class="container nav-wrapper">
+      <a href="index.html" class="brand-logo" aria-label="DigitalSnove Home">
+        <div class="logo-badge"><div class="logo-inner">DS</div></div>
+        <div class="brand-text">
+          <h1>DigitalSnove</h1>
+          <span>Think Digital. Go Global.</span>
+        </div>
+      </a>
+
+      <!-- Desktop Navigation Links -->
+      <nav class="main-nav" aria-label="Main Navigation">
+        <a href="index.html" class="nav-link active">Home</a>
+        
+        <!-- Services with Mega Dropdown -->
+        <div class="dropdown-parent">
+          <a href="services.html" class="nav-link ">Services &#9662;</a>
+          <div class="dropdown-menu">
+            <!-- 01. Digital Marketing -->
+            <a href="service-digital-marketing.html" class="dropdown-item">
+              <span class="icon-box">&#128227;</span>
+              <div class="dropdown-item-content">
+                <div class="dropdown-item-title">Digital Marketing</div>
+                <div class="dropdown-item-sub">SEO, PPC, Social Ads &amp; CRO</div>
+                <div class="dropdown-subtags">
+                  <span class="dropdown-subtag">SEO</span>
+                  <span class="dropdown-subtag">Google Ads</span>
+                  <span class="dropdown-subtag">Meta Ads</span>
+                  <span class="dropdown-subtag">CRO</span>
+                </div>
+              </div>
+            </a>
+
+            <!-- 02. Web Development -->
+            <a href="service-web-development.html" class="dropdown-item">
+              <span class="icon-box">&lt;/&gt;</span>
+              <div class="dropdown-item-content">
+                <div class="dropdown-item-title">Web Development</div>
+                <div class="dropdown-item-sub">Custom Web Apps &amp; WordPress</div>
+                <div class="dropdown-subtags">
+                  <span class="dropdown-subtag">Custom Apps</span>
+                  <span class="dropdown-subtag">Corporate</span>
+                  <span class="dropdown-subtag">WordPress</span>
+                  <span class="dropdown-subtag">UI/UX</span>
+                </div>
+              </div>
+            </a>
+
+            <!-- 03. Graphic Design & Branding -->
+            <a href="service-graphic-design.html" class="dropdown-item">
+              <span class="icon-box">&#9670;</span>
+              <div class="dropdown-item-content">
+                <div class="dropdown-item-title">Graphic Design &amp; Branding</div>
+                <div class="dropdown-item-sub">Logos, Guidelines &amp; Creatives</div>
+                <div class="dropdown-subtags">
+                  <span class="dropdown-subtag">Logo Design</span>
+                  <span class="dropdown-subtag">Branding</span>
+                  <span class="dropdown-subtag">Packaging</span>
+                </div>
+              </div>
+            </a>
+
+            <!-- 04. AI Tools & Automation -->
+            <a href="service-ai-automation.html" class="dropdown-item">
+              <span class="icon-box">&#9881;</span>
+              <div class="dropdown-item-content">
+                <div class="dropdown-item-title">AI Tools &amp; Automation</div>
+                <div class="dropdown-item-sub">Chatbots, CRM &amp; Workflows</div>
+                <div class="dropdown-subtags">
+                  <span class="dropdown-subtag">AI Bots</span>
+                  <span class="dropdown-subtag">Workflows</span>
+                  <span class="dropdown-subtag">APIs</span>
+                </div>
+              </div>
+            </a>
+
+            <!-- 05. Content Creation -->
+            <a href="service-content-creation.html" class="dropdown-item">
+              <span class="icon-box">&#9998;</span>
+              <div class="dropdown-item-content">
+                <div class="dropdown-item-title">Content Creation</div>
+                <div class="dropdown-item-sub">Copywriting &amp; SEO Blogs</div>
+                <div class="dropdown-subtags">
+                  <span class="dropdown-subtag">Website Copy</span>
+                  <span class="dropdown-subtag">SEO Blogs</span>
+                  <span class="dropdown-subtag">Email Funnels</span>
+                </div>
+              </div>
+            </a>
+
+            <!-- 06. E-Commerce Solutions -->
+            <a href="service-ecommerce.html" class="dropdown-item">
+              <span class="icon-box">&#128722;</span>
+              <div class="dropdown-item-content">
+                <div class="dropdown-item-title">E-Commerce Solutions</div>
+                <div class="dropdown-item-sub">Shopify &amp; WooCommerce</div>
+                <div class="dropdown-subtags">
+                  <span class="dropdown-subtag">Shopify</span>
+                  <span class="dropdown-subtag">WooCommerce</span>
+                  <span class="dropdown-subtag">Checkout</span>
+                </div>
+              </div>
+            </a>
+
+            <!-- Footer link to all services -->
+            <div class="dropdown-footer">
+              <a href="services.html">View All 6 Services &amp; Sub-Categories &rarr;</a>
+            </div>
+          </div>
+        </div>
+
+        <!-- NEW SaaS & Cloud POS Portal Link -->
+        <a href="cloud-pos-saas.html" class="nav-link" style="color: #00e5ff; font-weight: 700; display: inline-flex; align-items: center; gap: 5px;">
+          Cloud POS &amp; SaaS
+          <span style="background: linear-gradient(90deg, #00e5ff, #3b82f6); color: #020617; font-size: 9px; padding: 2px 6px; border-radius: 9999px; font-weight: 900; letter-spacing: 0.05em;">PORTAL</span>
+        </a>
+
+        <a href="about.html" class="nav-link ">About Us</a>
+        <a href="portfolio.html" class="nav-link ">Portfolio</a>
+        <a href="blog.html" class="nav-link ">Blog</a>
+        <a href="contact.html" class="nav-link ">Contact</a>
+      </nav>
+
+      <!-- Header Right Utilities & CTA -->
+      <div style="display: flex; align-items: center; gap: 16px;">
+        <span style="font-size: 12px; color: #94a3b8; display: flex; align-items: center; gap: 4px; cursor: pointer;">
+          &#127760; EN &#9662;
+        </span>
+        <a href="cloud-pos-saas.html#pricing" class="btn-primary header-cta" style="background: linear-gradient(90deg, #00e5ff, #2563eb); color: #020617; font-weight: 800; box-shadow: 0 0 15px rgba(0, 229, 255, 0.35);">Get Started / Free Trial &rarr;</a>
+        <button class="mobile-toggle" aria-label="Toggle navigation menu">&#9776;</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Mobile Drawer -->
+  <div class="mobile-overlay"></div>
+  <aside class="mobile-nav-drawer" aria-label="Mobile Navigation Drawer">
+    <div>
+      <div class="drawer-header">
+        <a href="index.html" class="brand-logo">
+          <div class="logo-badge"><div class="logo-inner">DS</div></div>
+          <div class="brand-text"><h1 style="font-size: 16px;">DigitalSnove</h1></div>
+        </a>
+        <button class="drawer-close-btn" aria-label="Close menu">&times;</button>
+      </div>
+      <nav class="drawer-nav">
+        <a href="index.html" class="active">Home</a>
+        <a href="cloud-pos-saas.html" style="color: #00e5ff; font-weight: 700; display: flex; align-items: center; justify-content: space-between;">
+          Cloud POS &amp; SaaS (Portal)
+          <span style="background: linear-gradient(90deg, #00e5ff, #3b82f6); color: #020617; font-size: 9px; padding: 2px 6px; border-radius: 9999px; font-weight: 900;">NEW</span>
+        </a>
+        <a href="services.html" class="">All Services</a>
+        <div class="drawer-sub-services">
+          <a href="service-digital-marketing.html">&bull; Digital Marketing</a>
+          <a href="service-web-development.html">&bull; Web Development</a>
+          <a href="service-graphic-design.html">&bull; Graphic Design &amp; Branding</a>
+          <a href="service-ai-automation.html">&bull; AI Tools &amp; Automation</a>
+          <a href="service-content-creation.html">&bull; Content Creation</a>
+          <a href="service-ecommerce.html">&bull; E-commerce Solutions</a>
+        </div>
+        <a href="about.html" class="">About Us</a>
+        <a href="portfolio.html" class="">Portfolio</a>
+        <a href="blog.html" class="">Blog</a>
+        <a href="contact.html" class="">Contact</a>
+      </nav>
+    </div>
+    <div>
+      <a href="cloud-pos-saas.html#pricing" class="btn-primary" style="width: 100%; justify-content: center; margin-top: 24px; background: linear-gradient(90deg, #00e5ff, #2563eb); color: #020617; font-weight: 800;">Get Started / Free Trial &rarr;</a>
+      <p style="font-size: 11px; color: #64748b; text-align: center; margin-top: 14px;">&copy; 2026 DigitalSnove</p>
+    </div>
+  </aside>
+  
+
+  <!-- SECTION 1: HERO SECTION -->
+  <section class="hero-section" id="hero">
+    <div class="container hero-grid">
+      <!-- Left Content -->
+      <div class="hero-content">
+        <span class="eyebrow" style="letter-spacing: 0.12em;">DIGITAL MARKETING &bull; WEB DEVELOPMENT &bull; AI TOOLS &bull; MORE</span>
+        <h2 class="hero-title" style="font-size: 54px; font-weight: 900; line-height: 1.12;">
+          Your Growth Partner in the <span class="text-cyan">Digital World</span>
+        </h2>
+        <p class="hero-desc" style="font-size: 14px; color: #94a3b8; line-height: 1.7; margin-bottom: 28px;">
+          At DigitalSnove, we help businesses grow globally with innovative digital marketing, powerful web solutions, AI tools and a wide range of digital services. We turn your ideas into digital success.
+        </p>
+
+        <div class="hero-actions">
+          <a href="quote.html" class="btn-primary" style="padding: 13px 30px; font-size: 14px;">Get Started &rarr;</a>
+          <a href="services.html" class="btn-outline" style="padding: 12px 26px; font-size: 14px;">Explore Our Services</a>
+        </div>
+
+        <!-- 3 Trust Badges -->
+        <div class="hero-badges-row">
+          <div class="trust-badge-item">
+            <div class="badge-icon-circle">&#127760;</div>
+            <div>
+              <h5>Global Reach</h5>
+              <p>Worldwide Services</p>
+            </div>
+          </div>
+          <div class="trust-badge-item">
+            <div class="badge-icon-circle">&#9201;</div>
+            <div>
+              <h5>24/7 Support</h5>
+              <p>Always Here For You</p>
+            </div>
+          </div>
+          <div class="trust-badge-item">
+            <div class="badge-icon-circle">&#128737;</div>
+            <div>
+              <h5>100% Satisfaction</h5>
+              <p>Your Success, Our Priority</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right 3D Interactive Scene: 3D Globe Canvas + Image 4 Photorealistic Devices + 4 Floating Badges -->
+      <div class="hero-3d-wrapper" style="position: relative; width: 100%; min-height: 480px; display: flex; align-items: center; justify-content: center; overflow: visible;">
+        <!-- Pure 3D Three.js Rotating Digital Earth Globe Canvas -->
+        <div id="hero-globe-canvas-container"></div>
+
+        <!-- Pure 3D Code-Crafted Devices Stage (Zero Static Composite Image) -->
+        <div class="devices-3d-stage" id="hero-devices-stage">
+          <!-- 3D Interactive Laptop -->
+          <div class="laptop-3d">
+            <div class="laptop-screen">
+              <div class="laptop-camera"></div>
+              <div class="laptop-top-bar">
+                <div class="window-dots">
+                  <span class="dot red"></span>
+                  <span class="dot yellow"></span>
+                  <span class="dot green"></span>
+                </div>
+                <div class="laptop-url-pill">digitalsnove.com/suite</div>
+                <div class="live-status-pill"><span class="pulse-dot"></span> LIVE</div>
+              </div>
+              <div class="laptop-display-body">
+                <div class="laptop-logo-row">
+                  <span class="ds-icon">DS</span>
+                  <div class="ds-text">
+                    <strong>DigitalSnove</strong>
+                    <small>Think Digital. Go Global.</small>
+                  </div>
+                </div>
+
+                <!-- Animated Mini Growth Analytics -->
+                <div class="laptop-metrics-row">
+                  <div class="screen-stat-card">
+                    <span class="stat-label">Client Growth</span>
+                    <strong class="stat-val text-cyan">+248%</strong>
+                  </div>
+                  <div class="screen-mini-chart">
+                    <span class="chart-bar b1"></span>
+                    <span class="chart-bar b2"></span>
+                    <span class="chart-bar b3"></span>
+                    <span class="chart-bar b4"></span>
+                    <span class="chart-bar b5"></span>
+                  </div>
+                </div>
+
+                <a href="quote.html" class="screen-cta">Get Started &rarr;</a>
+              </div>
+            </div>
+            <div class="laptop-base"></div>
+          </div>
+
+          <!-- 3D Floating Smartphone -->
+          <div class="phone-3d">
+            <div class="phone-speaker"></div>
+            <div class="phone-status-bar">
+              <span>9:41</span>
+              <span>5G &#128267;</span>
+            </div>
+            <div class="phone-content">
+              <div class="phone-badge">DS Mobile</div>
+              <h4>Build Your Digital Future</h4>
+              <div class="phone-mini-stat">
+                <span class="text-cyan">&#9650; 99.8%</span>
+                <small>Satisfaction Rate</small>
+              </div>
+              <a href="services.html" class="phone-btn">Explore &rarr;</a>
+            </div>
+            <div class="phone-home-indicator"></div>
+          </div>
+
+          <!-- 5 Animated Floating Holographic Badges with Individual Depth & Parallax -->
+          <a href="service-digital-marketing.html" class="floating-badge badge-marketing">
+            <span style="color: #00e5ff; font-size: 14px;">&#128227;</span> Digital Marketing
+          </a>
+          <a href="service-web-development.html" class="floating-badge badge-web">
+            <span style="color: #ffffff; font-size: 13px;">&lt;/&gt;</span> Web Development
+          </a>
+          <a href="service-ai-automation.html" class="floating-badge badge-ai">
+            <span style="color: #00e5ff; font-size: 14px;">&#9881;</span> AI Tools
+          </a>
+          <a href="services.html" class="floating-badge badge-services">
+            <span style="color: #00e5ff; font-size: 13px;">&#9638;</span> Digital Services
+          </a>
+          <a href="service-graphic-design.html" class="floating-badge badge-design">
+            <span style="color: #c084fc; font-size: 13px;">&#127912;</span> Graphic Design
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 2: SERVICES SECTION -->
+  <section class="services-section section-divider" id="services">
+    <div class="container">
+      <div class="section-header-flex">
+        <div>
+          <span class="eyebrow">OUR SERVICES</span>
+          <h2 class="section-title">Digital Solutions Built Around Your Goals</h2>
+          <p style="font-size: 13px; color: #94a3b8; max-width: 600px; margin-top: 6px;">
+            From your first website to a more effective digital marketing strategy, focus on the work your business needs.
+          </p>
+        </div>
+        <div>
+          <a href="services.html" class="btn-outline">View All Services &rarr;</a>
+        </div>
+      </div>
+
+      <!-- 6 Category Filter Tabs -->
+      <div class="services-nav-tabs" id="services-tabs">
+        <button class="services-nav-pill active" data-slide="0">All Services (6)</button>
+        <button class="services-nav-pill" data-slide="0">01 Digital Marketing</button>
+        <button class="services-nav-pill" data-slide="1">02 Web Development</button>
+        <button class="services-nav-pill" data-slide="2">03 Graphic Design</button>
+        <button class="services-nav-pill" data-slide="3">04 AI &amp; Automation</button>
+        <button class="services-nav-pill" data-slide="4">05 Content Creation</button>
+        <button class="services-nav-pill" data-slide="5">06 E-Commerce</button>
+      </div>
+
+      <!-- Animated 6-Card Carousel Track Showcase -->
+      <div class="services-carousel-wrapper" id="services-carousel">
+        <div class="services-carousel-track" id="services-track">
+          <!-- Card 01: Digital Marketing -->
+          <div class="service-slide-card">
+            <div>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span class="card-num-badge">01</span>
+                  <span style="color: var(--accent-cyan); font-size: 15px;">&#128227;</span>
+                </div>
+                <span class="tag-pill" style="background: rgba(0, 229, 255, 0.15); color: #00e5ff;">Growth</span>
+              </div>
+              <h3 style="font-size: 20px; font-weight: 800; color: #ffffff; margin-bottom: 8px;">Digital Marketing</h3>
+              <p class="card-desc" style="font-size: 12px; color: #94a3b8; line-height: 1.6; margin-bottom: 16px;">
+                Get found, attract high-intent audiences, and turn visitors into loyal customers with data-driven strategies.
+              </p>
+              <ul class="subservice-list">
+                <li><span class="check-icon">&#10003;</span> SEO &amp; Technical SEO</li>
+                <li><span class="check-icon">&#10003;</span> Social Media Marketing</li>
+                <li><span class="check-icon">&#10003;</span> Paid Advertising &amp; Google PPC</li>
+                <li><span class="check-icon">&#10003;</span> Conversion Rate Optimization</li>
+              </ul>
+            </div>
+            <div class="card-footer">
+              <a href="service-digital-marketing.html" class="card-link">Explore Digital Marketing &rarr;</a>
+              <img src="assets/service-marketing-graphic.png" alt="Digital Marketing" class="card-art-img">
+            </div>
+          </div>
+
+          <!-- Card 02: Web Development -->
+          <div class="service-slide-card">
+            <div>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span class="card-num-badge">02</span>
+                  <span style="color: var(--accent-cyan); font-size: 15px;">&lt;/&gt;</span>
+                </div>
+                <span class="tag-pill" style="background: rgba(139, 92, 246, 0.18); color: #c084fc;">Full-Stack</span>
+              </div>
+              <h3 style="font-size: 20px; font-weight: 800; color: #ffffff; margin-bottom: 8px;">Web Development</h3>
+              <p class="card-desc" style="font-size: 12px; color: #94a3b8; line-height: 1.6; margin-bottom: 16px;">
+                Build ultra-fast, secure, scalable modern websites and web applications tailored to your business goals.
+              </p>
+              <ul class="subservice-list">
+                <li><span class="check-icon">&#10003;</span> Business &amp; Corporate Websites</li>
+                <li><span class="check-icon">&#10003;</span> Custom Web Apps &amp; WordPress</li>
+                <li><span class="check-icon">&#10003;</span> Responsive &amp; Mobile-First Design</li>
+                <li><span class="check-icon">&#10003;</span> Cloud Speed &amp; Security Maintenance</li>
+              </ul>
+            </div>
+            <div class="card-footer">
+              <a href="service-web-development.html" class="card-link">Explore Web Development &rarr;</a>
+              <img src="assets/service-web-graphic.png" alt="Web Development" class="card-art-img">
+            </div>
+          </div>
+
+          <!-- Card 03: Graphic Design & Branding -->
+          <div class="service-slide-card">
+            <div>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span class="card-num-badge">03</span>
+                  <span style="color: #ec4899; font-size: 15px;">&#127912;</span>
+                </div>
+                <span class="tag-pill" style="background: rgba(236, 72, 153, 0.18); color: #f472b6;">Creative</span>
+              </div>
+              <h3 style="font-size: 20px; font-weight: 800; color: #ffffff; margin-bottom: 8px;">Graphic Design &amp; Branding</h3>
+              <p class="card-desc" style="font-size: 12px; color: #94a3b8; line-height: 1.6; margin-bottom: 16px;">
+                Create a memorable visual identity that differentiates your brand and builds deep customer trust.
+              </p>
+              <ul class="subservice-list">
+                <li><span class="check-icon">&#10003;</span> Logo &amp; Brand Identity Design</li>
+                <li><span class="check-icon">&#10003;</span> UI/UX Web &amp; Mobile Mockups</li>
+                <li><span class="check-icon">&#10003;</span> Social Media Creatives &amp; Ad Banners</li>
+                <li><span class="check-icon">&#10003;</span> Brand Guidelines &amp; Stylebooks</li>
+              </ul>
+            </div>
+            <div class="card-footer">
+              <a href="service-graphic-design.html" class="card-link">Explore Graphic Design &rarr;</a>
+              <div style="width: 50px; height: 50px; border-radius: 12px; background: rgba(236, 72, 153, 0.15); display: flex; align-items: center; justify-content: center; font-size: 24px;">&#127912;</div>
+            </div>
+          </div>
+
+          <!-- Card 04: AI & Automation -->
+          <div class="service-slide-card">
+            <div>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span class="card-num-badge">04</span>
+                  <span style="color: #00e5ff; font-size: 15px;">&#9881;</span>
+                </div>
+                <span class="tag-pill" style="background: rgba(0, 229, 255, 0.15); color: #00e5ff;">AI Tech</span>
+              </div>
+              <h3 style="font-size: 20px; font-weight: 800; color: #ffffff; margin-bottom: 8px;">AI &amp; Automation</h3>
+              <p class="card-desc" style="font-size: 12px; color: #94a3b8; line-height: 1.6; margin-bottom: 16px;">
+                Automate workflows, deploy intelligent chatbots, and scale business operations with next-gen AI.
+              </p>
+              <ul class="subservice-list">
+                <li><span class="check-icon">&#10003;</span> Custom AI Chatbots &amp; Customer Support</li>
+                <li><span class="check-icon">&#10003;</span> Workflow Automation (Zapier/Make)</li>
+                <li><span class="check-icon">&#10003;</span> AI Data Scraping &amp; Analytics</li>
+                <li><span class="check-icon">&#10003;</span> Custom API Integrations</li>
+              </ul>
+            </div>
+            <div class="card-footer">
+              <a href="service-ai-automation.html" class="card-link">Explore AI Solutions &rarr;</a>
+              <div style="width: 50px; height: 50px; border-radius: 12px; background: rgba(0, 229, 255, 0.15); display: flex; align-items: center; justify-content: center; font-size: 24px;">&#129302;</div>
+            </div>
+          </div>
+
+          <!-- Card 05: Content Creation & Copywriting -->
+          <div class="service-slide-card">
+            <div>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span class="card-num-badge">05</span>
+                  <span style="color: #38bdf8; font-size: 15px;">&#9997;</span>
+                </div>
+                <span class="tag-pill" style="background: rgba(56, 189, 248, 0.18); color: #38bdf8;">Editorial</span>
+              </div>
+              <h3 style="font-size: 20px; font-weight: 800; color: #ffffff; margin-bottom: 8px;">Content Creation</h3>
+              <p class="card-desc" style="font-size: 12px; color: #94a3b8; line-height: 1.6; margin-bottom: 16px;">
+                High-converting storytelling and SEO-rich copy that engages your audience and drives measurable actions.
+              </p>
+              <ul class="subservice-list">
+                <li><span class="check-icon">&#10003;</span> SEO Blog Posts &amp; Industry Articles</li>
+                <li><span class="check-icon">&#10003;</span> High-Converting Sales Landing Pages</li>
+                <li><span class="check-icon">&#10003;</span> Video Scriptwriting &amp; Storyboards</li>
+                <li><span class="check-icon">&#10003;</span> Email Campaigns &amp; Newsletters</li>
+              </ul>
+            </div>
+            <div class="card-footer">
+              <a href="service-content-creation.html" class="card-link">Explore Content Services &rarr;</a>
+              <div style="width: 50px; height: 50px; border-radius: 12px; background: rgba(56, 189, 248, 0.15); display: flex; align-items: center; justify-content: center; font-size: 24px;">&#128221;</div>
+            </div>
+          </div>
+
+          <!-- Card 06: E-Commerce Solutions -->
+          <div class="service-slide-card">
+            <div>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span class="card-num-badge">06</span>
+                  <span style="color: #10b981; font-size: 15px;">&#128722;</span>
+                </div>
+                <span class="tag-pill" style="background: rgba(16, 185, 129, 0.18); color: #34d399;">E-Store</span>
+              </div>
+              <h3 style="font-size: 20px; font-weight: 800; color: #ffffff; margin-bottom: 8px;">E-Commerce Solutions</h3>
+              <p class="card-desc" style="font-size: 12px; color: #94a3b8; line-height: 1.6; margin-bottom: 16px;">
+                Build and scale profitable digital stores on Shopify and WooCommerce designed for maximum global conversions.
+              </p>
+              <ul class="subservice-list">
+                <li><span class="check-icon">&#10003;</span> Shopify &amp; WooCommerce Custom Store Setup</li>
+                <li><span class="check-icon">&#10003;</span> Global Payment Gateway &amp; Shipping Config</li>
+                <li><span class="check-icon">&#10003;</span> Product Page Architecture &amp; CRO</li>
+                <li><span class="check-icon">&#10003;</span> Mobile Checkout &amp; Store Speed Tuning</li>
+              </ul>
+            </div>
+            <div class="card-footer">
+              <a href="service-ecommerce.html" class="card-link">Explore E-Commerce &rarr;</a>
+              <div style="width: 50px; height: 50px; border-radius: 12px; background: rgba(16, 185, 129, 0.15); display: flex; align-items: center; justify-content: center; font-size: 24px;">&#128717;</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Controls Row: Arrows + Dots Indicators -->
+      <div class="services-controls-row">
+        <div class="services-carousel-dots" id="services-dots">
+          <span class="services-dot active" data-slide="0" title="01 Digital Marketing"></span>
+          <span class="services-dot" data-slide="1" title="02 Web Development"></span>
+          <span class="services-dot" data-slide="2" title="03 Graphic Design"></span>
+          <span class="services-dot" data-slide="3" title="04 AI &amp; Automation"></span>
+          <span class="services-dot" data-slide="4" title="05 Content Creation"></span>
+          <span class="services-dot" data-slide="5" title="06 E-Commerce"></span>
+        </div>
+        <div class="services-nav-arrows">
+          <button class="services-arrow-btn" id="services-prev" aria-label="Previous Services">&#8592;</button>
+          <button class="services-arrow-btn" id="services-next" aria-label="Next Services">&#8594;</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 3: ABOUT DIGITALSNOVE -->
+  <section class="about-section section-divider" id="about">
+    <div class="container about-grid">
+      <!-- Left Column: Story -->
+      <div>
+        <span class="eyebrow">ABOUT DIGITALSNOVE</span>
+        <h2 style="font-size: 34px; font-weight: 800; color: #ffffff; line-height: 1.2; margin-bottom: 18px;">
+          More Than Just a Service We Build Long-Term Partnerships
+        </h2>
+        <p style="font-size: 13px; color: #94a3b8; line-height: 1.7; margin-bottom: 24px;">
+          DigitalSnove is a full-service digital agency helping businesses worldwide with digital marketing, web development, AI tools and more. Our mission is to deliver innovative, scalable and affordable solutions that create real value and long-term growth.
+        </p>
+        <a href="about.html" class="btn-primary">Learn More About Us &rarr;</a>
+      </div>
+
+      <!-- Center Column: Stats List -->
+      <div class="stats-list">
+        <div class="stat-item">
+          <div class="stat-icon">&#127760;</div>
+          <div>
+            <h3 class="stat-count" data-target="500" data-suffix="+">500+</h3>
+            <span>Global Clients</span>
+          </div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-icon">&#128193;</div>
+          <div>
+            <h3 class="stat-count" data-target="1200" data-suffix="+">1,200+</h3>
+            <span>Projects Completed</span>
+          </div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-icon">&#9733;</div>
+          <div>
+            <h3>4.9/5</h3>
+            <span>Client Satisfaction</span>
+          </div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-icon">&#128101;</div>
+          <div>
+            <h3 class="stat-count" data-target="50" data-suffix="+">50+</h3>
+            <span>Expert Team Members</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column: Office Image with Glowing Signage -->
+      <div class="office-img-wrapper" style="position: relative; background: #060b1d; min-height: 280px; display: flex; align-items: center; justify-content: center;">
+        <img src="assets/about-office.png" alt="DigitalSnove Office" style="width: 100%; height: auto; display: block;">
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 4: FEATURED PROJECTS / PORTFOLIO -->
+  <section class="projects-section section-divider" id="portfolio">
+    <div class="container">
+      <div class="section-header-flex">
+        <div>
+          <span class="eyebrow">OUR WORK</span>
+          <h2 class="section-title">Featured Projects</h2>
+          <p style="font-size: 13px; color: #94a3b8; margin-top: 6px;">
+            Real solutions. Measurable results. Explore some of our recent projects and see how we help businesses grow.
+          </p>
+        </div>
+        <a href="portfolio.html" class="btn-outline">View Portfolio &rarr;</a>
+      </div>
+
+      <div class="projects-grid">
+        <!-- Project 1 -->
+        <a href="portfolio.html" class="project-card">
+          <div class="project-art">
+            <img src="assets/project-ai.png" alt="Smart Tools for a Better Tomorrow" loading="lazy">
+          </div>
+          <div class="project-info">
+            <div>
+              <h4>Smart Tools for a Better Tomorrow</h4>
+            </div>
+            <div class="round-arrow-btn">&rarr;</div>
+          </div>
+        </a>
+
+        <!-- Project 2 -->
+        <a href="portfolio.html" class="project-card">
+          <div class="project-art">
+            <img src="assets/project-ecommerce.png" alt="E-Commerce Store" loading="lazy">
+          </div>
+          <div class="project-info">
+            <div>
+              <h4>E-Commerce Store</h4>
+            </div>
+            <div class="round-arrow-btn">&rarr;</div>
+          </div>
+        </a>
+
+        <!-- Project 3 -->
+        <a href="portfolio.html" class="project-card">
+          <div class="project-art">
+            <img src="assets/project-business.png" alt="Business Website Brand Growth" loading="lazy">
+          </div>
+          <div class="project-info">
+            <div>
+              <h4>Business Website Brand Growth</h4>
+            </div>
+            <div class="round-arrow-btn">&rarr;</div>
+          </div>
+        </a>
+
+        <!-- Project 4 -->
+        <a href="portfolio.html" class="project-card">
+          <div class="project-art">
+            <img src="assets/project-seo.png" alt="Digital Marketing SEO Success" loading="lazy">
+          </div>
+          <div class="project-info">
+            <div>
+              <h4>Digital Marketing SEO Success</h4>
+            </div>
+            <div class="round-arrow-btn">&rarr;</div>
+          </div>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 5: OUR PROCESS -->
+  <section class="process-section section-divider" id="process">
+    <div class="container" style="text-align: center;">
+      <div style="display: flex; align-items: flex-end; justify-content: space-between; text-align: left; margin-bottom: 20px;">
+        <div>
+          <span class="eyebrow">OUR PROCESS</span>
+          <h2 class="section-title">Simple Steps to Big Results</h2>
+          <p style="font-size: 13px; color: #94a3b8; max-width: 580px; margin-top: 6px;">
+            A clear and proven process to turn your ideas into digital success.
+          </p>
+        </div>
+        <a href="services.html" class="btn-outline">View Our Process &rarr;</a>
+      </div>
+
+      <div class="process-timeline">
+        <!-- Step 1 -->
+        <div class="process-step">
+          <div class="step-circle">&#128269;</div>
+          <span class="step-num">01</span>
+          <h4>Discover</h4>
+          <p>Understand your business goals and challenges.</p>
+        </div>
+
+        <!-- Step 2 -->
+        <div class="process-step">
+          <div class="step-circle">&#128203;</div>
+          <span class="step-num">02</span>
+          <h4>Plan</h4>
+          <p>Create a tailored strategy and project roadmap.</p>
+        </div>
+
+        <!-- Step 3 -->
+        <div class="process-step">
+          <div class="step-circle">&lt;/&gt;</div>
+          <span class="step-num">03</span>
+          <h4>Build</h4>
+          <p>Design and develop with modern technologies.</p>
+        </div>
+
+        <!-- Step 4 -->
+        <div class="process-step">
+          <div class="step-circle">&#9881;</div>
+          <span class="step-num">04</span>
+          <h4>Refine</h4>
+          <p>Test, optimize and ensure the best performance.</p>
+        </div>
+
+        <!-- Step 5 -->
+        <div class="process-step">
+          <div class="step-circle">&#128200;</div>
+          <span class="step-num">05</span>
+          <h4>Grow</h4>
+          <p>Track results and scale your success further.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 6: WHY CHOOSE US (ENLARGED 3D CUBES) -->
+  <section class="why-section section-divider" id="why-choose-us">
+    <div class="container why-grid">
+      <!-- Left Column -->
+      <div>
+        <span class="eyebrow">WHY CHOOSE US</span>
+        <h2 style="font-size: 34px; font-weight: 800; color: #ffffff; line-height: 1.2; margin-bottom: 16px;">
+          More Than Just a Service We Build Long-Term Partnerships
+        </h2>
+        <p style="font-size: 13px; color: #94a3b8; line-height: 1.7; margin-bottom: 24px;">
+          We take time to understand your business, your goals and your audience. Our focus is on delivering real results through strategy, creativity and technology.
+        </p>
+        <a href="about.html" class="btn-primary">Learn More About Us &rarr;</a>
+      </div>
+
+      <!-- Center Column: Benefits -->
+      <div class="why-benefits">
+        <div class="benefit-row">
+          <div class="benefit-icon">&#128161;</div>
+          <div>
+            <h4>Strategic Approach</h4>
+            <p>Data-driven decisions</p>
+          </div>
+        </div>
+        <div class="benefit-row">
+          <div class="benefit-icon">&#128101;</div>
+          <div>
+            <h4>Expert Team</h4>
+            <p>Skilled &amp; experienced</p>
+          </div>
+        </div>
+        <div class="benefit-row">
+          <div class="benefit-icon">&#128172;</div>
+          <div>
+            <h4>Transparent Communication</h4>
+            <p>No hidden costs</p>
+          </div>
+        </div>
+        <div class="benefit-row">
+          <div class="benefit-icon">&#9201;</div>
+          <div>
+            <h4>On-Time Delivery</h4>
+            <p>Your time matters</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column: 3D Floating Isometric Cubes Canvas (Enlarged) -->
+      <div class="cubes-canvas-wrapper">
+        <div id="why-choose-cubes-canvas"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 7: CLIENT TESTIMONIALS -->
+  <section class="testimonials-section section-divider" id="testimonials">
+    <div class="container">
+      <span class="eyebrow">WHAT OUR CLIENTS SAY</span>
+      <h2 class="section-title">Trusted by Businesses Worldwide</h2>
+
+      <div class="testimonials-slider-wrap">
+        <button class="slider-nav-btn" id="test-prev-btn" aria-label="Previous review">&#8592;</button>
+
+        <!-- Testimonial 1 -->
+        <div class="testimonial-card testimonial-slide-item">
+          <img src="assets/testimonial-avatar.png" alt="Sarah Johnson" class="testimonial-avatar">
+          <div>
+            <p class="testimonial-text">
+              "DigitalSnove transformed our online presence. Their team is professional, creative and always supportive. Our traffic and sales have grown significantly."
+            </p>
+            <div class="author-name">Sarah Johnson</div>
+            <div class="author-role">CEO, LUXE</div>
+            <div class="star-rating">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+          </div>
+        </div>
+
+        <!-- Testimonial 2 -->
+        <div class="testimonial-card testimonial-slide-item" style="display: none;">
+          <img src="assets/testimonial-avatar.png" alt="Marcus Vance" class="testimonial-avatar">
+          <div>
+            <p class="testimonial-text">
+              "The AI automation workflows DigitalSnove integrated into our customer portal cut our support response times by 75% while boosting qualified leads."
+            </p>
+            <div class="author-name">Marcus Vance</div>
+            <div class="author-role">Director of Operations, CloudScale Global</div>
+            <div class="star-rating">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+          </div>
+        </div>
+
+        <button class="slider-nav-btn" id="test-next-btn" aria-label="Next review">&#8594;</button>
+      </div>
+
+      <!-- Dots Indicators -->
+      <div class="slider-dots">
+        <button class="dot active" aria-label="Slide 1"></button>
+        <button class="dot" aria-label="Slide 2"></button>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 8: CTA BANNER -->
+  <section class="cta-banner-section section-divider" id="cta">
+    <div class="container">
+      <div class="cta-banner-box">
+        <div>
+          <span class="eyebrow" style="color: #00e5ff;">LET'S WORK TOGETHER</span>
+          <h2>Ready to Grow Your Business Digitally?</h2>
+          <p>
+            Get in touch with us today and let's turn your ideas into success. Stay succeed.
+          </p>
+          <a href="quote.html" class="btn-primary" style="font-size: 14px; padding: 14px 32px;">Get a Free Quote &rarr;</a>
+
+          <!-- Direct Contact Row matching screenshot -->
+          <div class="cta-contact-row">
+            <a href="mailto:info@digitalsnove.com" class="cta-contact-item">
+              <div class="contact-icon-box">&#9993;</div>
+              <div>
+                <span style="font-size: 10px; color: #94a3b8; display: block;">Email</span>
+                <strong style="color: #fff;">info@digitalsnove.com</strong>
+              </div>
+            </a>
+            <a href="tel:+923019643900" class="cta-contact-item">
+              <div class="contact-icon-box">&#9742;</div>
+              <div>
+                <span style="font-size: 10px; color: #94a3b8; display: block;">Phone</span>
+                <strong style="color: #fff;">+92 301 964 3900</strong>
+              </div>
+            </a>
+            <div class="cta-contact-item">
+              <div class="contact-icon-box">&#127760;</div>
+              <div>
+                <span style="font-size: 10px; color: #94a3b8; display: block;">Location</span>
+                <strong style="color: #fff;">Worldwide</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3D Rotating Cyber Earth Canvas -->
+        <div class="cta-3d-globe-wrapper">
+          <div id="cta-globe-canvas"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 9: FAQ ACCORDION -->
+  <section class="faq-section section-divider" id="faq">
+    <div class="container faq-grid">
+      <!-- Left Column: FAQ Intro & 24/7 Consultation Card -->
+      <div>
+        <span class="eyebrow">FREQUENTLY ASKED QUESTIONS</span>
+        <h2 style="font-size: 34px; font-weight: 800; color: #ffffff; line-height: 1.2; margin-bottom: 14px;">
+          Got Questions? We've Got Answers.
+        </h2>
+        <p style="font-size: 13px; color: #94a3b8; line-height: 1.6; margin-bottom: 20px;">
+          Find quick answers to the most common questions about our services, process, pricing and more.
+        </p>
+
+        <!-- Professional 24/7 Support Card -->
+        <div class="faq-support-card">
+          <div class="support-card-header">
+            <span class="live-dot-pulse"></span>
+            <span style="font-size: 11px; font-weight: 800; color: #00e5ff; letter-spacing: 0.06em; text-transform: uppercase;">24/7 Support &amp; Strategy</span>
+          </div>
+          <h4 style="font-size: 17px; font-weight: 800; color: #ffffff; margin: 10px 0 8px;">
+            Have a question about your project?
+          </h4>
+          <p style="font-size: 12px; color: #94a3b8; line-height: 1.55; margin-bottom: 16px;">
+            Can't find what you need? Our team of digital strategists is ready to understand your goals and provide a free customized roadmap.
+          </p>
+
+          <div class="faq-perks-list">
+            <div class="faq-perk-item">
+              <span class="perk-icon">&#9889;</span>
+              <div>
+                <strong style="color: #fff; font-size: 12px; display: block;">&lt; 15 Min Response</strong>
+                <span style="color: #64748b; font-size: 11px;">Fast replies via WhatsApp &amp; Email</span>
+              </div>
+            </div>
+            <div class="faq-perk-item">
+              <span class="perk-icon">&#128172;</span>
+              <div>
+                <strong style="color: #fff; font-size: 12px; display: block;">Free Consultation Call</strong>
+                <span style="color: #64748b; font-size: 11px;">No obligation, 100% custom roadmap</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="support-card-actions">
+            <a href="contact.html" class="btn-primary" style="font-size: 12px; padding: 10px 18px;">Contact Our Team &rarr;</a>
+            <a href="https://wa.me/923019643900" target="_blank" class="btn-whatsapp">
+              <span style="font-size: 14px;">&#128172;</span> WhatsApp Chat
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column: Accordion Items -->
+      <div class="accordion-list">
+        <!-- Item 1 -->
+        <div class="accordion-item open">
+          <button class="accordion-trigger">
+            <span>What services does DigitalSnove offer?</span>
+            <div class="trigger-icon">+</div>
+          </button>
+          <div class="accordion-content">
+            DigitalSnove offers six core services: Digital Marketing (SEO &amp; PPC), Custom Web Development, Graphic Design &amp; Brand Identity, AI Tools &amp; Automation, Content Creation &amp; Copywriting, and E-Commerce Solutions (Shopify &amp; WooCommerce).
+          </div>
+        </div>
+
+        <!-- Item 2 -->
+        <div class="accordion-item">
+          <button class="accordion-trigger">
+            <span>How long does a project take?</span>
+            <div class="trigger-icon">+</div>
+          </button>
+          <div class="accordion-content">
+            Typical custom web projects range from 2 to 6 weeks depending on requirements and integrations. We establish clear milestone deliverables and communicate progress weekly.
+          </div>
+        </div>
+
+        <!-- Item 3 -->
+        <div class="accordion-item">
+          <button class="accordion-trigger">
+            <span>Do you work with international clients?</span>
+            <div class="trigger-icon">+</div>
+          </button>
+          <div class="accordion-content">
+            Yes! We work with clients globally across the US, UK, Middle East, Europe, and Asia, offering 24/7 support and flexible communication schedules.
+          </div>
+        </div>
+
+        <!-- Item 4 -->
+        <div class="accordion-item">
+          <button class="accordion-trigger">
+            <span>What is the pricing model?</span>
+            <div class="trigger-icon">+</div>
+          </button>
+          <div class="accordion-content">
+            We provide fixed-price milestone contracts with no hidden fees, as well as monthly growth retainer agreements for ongoing marketing and technical maintenance.
+          </div>
+        </div>
+
+        <!-- Item 5 -->
+        <div class="accordion-item">
+          <button class="accordion-trigger">
+            <span>How can I get started?</span>
+            <div class="trigger-icon">+</div>
+          </button>
+          <div class="accordion-content">
+            Click on "Get a Free Quote" or visit our Contact page. Share your project requirements and our team will provide a tailored proposal and quote within 24 hours.
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- FOOTER -->
+  <footer class="site-footer">
+    <div class="container footer-grid-wrap">
+      <!-- Brand & Socials -->
+      <div class="footer-col-brand">
+        <a href="index.html" class="brand-logo">
+          <div class="logo-badge"><div class="logo-inner">DS</div></div>
+          <div class="brand-text">
+            <h1 style="font-size: 15px;">DigitalSnove</h1>
+            <span style="font-size: 8px;">Think Digital. Go Global.</span>
+          </div>
+        </a>
+        <p style="font-size: 12px; color: #94a3b8; margin: 12px 0 16px; line-height: 1.6; max-width: 320px;">
+          Premier digital agency &amp; SaaS provider empowering healthcare clinics, pharmacies, and high-growth businesses.
+        </p>
+        <div class="social-links" style="padding-left: 0; border-left: none;">
+          <a href="https://facebook.com" target="_blank" rel="noopener" aria-label="Facebook">&#9670; Facebook</a>
+          <a href="https://twitter.com" target="_blank" rel="noopener" aria-label="Twitter">&#9670; X</a>
+          <a href="https://linkedin.com" target="_blank" rel="noopener" aria-label="LinkedIn">&#9670; LinkedIn</a>
+          <a href="https://instagram.com" target="_blank" rel="noopener" aria-label="Instagram">&#9670; Instagram</a>
+          <a href="https://youtube.com" target="_blank" rel="noopener" aria-label="YouTube">&#9670; YouTube</a>
+        </div>
+      </div>
+
+      <!-- Quick Nav Links -->
+      <div class="footer-col">
+        <h4 style="font-size: 13px; font-weight: 800; color: #fff; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px;">Company</h4>
+        <nav class="footer-nav-vertical">
+          <a href="index.html">Home</a>
+          <a href="about.html">About Us</a>
+          <a href="portfolio.html">Portfolio</a>
+          <a href="blog.html">Blog</a>
+          <a href="contact.html">Contact Us</a>
+          <a href="quote.html">Get a Quote</a>
+        </nav>
+      </div>
+
+      <!-- Services & Solutions Column -->
+      <div class="footer-col">
+        <h4 style="font-size: 13px; font-weight: 800; color: #fff; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px;">Services &amp; Solutions</h4>
+        <nav class="footer-nav-vertical">
+          <a href="cloud-pos-saas.html" style="color: #00e5ff; font-weight: 700;">&#9889; Cloud POS &amp; Business SaaS</a>
+          <a href="cloud-pos-saas.html#clinic">&bull; Clinic &amp; Hospital Management</a>
+          <a href="cloud-pos-saas.html#pharmacy">&bull; Pharmacy &amp; Retail POS</a>
+          <a href="service-web-development.html">&bull; Web &amp; Custom Software</a>
+          <a href="service-digital-marketing.html">&bull; Digital Marketing &amp; SEO</a>
+          <a href="service-ai-automation.html">&bull; AI Tools &amp; Automation</a>
+        </nav>
+      </div>
+    </div>
+
+    <!-- Legal & Copyright -->
+    <div class="container footer-bottom-strip">
+      <p>&copy; 2026 DigitalSnove. All rights reserved.</p>
+      <div class="footer-legal-links">
+        <a href="privacy-policy.html">Privacy Policy</a>
+        <span>&bull;</span>
+        <a href="terms-conditions.html">Terms &amp; Conditions</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- SCRIPTS -->
+  <script src="js/three.min.js"></script>
+  <script>
+    if (typeof THREE === 'undefined') {
+      document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"><\/script>');
+    }
+  </script>
+  <script src="js/main.js"></script>
+</body>
 </html>
+
+
+  <!-- Embedded 3D Engines -->
+  <script>
+/**
+ * DigitalSnove — Hero 3D Holographic Globe
+ * Pure 3D Canvas / Three.js Code Animation
+ */
+(function() {
+  const container = document.getElementById('hero-globe-canvas-container');
+  if (!container || typeof THREE === 'undefined') return;
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+  camera.position.z = 24;
+
+  const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+  renderer.setSize(container.clientWidth, container.clientHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  container.appendChild(renderer.domElement);
+
+  // Group for all globe elements
+  const globeGroup = new THREE.Group();
+  scene.add(globeGroup);
+
+  // 1. Core Sphere Wireframe (Latitude & Longitude grid)
+  const sphereGeo = new THREE.SphereGeometry(8.2, 36, 36);
+  const wireframeMat = new THREE.MeshBasicMaterial({
+    color: 0x00d2ff,
+    wireframe: true,
+    transparent: true,
+    opacity: 0.22
+  });
+  const sphereWire = new THREE.Mesh(sphereGeo, wireframeMat);
+  globeGroup.add(sphereWire);
+
+  // 2. Inner Glowing Atmosphere Sphere
+  const innerGeo = new THREE.SphereGeometry(8.0, 32, 32);
+  const innerMat = new THREE.MeshBasicMaterial({
+    color: 0x0a2560,
+    transparent: true,
+    opacity: 0.4
+  });
+  const innerSphere = new THREE.Mesh(innerGeo, innerMat);
+  globeGroup.add(innerSphere);
+
+  // 3. Dot Matrix / Continents Particle Shell
+  const particleCount = 1200;
+  const particleGeo = new THREE.BufferGeometry();
+  const positions = new Float32Array(particleCount * 3);
+  const colors = new Float32Array(particleCount * 3);
+
+  const cyanColor = new THREE.Color(0x00f2fe);
+  const blueColor = new THREE.Color(0x3b82f6);
+  const purpleColor = new THREE.Color(0x8b5cf6);
+
+  for (let i = 0; i < particleCount; i++) {
+    // Distribute on sphere surface
+    const phi = Math.acos(-1 + (2 * i) / particleCount);
+    const theta = Math.sqrt(particleCount * Math.PI) * phi;
+    const r = 8.35 + (Math.random() * 0.15);
+
+    const x = r * Math.cos(theta) * Math.sin(phi);
+    const y = r * Math.sin(theta) * Math.sin(phi);
+    const z = r * Math.cos(phi);
+
+    positions[i * 3] = x;
+    positions[i * 3 + 1] = y;
+    positions[i * 3 + 2] = z;
+
+    // Gradient colors from cyan to blue to purple
+    const mixRatio = Math.random();
+    const c = mixRatio < 0.6 ? cyanColor : (mixRatio < 0.85 ? blueColor : purpleColor);
+    colors[i * 3] = c.r;
+    colors[i * 3 + 1] = c.g;
+    colors[i * 3 + 2] = c.b;
+  }
+
+  particleGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  particleGeo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+  const particleMat = new THREE.PointsMaterial({
+    size: 0.18,
+    vertexColors: true,
+    transparent: true,
+    opacity: 0.85,
+    blending: THREE.AdditiveBlending
+  });
+
+  const particleMesh = new THREE.Points(particleGeo, particleMat);
+  globeGroup.add(particleMesh);
+
+  // 4. Orbital Cyber Rings
+  function createOrbitalRing(radius, tube, color, rotX, rotY) {
+    const ringGeo = new THREE.TorusGeometry(radius, tube, 8, 80);
+    const ringMat = new THREE.MeshBasicMaterial({
+      color: color,
+      transparent: true,
+      opacity: 0.35,
+      blending: THREE.AdditiveBlending
+    });
+    const ring = new THREE.Mesh(ringGeo, ringMat);
+    ring.rotation.x = rotX;
+    ring.rotation.y = rotY;
+    return ring;
+  }
+
+  const ring1 = createOrbitalRing(10.2, 0.04, 0x00f2fe, Math.PI / 3, Math.PI / 6);
+  const ring2 = createOrbitalRing(11.0, 0.03, 0x8b5cf6, -Math.PI / 4, Math.PI / 5);
+  globeGroup.add(ring1);
+  globeGroup.add(ring2);
+
+  // 5. Interactive Mouse Parallax
+  let mouseX = 0;
+  let mouseY = 0;
+  let targetX = 0;
+  let targetY = 0;
+
+  window.addEventListener('mousemove', (e) => {
+    mouseX = (e.clientX / window.innerWidth) - 0.5;
+    mouseY = (e.clientY / window.innerHeight) - 0.5;
+  }, { passive: true });
+
+  // Animation Loop
+  let clock = new THREE.Clock();
+
+  function animate() {
+    requestAnimationFrame(animate);
+    const delta = clock.getDelta();
+    const elapsedTime = clock.getElapsedTime();
+
+    // Constant smooth globe rotation
+    globeGroup.rotation.y += 0.004;
+    sphereWire.rotation.y += 0.002;
+    particleMesh.rotation.y += 0.004;
+
+    // Rings rotation
+    ring1.rotation.z += 0.003;
+    ring2.rotation.z -= 0.002;
+
+    // Gentle mouse easing
+    targetX += (mouseX - targetX) * 0.05;
+    targetY += (mouseY - targetY) * 0.05;
+    globeGroup.rotation.x = targetY * 0.4 + 0.15;
+    globeGroup.position.x = targetX * 1.5;
+
+    // Subtle breathing pulse
+    const scale = 1 + Math.sin(elapsedTime * 1.5) * 0.015;
+    particleMesh.scale.set(scale, scale, scale);
+
+    renderer.render(scene, camera);
+  }
+  animate();
+
+  // Responsive resize
+  window.addEventListener('resize', () => {
+    if (!container) return;
+    camera.aspect = container.clientWidth / container.clientHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(container.clientWidth, container.clientHeight);
+  });
+})();
+
+/**
+ * DigitalSnove — Why Choose Us 3D Floating Isometric Cubes
+ * Pure 3D Canvas / Three.js Code Animation — High-Definition & Enlarged
+ */
+(function() {
+  const container = document.getElementById('why-choose-cubes-canvas');
+  if (!container || typeof THREE === 'undefined') return;
+
+  const scene = new THREE.Scene();
+
+  // Perspective camera with isometric angle, brought closer for larger display
+  const aspect = container.clientWidth / container.clientHeight;
+  const camera = new THREE.PerspectiveCamera(42, aspect, 0.1, 1000);
+  camera.position.set(14, 12, 16);
+  camera.lookAt(0, 0.5, 0);
+
+  const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+  renderer.setSize(container.clientWidth, container.clientHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  container.innerHTML = '';
+  container.appendChild(renderer.domElement);
+
+  // Vibrant Lights
+  const ambientLight = new THREE.AmbientLight(0x0a193b, 1.8);
+  scene.add(ambientLight);
+
+  const cyanLight = new THREE.PointLight(0x00f2fe, 4.5, 50);
+  cyanLight.position.set(8, 12, 8);
+  scene.add(cyanLight);
+
+  const purpleLight = new THREE.PointLight(0x8b5cf6, 4.5, 50);
+  purpleLight.position.set(-8, -5, -6);
+  scene.add(purpleLight);
+
+  const cubesGroup = new THREE.Group();
+  scene.add(cubesGroup);
+
+  // Enlarged Cube Configurations matching the approved reference design
+  const cubeConfigs = [
+    { size: 4.6, pos: [0, 1.4, 0], color: 0x00d2ff, emissive: 0x0077b6, speed: 1.1, phase: 0 },
+    { size: 3.6, pos: [-4.4, -1.2, 2.0], color: 0x0096c7, emissive: 0x03045e, speed: 1.0, phase: 1.5 },
+    { size: 3.4, pos: [3.8, -1.4, 2.4], color: 0x7209b7, emissive: 0x3f37c9, speed: 1.3, phase: 2.5 },
+    { size: 2.6, pos: [-2.4, 4.6, -2.6], color: 0x00b4d8, emissive: 0x023e8a, speed: 1.2, phase: 3.2 },
+    { size: 2.2, pos: [3.2, 3.8, -2.2], color: 0x4895ef, emissive: 0x4361ee, speed: 1.4, phase: 4.1 },
+    { size: 1.8, pos: [5.2, 0.8, -3.2], color: 0x560bad, emissive: 0x3a0ca3, speed: 1.5, phase: 5.0 },
+    { size: 1.5, pos: [-4.8, 2.0, -1.6], color: 0x4cc9f0, emissive: 0x4895ef, speed: 1.6, phase: 0.8 },
+  ];
+
+  const cubeMeshes = [];
+
+  cubeConfigs.forEach(cfg => {
+    const geo = new THREE.BoxGeometry(cfg.size, cfg.size, cfg.size);
+
+    // Glowing translucent cyber glass material
+    const mat = new THREE.MeshPhongMaterial({
+      color: cfg.color,
+      emissive: cfg.emissive,
+      emissiveIntensity: 0.55,
+      specular: 0x00f2fe,
+      shininess: 100,
+      transparent: true,
+      opacity: 0.85,
+    });
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.position.set(cfg.pos[0], cfg.pos[1], cfg.pos[2]);
+
+    // Glowing outer edges wireframe
+    const edgesGeo = new THREE.EdgesGeometry(geo);
+    const edgesMat = new THREE.LineBasicMaterial({
+      color: 0x00f2fe,
+      transparent: true,
+      opacity: 0.85,
+      linewidth: 2
+    });
+    const edges = new THREE.LineSegments(edgesGeo, edgesMat);
+    mesh.add(edges);
+
+    cubesGroup.add(mesh);
+    cubeMeshes.push({ mesh, initialY: cfg.pos[1], speed: cfg.speed, phase: cfg.phase });
+  });
+
+  // Cyber Grid Floor lines (Enlarged and Glowing)
+  const gridHelper = new THREE.GridHelper(22, 22, 0x00e5ff, 0x12254e);
+  gridHelper.position.y = -5.0;
+  scene.add(gridHelper);
+
+  // Mouse tilt interaction with smooth damping
+  let mouseX = 0;
+  let mouseY = 0;
+  let targetRotX = 0;
+  let targetRotY = 0;
+
+  window.addEventListener('mousemove', (e) => {
+    mouseX = (e.clientX / window.innerWidth) - 0.5;
+    mouseY = (e.clientY / window.innerHeight) - 0.5;
+  }, { passive: true });
+
+  // Animation Loop with 60fps smooth easing
+  let clock = new THREE.Clock();
+
+  function animate() {
+    requestAnimationFrame(animate);
+    const time = clock.getElapsedTime();
+
+    // Smooth hover tilt damping
+    targetRotY = mouseX * 0.4;
+    targetRotX = mouseY * 0.3;
+    cubesGroup.rotation.y += (targetRotY - cubesGroup.rotation.y) * 0.05;
+    cubesGroup.rotation.x += (targetRotX - cubesGroup.rotation.x) * 0.05;
+
+    // Gentle floating oscillations for individual cubes
+    cubeMeshes.forEach(item => {
+      item.mesh.position.y = item.initialY + Math.sin(time * item.speed + item.phase) * 0.35;
+      item.mesh.rotation.y = Math.sin(time * 0.4 + item.phase) * 0.08;
+    });
+
+    renderer.render(scene, camera);
+  }
+
+  animate();
+
+  // Responsive resize
+  window.addEventListener('resize', () => {
+    if (!container) return;
+    camera.aspect = container.clientWidth / container.clientHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(container.clientWidth, container.clientHeight);
+  });
+})();
+
+/**
+ * DigitalSnove — CTA Banner 3D Rotating Cyber Earth
+ * Pure 3D Canvas / Three.js Code Animation — Perfectly Centered (No Cuts)
+ */
+(function() {
+  const container = document.getElementById('cta-globe-canvas');
+  if (!container || typeof THREE === 'undefined') return;
+
+  const scene = new THREE.Scene();
+  // Camera centered at Y=0, Z=24 (no downward clipping)
+  const camera = new THREE.PerspectiveCamera(40, container.clientWidth / container.clientHeight, 0.1, 1000);
+  camera.position.set(0, 0, 24);
+
+  const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+  renderer.setSize(container.clientWidth, container.clientHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  container.appendChild(renderer.domElement);
+
+  const earthGroup = new THREE.Group();
+  earthGroup.position.set(0, 0, 0);
+  scene.add(earthGroup);
+
+  // 1. Digital Wireframe Sphere (comfortably fits container, zero bottom cut)
+  const sphereGeo = new THREE.SphereGeometry(6.5, 32, 32);
+  const sphereMat = new THREE.MeshBasicMaterial({
+    color: 0x00d2ff,
+    wireframe: true,
+    transparent: true,
+    opacity: 0.28
+  });
+  const sphereMesh = new THREE.Mesh(sphereGeo, sphereMat);
+  earthGroup.add(sphereMesh);
+
+  // 2. Inner Glow Mesh
+  const glowGeo = new THREE.SphereGeometry(6.3, 24, 24);
+  const glowMat = new THREE.MeshBasicMaterial({
+    color: 0x0b256d,
+    transparent: true,
+    opacity: 0.5
+  });
+  const glowMesh = new THREE.Mesh(glowGeo, glowMat);
+  earthGroup.add(glowMesh);
+
+  // 3. Network Connection Nodes & Vertices
+  const nodeCount = 550;
+  const nodeGeo = new THREE.BufferGeometry();
+  const nodePositions = new Float32Array(nodeCount * 3);
+  const nodeColors = new Float32Array(nodeCount * 3);
+
+  const cyan = new THREE.Color(0x00f2fe);
+  const electric = new THREE.Color(0x3b82f6);
+  const purple = new THREE.Color(0xa855f7);
+
+  for (let i = 0; i < nodeCount; i++) {
+    const phi = Math.acos(-1 + (2 * i) / nodeCount);
+    const theta = Math.sqrt(nodeCount * Math.PI) * phi;
+    const r = 6.6 + (Math.random() * 0.2);
+
+    nodePositions[i * 3] = r * Math.cos(theta) * Math.sin(phi);
+    nodePositions[i * 3 + 1] = r * Math.sin(theta) * Math.sin(phi);
+    nodePositions[i * 3 + 2] = r * Math.cos(phi);
+
+    const c = Math.random() < 0.7 ? cyan : (Math.random() < 0.9 ? electric : purple);
+    nodeColors[i * 3] = c.r;
+    nodeColors[i * 3 + 1] = c.g;
+    nodeColors[i * 3 + 2] = c.b;
+  }
+
+  nodeGeo.setAttribute('position', new THREE.BufferAttribute(nodePositions, 3));
+  nodeGeo.setAttribute('color', new THREE.BufferAttribute(nodeColors, 3));
+
+  const nodeMat = new THREE.PointsMaterial({
+    size: 0.22,
+    vertexColors: true,
+    transparent: true,
+    opacity: 0.9,
+    blending: THREE.AdditiveBlending
+  });
+
+  const nodePoints = new THREE.Points(nodeGeo, nodeMat);
+  earthGroup.add(nodePoints);
+
+  // 4. Connected Network Lines
+  const lineGeo = new THREE.BufferGeometry();
+  const lineCount = 110;
+  const linePositions = new Float32Array(lineCount * 6);
+
+  for (let i = 0; i < lineCount; i++) {
+    const idx1 = Math.floor(Math.random() * nodeCount);
+    const idx2 = Math.floor(Math.random() * nodeCount);
+
+    linePositions[i * 6] = nodePositions[idx1 * 3];
+    linePositions[i * 6 + 1] = nodePositions[idx1 * 3 + 1];
+    linePositions[i * 6 + 2] = nodePositions[idx1 * 3 + 2];
+
+    linePositions[i * 6 + 3] = nodePositions[idx2 * 3];
+    linePositions[i * 6 + 4] = nodePositions[idx2 * 3 + 1];
+    linePositions[i * 6 + 5] = nodePositions[idx2 * 3 + 2];
+  }
+
+  lineGeo.setAttribute('position', new THREE.BufferAttribute(linePositions, 3));
+  const lineMat = new THREE.LineBasicMaterial({
+    color: 0x00f2fe,
+    transparent: true,
+    opacity: 0.25,
+    blending: THREE.AdditiveBlending
+  });
+  const networkLines = new THREE.LineSegments(lineGeo, lineMat);
+  earthGroup.add(networkLines);
+
+  // Centered Mouse Parallax
+  let mouseX = 0;
+  let mouseY = 0;
+  window.addEventListener('mousemove', (e) => {
+    mouseX = (e.clientX / window.innerWidth) - 0.5;
+    mouseY = (e.clientY / window.innerHeight) - 0.5;
+  }, { passive: true });
+
+  // Animation Loop (Zero Y-offset tilt, perfectly centered)
+  function animate() {
+    requestAnimationFrame(animate);
+
+    earthGroup.rotation.y += 0.005;
+    sphereMesh.rotation.y += 0.003;
+    networkLines.rotation.y += 0.005;
+
+    earthGroup.rotation.x = mouseY * 0.12;
+    earthGroup.rotation.z = mouseX * 0.12;
+
+    renderer.render(scene, camera);
+  }
+  animate();
+
+  window.addEventListener('resize', () => {
+    if (!container) return;
+    camera.aspect = container.clientWidth / container.clientHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(container.clientWidth, container.clientHeight);
+  });
+})();
+
+/**
+ * Services Animated 6-Card Carousel & Filter Tabs
+ */
+(function() {
+  const track = document.getElementById('services-track');
+  const wrapper = document.getElementById('services-carousel');
+  const prevBtn = document.getElementById('services-prev');
+  const nextBtn = document.getElementById('services-next');
+  const dotsContainer = document.getElementById('services-dots');
+  const tabs = document.querySelectorAll('.services-nav-pill');
+  if (!track || !wrapper) return;
+
+  const originalCards = Array.from(track.children);
+  const totalCards = 6; // 6 services
+
+  // Clone first 3 cards to allow seamless infinite wrap on desktop (up to 3 per view)
+  originalCards.slice(0, 3).forEach((c) => {
+    const clone = c.cloneNode(true);
+    clone.setAttribute('data-clone', 'true');
+    track.appendChild(clone);
+  });
+
+  let currentSlide = 0;
+  let autoTimer = null;
+  let isTransitioning = false;
+
+  function getCardWidth() {
+    const first = track.children[0];
+    if (!first) return 0;
+    return first.offsetWidth + 20; // 20px gap
+  }
+
+  function updateActiveUI(serviceIndex) {
+    const norm = ((serviceIndex % totalCards) + totalCards) % totalCards;
+
+    // Update Dots
+    const dots = dotsContainer ? dotsContainer.querySelectorAll('.services-dot') : [];
+    dots.forEach((dot, idx) => {
+      dot.classList.toggle('active', idx === norm);
+    });
+
+    // Update Tabs
+    tabs.forEach((tab, idx) => {
+      if (idx === 0) {
+        tab.classList.toggle('active', norm === 0);
+      } else {
+        tab.classList.toggle('active', (idx - 1) === norm);
+      }
+    });
+  }
+
+  function goToSlide(index, animated = true) {
+    const cardWidth = getCardWidth();
+    if (animated) {
+      track.style.transition = 'transform 0.55s cubic-bezier(0.16, 1, 0.3, 1)';
+    } else {
+      track.style.transition = 'none';
+    }
+    track.style.transform = `translateX(-${index * cardWidth}px)`;
+    currentSlide = index;
+    updateActiveUI(index);
+  }
+
+  function nextSlide() {
+    if (isTransitioning) return;
+    isTransitioning = true;
+    currentSlide++;
+    goToSlide(currentSlide, true);
+
+    if (currentSlide >= totalCards) {
+      // Reached the cloned cards (slide 6), smoothly finish slide then silently jump to 0
+      setTimeout(() => {
+        track.style.transition = 'none';
+        currentSlide = 0;
+        const cardWidth = getCardWidth();
+        track.style.transform = 'translateX(0px)';
+        updateActiveUI(0);
+        void track.offsetWidth;
+        isTransitioning = false;
+      }, 560);
+    } else {
+      setTimeout(() => { isTransitioning = false; }, 560);
+    }
+  }
+
+  function prevSlide() {
+    if (isTransitioning) return;
+    isTransitioning = true;
+    if (currentSlide <= 0) {
+      track.style.transition = 'none';
+      const cardWidth = getCardWidth();
+      track.style.transform = `translateX(-${totalCards * cardWidth}px)`;
+      void track.offsetWidth;
+      currentSlide = totalCards - 1;
+      setTimeout(() => {
+        goToSlide(currentSlide, true);
+        setTimeout(() => { isTransitioning = false; }, 560);
+      }, 20);
+    } else {
+      currentSlide--;
+      goToSlide(currentSlide, true);
+      setTimeout(() => { isTransitioning = false; }, 560);
+    }
+  }
+
+  function startAutoPlay() {
+    stopAutoPlay();
+    autoTimer = setInterval(() => {
+      nextSlide();
+    }, 3500); // Continuous auto rotation every 3.5 seconds
+  }
+
+  function stopAutoPlay() {
+    if (autoTimer) {
+      clearInterval(autoTimer);
+      autoTimer = null;
+    }
+  }
+
+  // Button clicks
+  if (nextBtn) {
+    nextBtn.addEventListener('click', () => {
+      nextSlide();
+      startAutoPlay();
+    });
+  }
+  if (prevBtn) {
+    prevBtn.addEventListener('click', () => {
+      prevSlide();
+      startAutoPlay();
+    });
+  }
+
+  // Dots click
+  if (dotsContainer) {
+    dotsContainer.querySelectorAll('.services-dot').forEach((dot, idx) => {
+      dot.addEventListener('click', () => {
+        goToSlide(idx, true);
+        startAutoPlay();
+      });
+    });
+  }
+
+  // Tabs click (All 6 tabs: 01, 02, 03, 04, 05, 06 and All)
+  tabs.forEach((tab, idx) => {
+    tab.addEventListener('click', () => {
+      let targetIndex = 0;
+      if (idx === 0) {
+        targetIndex = 0; // "All Services"
+      } else {
+        targetIndex = idx - 1; // 0 for 01 Marketing, 1 for 02 Web, 2 for 03 Graphic, 3 for 04 AI, 4 for 05 Content, 5 for 06 E-Commerce
+      }
+      goToSlide(targetIndex, true);
+      startAutoPlay(); // Continues auto play after user click
+    });
+  });
+
+  window.addEventListener('resize', () => {
+    goToSlide(currentSlide % totalCards, false);
+  });
+
+  startAutoPlay();
+})();
+
+/**
+ * Hero 3D Devices Interactive Mouse Parallax Tilt
+ */
+(function() {
+  const stage = document.getElementById('hero-devices-stage');
+  const heroWrapper = document.querySelector('.hero-3d-wrapper');
+  if (!stage || !heroWrapper) return;
+
+  heroWrapper.addEventListener('mousemove', (e) => {
+    const rect = heroWrapper.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width - 0.5;
+    const y = (e.clientY - rect.top) / rect.height - 0.5;
+    stage.style.transform = `perspective(1200px) rotateY(${x * 14}deg) rotateX(${-y * 10}deg)`;
+  });
+
+  heroWrapper.addEventListener('mouseleave', () => {
+    stage.style.transform = 'perspective(1200px) rotateY(0deg) rotateX(0deg)';
+  });
+})();
+
+  </script>
