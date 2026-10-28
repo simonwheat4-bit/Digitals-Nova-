@@ -951,11 +951,16 @@
       </nav>
 
       <!-- Header Right Utilities & CTA -->
-      <div style="display: flex; align-items: center; gap: 14px;">
-        <button class="btn-saas-secondary" onclick="openDemoModal()" style="padding: 9px 18px; font-size: 13px;">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <button class="btn-saas-secondary" onclick="openDemoModal()" style="padding: 9px 16px; font-size: 13px;">
           <span>&#9654;</span> Live Demo
         </button>
-        <button class="btn-saas-primary" onclick="openTrialModal()" style="padding: 10px 22px; font-size: 13px;">
+        <!-- PERMANENT LOGIN BUTTON -->
+        <button class="btn-saas-login" onclick="openLoginModal()" style="padding: 9px 18px; font-size: 13px; background: rgba(0, 229, 255, 0.08); border: 1px solid rgba(0, 229, 255, 0.45); color: #00e5ff; border-radius: 9999px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all 0.25s ease;" onmouseover="this.style.background='rgba(0,229,255,0.18)'; this.style.borderColor='#00e5ff'; this.style.boxShadow='0 0 15px rgba(0,229,255,0.4)';" onmouseout="this.style.background='rgba(0,229,255,0.08)'; this.style.borderColor='rgba(0,229,255,0.45)'; this.style.boxShadow='none';">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+          Login
+        </button>
+        <button class="btn-saas-primary" onclick="openTrialModal()" style="padding: 10px 20px; font-size: 13px;">
           Start Free Trial &rarr;
         </button>
         <button class="mobile-toggle" aria-label="Toggle navigation menu">&#9776;</button>
@@ -985,8 +990,12 @@
         <a href="contact.html">Contact Us</a>
       </nav>
     </div>
-    <div style="padding: 20px 0;">
-      <button class="btn-saas-primary" onclick="openTrialModal()" style="width: 100%; justify-content: center;">
+    <div style="padding: 20px 0; display: flex; flex-direction: column; gap: 10px;">
+      <button class="btn-saas-login" onclick="openLoginModal(); document.querySelector('.mobile-overlay').classList.remove('open'); document.querySelector('.mobile-nav-drawer').classList.remove('open');" style="width: 100%; justify-content: center; padding: 12px; background: rgba(0, 229, 255, 0.1); border: 1px solid #00e5ff; color: #00e5ff; border-radius: 10px; font-weight: 700; display: flex; align-items: center; gap: 8px; font-size: 14px;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+        Login to My Portal
+      </button>
+      <button class="btn-saas-primary" onclick="openTrialModal(); document.querySelector('.mobile-overlay').classList.remove('open'); document.querySelector('.mobile-nav-drawer').classList.remove('open');" style="width: 100%; justify-content: center;">
         Start 3-Day Free Trial &rarr;
       </button>
     </div>
@@ -1028,17 +1037,17 @@
       </div>
 
       <!-- Right Interactive Terminal Mockup -->
-      <div class="pos-terminal-mockup">
+      <div class="pos-terminal-mockup" id="pos-terminal">
         <div class="terminal-topbar">
           <div class="terminal-dots">
             <span style="background: #ef4444;"></span>
             <span style="background: #eab308;"></span>
             <span style="background: #10b981;"></span>
           </div>
-          <div class="terminal-title">
+          <div class="terminal-title" id="terminalSubdomainTitle">
             <span>&#128187;</span> portal.digitalsnove.com/pos-terminal
           </div>
-          <span style="background: rgba(16, 185, 129, 0.2); color: #10b981; font-size: 10px; padding: 2px 8px; border-radius: 9999px; font-weight: 800;">
+          <span id="terminalStatusBadge" style="background: rgba(16, 185, 129, 0.2); color: #10b981; font-size: 10px; padding: 2px 8px; border-radius: 9999px; font-weight: 800;">
             ● CLOUD SYNCED (99.99% UPTIME)
           </span>
         </div>
@@ -1046,8 +1055,8 @@
         <div class="terminal-body">
           <div class="pos-counter-header">
             <div>
-              <strong style="color: #fff; font-size: 13px; display: block;">Apex Specialty Clinic &amp; Pharmacy POS</strong>
-              <small style="color: #64748b; font-size: 10px;">Cashier: Ahmad Raza &bull; Counter #01</small>
+              <strong style="color: #fff; font-size: 13px; display: block;" id="terminalFacilityName">Apex Specialty Clinic &amp; Pharmacy POS</strong>
+              <small style="color: #64748b; font-size: 10px;" id="terminalCashierName">Cashier: Ahmad Raza &bull; Counter #01</small>
             </div>
             <span class="tag-green">Z-Report Shift Active</span>
           </div>
@@ -1617,6 +1626,82 @@
     </div>
   </footer>
 
+  <!-- PERMANENT LOGIN MODAL -->
+  <div class="saas-modal-backdrop" id="loginModal">
+    <div class="saas-modal-window" style="max-width: 520px;">
+      <button class="modal-close-btn" onclick="closeLoginModal()">&times;</button>
+      
+      <div style="text-align: center; margin-bottom: 20px;">
+        <div style="width: 50px; height: 50px; border-radius: 14px; background: rgba(0,229,255,0.1); border: 1px solid rgba(0,229,255,0.3); color: #00e5ff; display: inline-flex; align-items: center; justify-content: center; font-size: 22px; margin-bottom: 12px;">
+          &#128274;
+        </div>
+        <h3 style="font-size: 22px; font-weight: 900; color: #ffffff; margin: 0 0 6px;">Sign In to DigitalsNova Portal</h3>
+        <p style="color: #94a3b8; font-size: 13px; margin: 0;">Access your dedicated cloud clinic, hospital, or pharmacy workspace.</p>
+      </div>
+
+      <!-- Quick Demo Account Switcher -->
+      <div style="background: rgba(15, 23, 42, 0.85); border: 1px solid #1a2c58; border-radius: 10px; padding: 12px; margin-bottom: 20px;">
+        <div style="font-size: 11px; font-weight: 700; color: #64748b; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; justify-content: space-between;">
+          <span>Demo Tenant Quick Select:</span>
+          <span style="color: #00e5ff; font-size: 10px;">1-Click Fill</span>
+        </div>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+          <button type="button" onclick="fillDemoLogin('alshifa', 'admin.alshifa', 'admin123')" style="background: #060b1e; border: 1px solid rgba(0,229,255,0.3); color: #00e5ff; font-size: 11px; padding: 5px 10px; border-radius: 6px; cursor: pointer; font-weight: 600;">
+            Al-Shifa Dental
+          </button>
+          <button type="button" onclick="fillDemoLogin('citymed', 'admin.citymed', 'admin123')" style="background: #060b1e; border: 1px solid rgba(59,130,246,0.3); color: #60a5fa; font-size: 11px; padding: 5px 10px; border-radius: 6px; cursor: pointer; font-weight: 600;">
+            CityMed Clinic
+          </button>
+          <button type="button" onclick="fillDemoLogin('lifecare', 'admin.lifecare', 'admin123')" style="background: #060b1e; border: 1px solid rgba(168,85,247,0.3); color: #c084fc; font-size: 11px; padding: 5px 10px; border-radius: 6px; cursor: pointer; font-weight: 600;">
+            LifeCare Hospital
+          </button>
+          <button type="button" onclick="fillDemoLogin('altahirclinics', 'superadmin', 'admin123')" style="background: #060b1e; border: 1px solid rgba(234,179,8,0.3); color: #facc15; font-size: 11px; padding: 5px 10px; border-radius: 6px; cursor: pointer; font-weight: 600;">
+            Super Admin
+          </button>
+        </div>
+      </div>
+
+      <form id="loginForm" onsubmit="handleLoginSubmit(event)">
+        <div class="saas-form-group">
+          <label>Business Subdomain / Organization Slug *</label>
+          <div style="position: relative;">
+            <input type="text" id="loginSubdomain" class="saas-input" placeholder="e.g. alshifa or kmrpharmacy" required style="padding-right: 140px;">
+            <span style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-size: 11px; color: #64748b; font-family: monospace; pointer-events: none;">.digitalsnova.com</span>
+          </div>
+        </div>
+
+        <div class="saas-form-group">
+          <label>Username / Staff ID *</label>
+          <input type="text" id="loginUsername" class="saas-input" placeholder="e.g. admin.alshifa or cashier1" required>
+        </div>
+
+        <div class="saas-form-group">
+          <label>Password *</label>
+          <input type="password" id="loginPassword" class="saas-input" placeholder="••••••••" required>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; font-size: 12px;">
+          <label style="display: flex; align-items: center; gap: 6px; color: #94a3b8; cursor: pointer;">
+            <input type="checkbox" id="loginRemember" checked style="accent-color: #00e5ff;">
+            Remember My Workspace
+          </label>
+          <a href="https://wa.me/923019643900?text=Hello%20DigitalsNova%20Support,%20I%20forgot%20my%20Cloud%20POS%20portal%20subdomain%20and%20password." target="_blank" style="color: #00e5ff; text-decoration: none;">Forgot Credentials?</a>
+        </div>
+
+        <button type="submit" class="btn-saas-primary" style="width: 100%; justify-content: center; font-size: 15px; padding: 13px;">
+          Sign In to Portal &rarr;
+        </button>
+      </form>
+
+      <div style="margin-top: 18px; text-align: center; border-top: 1px solid #1a2c58; padding-top: 14px; font-size: 12px; color: #94a3b8;">
+        Don't have an active facility account?
+        <button type="button" onclick="closeLoginModal(); openTrialModal();" style="background: none; border: none; color: #00e5ff; font-weight: 700; cursor: pointer; margin-left: 4px; text-decoration: underline;">
+          Start 3-Day Free Trial
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- AUTOMATED ONBOARDING & TRIAL SIGNUP MODAL -->
   <div class="saas-modal-backdrop" id="trialModal">
     <div class="saas-modal-window">
@@ -1709,16 +1794,23 @@
           <div class="license-key-badge" id="displayLicenseKey">DNP-8892-4410-9124</div>
           <div style="font-size: 12px; color: #cbd5e1; margin-top: 8px;">
             <strong>Tenant URL:</strong> <span style="color: #00e5ff;" id="displayTenantUrl">https://clinic.digitalsnove.com</span>
+            <span style="background: rgba(16,185,129,0.15); color: #10b981; font-size: 10px; padding: 2px 6px; border-radius: 4px; margin-left: 6px;">Cloud Allocated</span>
           </div>
           <div style="font-size: 11px; color: #10b981; margin-top: 6px; font-weight: 700;">
             ● Status: Active (3 Days Remaining &bull; Zero Card Required)
           </div>
+          <div style="font-size: 11px; color: #94a3b8; margin-top: 8px; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 8px;">
+            ℹ️ <em>Click below to launch your active cloud terminal session directly. (Live custom subdomains activate once Wildcard CNAME is mapped in cPanel).</em>
+          </div>
         </div>
 
         <div style="display: flex; gap: 10px; flex-direction: column;">
-          <a id="btnLaunchPortal" href="#" target="_blank" class="btn-saas-primary" style="justify-content: center; font-size: 15px;">
-            &#128187; Launch Cloud POS Portal &rarr;
+          <a id="btnLaunchWebApp" href="portal/index.html" class="btn-saas-primary" style="justify-content: center; font-size: 15px; padding: 13px;">
+            &#128640; Launch Cloud POS Portal Web App &rarr;
           </a>
+          <button id="btnLaunchPortal" type="button" class="btn-saas-secondary" style="justify-content: center; font-size: 14px; border-color: rgba(0, 229, 255, 0.4); color: #00e5ff;">
+            &#128187; Test In-Page Terminal Simulator Below &darr;
+          </button>
           <a id="btnWhatsAppSave" href="#" target="_blank" class="btn-saas-secondary" style="justify-content: center; border-color: rgba(37,211,102,0.4); color: #25d366;">
             <span>&#128172;</span> Save Credentials on WhatsApp
           </a>
@@ -1797,6 +1889,69 @@
       document.getElementById('trialModal').classList.remove('open');
     }
 
+    function openLoginModal() {
+      const modal = document.getElementById('loginModal');
+      if (modal) modal.classList.add('open');
+    }
+
+    function closeLoginModal() {
+      const modal = document.getElementById('loginModal');
+      if (modal) modal.classList.remove('open');
+    }
+
+    function fillDemoLogin(subdomain, username, password) {
+      const subInput = document.getElementById('loginSubdomain');
+      const userInput = document.getElementById('loginUsername');
+      const passInput = document.getElementById('loginPassword');
+      if (subInput) subInput.value = subdomain;
+      if (userInput) userInput.value = username;
+      if (passInput) passInput.value = password;
+    }
+
+    function handleLoginSubmit(e) {
+      e.preventDefault();
+      const subdomain = document.getElementById('loginSubdomain').value.trim().toLowerCase();
+      const username = document.getElementById('loginUsername').value.trim();
+      const password = document.getElementById('loginPassword').value;
+
+      if (!subdomain || !username) {
+        alert('Please fill in your Business Subdomain and Username.');
+        return;
+      }
+
+      // Persist auth user & subdomain in localStorage for DigitalsNova Portal
+      localStorage.setItem('digitalsnova_subdomain', subdomain);
+      localStorage.setItem('digitalsnova_auth_user', JSON.stringify({
+        username: username,
+        role: username.includes('superadmin') ? 'SUPER_ADMIN' : (username.includes('admin') ? 'CLINIC_ADMIN' : 'STAFF'),
+        tenantId: 'tenant_' + subdomain,
+        subdomain: subdomain
+      }));
+
+      closeLoginModal();
+
+      // Launch portal web app directly with subdomain parameter
+      const portalTarget = `portal/index.html?subdomain=${encodeURIComponent(subdomain)}`;
+      
+      // Also update in-page terminal simulator for instant reassurance
+      const facilityElem = document.getElementById('terminalFacilityName');
+      const cashierElem = document.getElementById('terminalCashierName');
+      const subTitleElem = document.getElementById('terminalSubdomainTitle');
+      const statusBadge = document.getElementById('terminalStatusBadge');
+
+      if (facilityElem) facilityElem.innerText = subdomain.toUpperCase() + ' — Live Workspace';
+      if (cashierElem) cashierElem.innerHTML = `Authenticated: ${username} &bull; Active Counter #01`;
+      if (subTitleElem) subTitleElem.innerHTML = `<span>💻</span> ${subdomain}.digitalsnova.com/pos`;
+      if (statusBadge) {
+        statusBadge.innerHTML = '● AUTHENTICATED ONLINE';
+        statusBadge.style.background = 'rgba(16, 185, 129, 0.25)';
+        statusBadge.style.color = '#10b981';
+      }
+
+      // Redirect user to the active portal web app
+      window.location.href = portalTarget;
+    }
+
     function openDemoModal() {
       document.getElementById('demoModal').classList.add('open');
     }
@@ -1842,14 +1997,55 @@
         document.getElementById('displayLicenseKey').innerText = licenseKey;
         document.getElementById('displayTenantUrl').innerText = tenantUrl;
 
-        // Wire up Launch Portal button
+        // Persist in localStorage so portal auto-recognizes new tenant
+        localStorage.setItem('digitalsnova_subdomain', slug);
+        localStorage.setItem('digitalsnova_auth_user', JSON.stringify({
+          username: 'admin.' + slug,
+          name: name,
+          role: 'CLINIC_ADMIN',
+          tenantId: 'tenant_' + slug,
+          licenseKey: licenseKey
+        }));
+
+        // Wire up Launch Web App button
+        const launchWebAppBtn = document.getElementById('btnLaunchWebApp');
+        if (launchWebAppBtn) {
+          launchWebAppBtn.href = `portal/index.html?subdomain=${encodeURIComponent(slug)}`;
+        }
+
+        // Wire up In-Page Simulator button
         const launchBtn = document.getElementById('btnLaunchPortal');
         if (launchBtn) {
-          launchBtn.href = tenantUrl;
           launchBtn.onclick = function(ev) {
             ev.preventDefault();
-            alert("🚀 [TENANT PORTAL LAUNCHED]\nRouting to isolated tenant environment: " + tenantUrl + "\n\nMaster License Key: " + licenseKey + "\nRole: Master Superadmin\nStatus: 3-Day Enterprise Trial Active");
-            window.open(tenantUrl, '_blank');
+            closeTrialModal();
+
+            // Personalize the in-page cloud POS terminal workspace
+            const facilityElem = document.getElementById('terminalFacilityName');
+            const cashierElem = document.getElementById('terminalCashierName');
+            const subTitleElem = document.getElementById('terminalSubdomainTitle');
+            const statusBadge = document.getElementById('terminalStatusBadge');
+
+            if (facilityElem) facilityElem.innerText = business + ' — Cloud POS Portal';
+            if (cashierElem) cashierElem.innerHTML = `Cashier: ${name} &bull; Master Superadmin &bull; Counter #01`;
+            if (subTitleElem) subTitleElem.innerHTML = `<span>💻</span> ${slug}.digitalsnove.com/pos`;
+            if (statusBadge) {
+              statusBadge.innerHTML = `● TRIAL ACTIVE (${licenseKey})`;
+              statusBadge.style.background = 'rgba(0, 229, 255, 0.25)';
+              statusBadge.style.color = '#00e5ff';
+            }
+
+            // Scroll to the active terminal
+            const target = document.getElementById('pos-terminal');
+            if (target) {
+              target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              target.style.boxShadow = '0 0 50px rgba(0, 229, 255, 0.7), 0 25px 60px rgba(0,0,0,0.95)';
+              setTimeout(() => {
+                target.style.boxShadow = '0 25px 60px rgba(0, 0, 0, 0.85), 0 0 40px rgba(0, 229, 255, 0.2)';
+              }, 3000);
+            }
+
+            alert(`🎉 [TENANT WORKSPACE ACTIVE]\n\nWelcome to your DigitalsNova Cloud Portal workspace for "${business}"!\n\n• Master License Key: ${licenseKey}\n• Assigned Subdomain: ${tenantUrl}\n• Status: 3-Day Enterprise Trial Activated\n\nYour active cloud POS counter session is now loaded and ready to test below! You can also click "Launch Cloud POS Portal Web App" at any time.`);
           };
         }
 
@@ -1901,6 +2097,26 @@
         overlay.classList.remove('open');
       });
     }
+
+    // Close modals on Escape key or clicking backdrop
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closeTrialModal();
+        closeLoginModal();
+        closeDemoModal();
+      }
+    });
+
+    ['trialModal', 'loginModal', 'demoModal'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.addEventListener('click', (e) => {
+          if (e.target === el) {
+            el.classList.remove('open');
+          }
+        });
+      }
+    });
   </script>
 </body>
 </html>
