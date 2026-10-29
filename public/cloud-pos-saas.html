@@ -1752,27 +1752,12 @@
         <p style="color: #94a3b8; font-size: 13px; margin: 0;">Access your dedicated cloud clinic, hospital, or pharmacy workspace.</p>
       </div>
 
-      <!-- Quick Demo Account Switcher -->
-      <div style="background: rgba(15, 23, 42, 0.85); border: 1px solid #1a2c58; border-radius: 10px; padding: 12px; margin-bottom: 20px;">
-        <div style="font-size: 11px; font-weight: 700; color: #64748b; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; justify-content: space-between;">
-          <span>Demo Tenant Quick Select:</span>
-          <span style="color: #00e5ff; font-size: 10px;">1-Click Fill</span>
-        </div>
-        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-          <button type="button" onclick="fillDemoLogin('alshifa', 'admin.alshifa', 'admin123')" style="background: #060b1e; border: 1px solid rgba(0,229,255,0.3); color: #00e5ff; font-size: 11px; padding: 5px 10px; border-radius: 6px; cursor: pointer; font-weight: 600;">
-            Al-Shifa Dental
-          </button>
-          <button type="button" onclick="fillDemoLogin('citymed', 'admin.citymed', 'admin123')" style="background: #060b1e; border: 1px solid rgba(59,130,246,0.3); color: #60a5fa; font-size: 11px; padding: 5px 10px; border-radius: 6px; cursor: pointer; font-weight: 600;">
-            CityMed Clinic
-          </button>
-          <button type="button" onclick="fillDemoLogin('lifecare', 'admin.lifecare', 'admin123')" style="background: #060b1e; border: 1px solid rgba(168,85,247,0.3); color: #c084fc; font-size: 11px; padding: 5px 10px; border-radius: 6px; cursor: pointer; font-weight: 600;">
-            LifeCare Hospital
-          </button>
-          <!-- Restricted to Platform Owner (Ubaid) ONLY - Hidden for regular tenants -->
-          <button type="button" id="ownerSuperAdminBtn" onclick="fillDemoLogin('altahirclinics', 'superadmin', 'admin123')" style="display: none; background: #130a2a; border: 1px solid #eab308; color: #facc15; font-size: 11px; padding: 5px 10px; border-radius: 6px; cursor: pointer; font-weight: 700;">
-            👑 Super Admin (Owner: Ubaid)
-          </button>
-        </div>
+      <!-- Restricted to Platform Owner (Ubaid) ONLY - Hidden for regular tenants -->
+      <div id="ownerNoticeBox" style="display: none; background: rgba(234, 179, 8, 0.1); border: 1px solid rgba(234, 179, 8, 0.4); border-radius: 10px; padding: 10px 14px; margin-bottom: 16px; font-size: 11px; color: #facc15; justify-content: space-between; align-items: center;">
+        <span>👑 <strong>Platform Owner Mode:</strong> Ubaid Ur Rehman</span>
+        <button type="button" id="ownerSuperAdminBtn" onclick="fillDemoLogin('hq', 'superadmin', '2200230')" style="background: #eab308; border: none; color: #04091a; font-size: 10px; font-weight: 800; padding: 4px 8px; border-radius: 6px; cursor: pointer;">
+          Fill Master Access
+        </button>
       </div>
 
       <form id="loginForm" onsubmit="handleLoginSubmit(event)">
@@ -2053,9 +2038,9 @@
                       urlParams.get('master') === '1' ||
                       localStorage.getItem('digitalsnova_owner_access') === 'ubaid';
 
-      const ownerBtn = document.getElementById('ownerSuperAdminBtn');
-      if (ownerBtn) {
-        ownerBtn.style.display = isOwner ? 'inline-block' : 'none';
+      const box = document.getElementById('ownerNoticeBox');
+      if (box) {
+        box.style.display = isOwner ? 'flex' : 'none';
       }
     }
 
@@ -2182,58 +2167,105 @@
       const username = document.getElementById('loginUsername').value.trim();
       const password = document.getElementById('loginPassword').value;
 
-      if (!username) {
-        alert('Please enter your Username or Staff ID.');
+      if (!username || !password) {
+        alert('Please enter both your Username and Password.');
         return;
       }
 
-      // Auto-detect slug if not filled
-      if (!subdomain) {
-        const cleanU = username.toLowerCase();
-        if (cleanU.includes('.')) {
-          subdomain = cleanU.split('.')[1];
-        } else {
-          let regTenants = [];
-          try {
-            regTenants = JSON.parse(localStorage.getItem('digitalsnova_registered_tenants') || '[]');
-          } catch { regTenants = []; }
-          const match = regTenants.find(t => 
-            (t.adminUser && t.adminUser.username.toLowerCase() === cleanU) ||
-            (t.subdomain && t.subdomain.toLowerCase() === cleanU) ||
-            (t.phone && t.phone.replace(/[^0-9]/g, '') === cleanU.replace(/[^0-9]/g, ''))
-          );
-          if (match) {
-            subdomain = match.subdomain;
-          } else {
-            subdomain = localStorage.getItem('digitalsnova_subdomain') || 'alshifa';
+      const cleanU = username.toLowerCase().trim();
+      const cleanP = password.trim();
+
+      let authenticatedUser = null;
+      let targetSubdomain = subdomain;
+
+      // 1. Super Admin authentication (Owner: Ubaid)
+      if (cleanU === 'superadmin' || cleanU === 'ubaid') {
+        if (cleanP !== '2200230' && cleanP !== '123' && cleanP !== 'admin123') {
+          alert('Invalid password for Super Admin.');
+          return;
+        }
+        authenticatedUser = {
+          username: 'superadmin',
+          name: 'Ubaid Ur Rehman (Platform Owner)',
+          role: 'SUPER_ADMIN',
+          tenantId: 'GLOBAL',
+          tenantName: 'Digital Snove SaaS Headquarters',
+          clinicName: 'Digital Snove SaaS Headquarters',
+          subdomain: 'hq'
+        };
+        targetSubdomain = 'hq';
+      }
+
+      // 2. Custom staff authentication
+      if (!authenticatedUser) {
+        let staffList = [];
+        try { staffList = JSON.parse(localStorage.getItem('digitalsnova_custom_staff') || '[]'); } catch {}
+        const matchedStaff = staffList.find(s => s.username.toLowerCase() === cleanU);
+        if (matchedStaff) {
+          if ((matchedStaff.password || '123') !== cleanP) {
+            alert('Invalid username or password.');
+            return;
           }
+          if (matchedStaff.active === false) {
+            alert('This staff account is deactivated. Contact your Clinic Admin.');
+            return;
+          }
+          authenticatedUser = {
+            id: matchedStaff.id,
+            username: matchedStaff.username,
+            name: matchedStaff.name,
+            role: 'STAFF',
+            tenantId: matchedStaff.tenantId,
+            subdomain: matchedStaff.subdomain
+          };
+          targetSubdomain = matchedStaff.subdomain;
         }
       }
 
-      // Persist auth user & subdomain in localStorage for DigitalsNova Portal
-      const demoNames = {
-        'alshifa': 'Al-Shifa Dental & Aesthetic Clinic',
-        'citymed': 'CityMed Specialist Polyclinic',
-        'lifecare': 'LifeCare Hospital & Pharmacy',
-        'altahirclinics': 'Al-Tahir Clinics (HQ)'
-      };
-      const resolvedTenantName = demoNames[subdomain] || (subdomain.charAt(0).toUpperCase() + subdomain.slice(1) + ' Healthcare Center');
+      // 3. Registered Tenant authentication
+      if (!authenticatedUser) {
+        let regTenants = [];
+        try { regTenants = JSON.parse(localStorage.getItem('digitalsnova_registered_tenants') || '[]'); } catch {}
+        const matchedTenant = regTenants.find(t => 
+          (t.adminUser && t.adminUser.username && t.adminUser.username.toLowerCase() === cleanU) ||
+          (t.subdomain && t.subdomain.toLowerCase() === cleanU) ||
+          (t.phone && t.phone.replace(/[^0-9]/g, '') === cleanU.replace(/[^0-9]/g, '')) ||
+          (t.email && t.email.toLowerCase() === cleanU)
+        );
+        if (matchedTenant) {
+          const expectedPass = matchedTenant.adminUser?.password || matchedTenant.adminPassword || '123';
+          if (expectedPass !== cleanP) {
+            alert('Invalid username or password.');
+            return;
+          }
+          authenticatedUser = {
+            id: 'u_' + matchedTenant.subdomain,
+            username: matchedTenant.adminUser?.username || `admin.${matchedTenant.subdomain}`,
+            name: matchedTenant.adminUser?.name || matchedTenant.name + ' Admin',
+            role: 'CLINIC_ADMIN',
+            tenantId: matchedTenant.id,
+            tenantName: matchedTenant.name,
+            clinicName: matchedTenant.name,
+            subdomain: matchedTenant.subdomain
+          };
+          targetSubdomain = matchedTenant.subdomain;
+        }
+      }
 
-      localStorage.setItem('digitalsnova_subdomain', subdomain);
-      localStorage.setItem('digitalsnova_auth_user', JSON.stringify({
-        username: username,
-        role: username.includes('superadmin') ? 'SUPER_ADMIN' : (username.includes('admin') ? 'CLINIC_ADMIN' : 'STAFF'),
-        tenantId: 'tenant_' + subdomain,
-        tenantName: resolvedTenantName,
-        clinicName: resolvedTenantName,
-        subdomain: subdomain
-      }));
+      if (!authenticatedUser) {
+        alert('Invalid username or password. Please verify your credentials or register your clinic.');
+        return;
+      }
+
+      // Persist auth user & subdomain in localStorage for DigitalsNova Portal
+      localStorage.setItem('digitalsnova_subdomain', targetSubdomain);
+      localStorage.setItem('digitalsnova_auth_user', JSON.stringify(authenticatedUser));
 
       // Trigger first login real-time notification
       try {
         let loggedTenants = JSON.parse(localStorage.getItem('digitalsnova_logged_in_tenants') || '[]');
-        if (!username.includes('superadmin') && !loggedTenants.includes(subdomain)) {
-          loggedTenants.push(subdomain);
+        if (authenticatedUser.role !== 'SUPER_ADMIN' && !loggedTenants.includes(targetSubdomain)) {
+          loggedTenants.push(targetSubdomain);
           localStorage.setItem('digitalsnova_logged_in_tenants', JSON.stringify(loggedTenants));
 
           let notifs = JSON.parse(localStorage.getItem('digitalsnova_superadmin_notifications') || '[]');
@@ -2242,9 +2274,9 @@
             timestamp: new Date().toISOString(),
             type: 'FIRST_LOGIN',
             title: '🚀 Tenant First Live Login',
-            message: `Tenant "${resolvedTenantName}" (@${username}) completed first login to active workspace.`,
-            tenantName: resolvedTenantName,
-            subdomain: subdomain,
+            message: `Tenant "${authenticatedUser.tenantName || targetSubdomain}" (@${username}) completed first login to active workspace.`,
+            tenantName: authenticatedUser.tenantName || targetSubdomain,
+            subdomain: targetSubdomain,
             unread: true
           });
           localStorage.setItem('digitalsnova_superadmin_notifications', JSON.stringify(notifs.slice(0, 50)));
@@ -2254,24 +2286,7 @@
       closeLoginModal();
 
       // Launch portal web app directly with subdomain parameter
-      const portalTarget = `portal/index.html?subdomain=${encodeURIComponent(subdomain)}`;
-      
-      // Also update in-page terminal simulator for instant reassurance
-      const facilityElem = document.getElementById('terminalFacilityName');
-      const cashierElem = document.getElementById('terminalCashierName');
-      const subTitleElem = document.getElementById('terminalSubdomainTitle');
-      const statusBadge = document.getElementById('terminalStatusBadge');
-
-      if (facilityElem) facilityElem.innerText = subdomain.toUpperCase() + ' — Live Workspace';
-      if (cashierElem) cashierElem.innerHTML = `Authenticated: ${username} &bull; Active Counter #01`;
-      if (subTitleElem) subTitleElem.innerHTML = `<span>💻</span> ${subdomain}.digitalsnova.com/pos`;
-      if (statusBadge) {
-        statusBadge.innerHTML = '● AUTHENTICATED ONLINE';
-        statusBadge.style.background = 'rgba(16, 185, 129, 0.25)';
-        statusBadge.style.color = '#10b981';
-      }
-
-      // Redirect user to the active portal web app
+      const portalTarget = `portal/index.html?subdomain=${encodeURIComponent(targetSubdomain)}`;
       window.location.href = portalTarget;
     }
 
@@ -2303,14 +2318,7 @@
         regTenants = JSON.parse(localStorage.getItem('digitalsnova_registered_tenants') || '[]');
       } catch { regTenants = []; }
 
-      const demoTenants = [
-        { phone: '03000000000', email: 'alshifa@digitalsnova.com', subdomain: 'alshifa' },
-        { phone: '03000000001', email: 'citymed@digitalsnova.com', subdomain: 'citymed' },
-        { phone: '03000000002', email: 'lifecare@digitalsnova.com', subdomain: 'lifecare' }
-      ];
-
-      const allExisting = [...demoTenants, ...regTenants];
-      const isDuplicate = allExisting.some(t => {
+      const isDuplicate = regTenants.some(t => {
         const tP = (t.phone || '').replace(/[^0-9]/g, '');
         const tE = (t.email || t.adminUser?.email || '').trim().toLowerCase();
         const tS = (t.subdomain || '').toLowerCase();
