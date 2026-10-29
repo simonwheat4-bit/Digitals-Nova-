@@ -35,6 +35,6 @@ jobs:
             --exclude-glob src/ \
             --exclude-glob *.zip \
             --exclude-glob .env \
-            ./ public_html;
+            ./ /public_html;
           quit;
           "
