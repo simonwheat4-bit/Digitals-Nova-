@@ -19,10 +19,13 @@ jobs:
           port: 21
           server-dir: public_html/
           dangerous-clean-slate: false
-          timeout: 10000
+          local-dir: ./
           exclude: |
             **/.git*
             **/.git*/**
             **/.github/**
             node_modules/**
+            src/**
             *.zip
+            .env
+            package-lock.json
