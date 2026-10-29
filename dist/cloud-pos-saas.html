@@ -847,12 +847,12 @@
       background: #08122c;
       border: 1px solid rgba(0, 229, 255, 0.4);
       border-radius: 22px;
-      max-width: 490px;
+      max-width: 470px;
       width: 100%;
-      max-height: calc(100vh - 40px);
+      max-height: min(92vh, 670px);
       overflow-y: auto;
       margin: auto;
-      padding: 28px 24px;
+      padding: 24px 22px;
       box-shadow: 0 25px 60px rgba(0, 0, 0, 0.95), 0 0 40px rgba(0, 229, 255, 0.25);
       position: relative;
       animation: modalPop 0.3s cubic-bezier(0.16, 1, 0.3, 1);
@@ -1776,17 +1776,16 @@
       </div>
 
       <form id="loginForm" onsubmit="handleLoginSubmit(event)">
-        <div class="saas-form-group">
-          <label>Business Subdomain / Organization Slug *</label>
-          <div style="position: relative;">
-            <input type="text" id="loginSubdomain" class="saas-input" placeholder="e.g. alshifa or kmrpharmacy" required style="padding-right: 140px;">
-            <span style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-size: 11px; color: #64748b; font-family: monospace; pointer-events: none;">.digitalsnova.com</span>
-          </div>
+        <!-- Smart Auto-Detected Store Indicator (Replaces manual subdomain requirement) -->
+        <div id="smartSlugBadge" style="display: none; background: rgba(0,229,255,0.08); border: 1px solid rgba(0,229,255,0.3); border-radius: 8px; padding: 8px 12px; font-size: 11px; margin-bottom: 12px; color: #00e5ff; align-items: center; justify-content: space-between;">
+          <span id="detectedStoreTitle">✨ Auto-Mapped Store: <strong>Al-Shifa Dental</strong></span>
+          <span style="font-family: monospace; color: #94a3b8;" id="detectedStoreSlug">alshifa.digitalsnova.com</span>
         </div>
+        <input type="hidden" id="loginSubdomain" value="">
 
         <div class="saas-form-group">
           <label>Username / Staff ID *</label>
-          <input type="text" id="loginUsername" class="saas-input" placeholder="e.g. admin.alshifa or cashier1" required>
+          <input type="text" id="loginUsername" class="saas-input" placeholder="e.g. admin.alshifa, cashier1, or phone" required oninput="autoDetectSlugFromUsername(this.value)">
         </div>
 
         <div class="saas-form-group">
@@ -2108,6 +2107,65 @@
       if (modal) modal.classList.remove('open');
     }
 
+    function autoDetectSlugFromUsername(val) {
+      const badge = document.getElementById('smartSlugBadge');
+      const titleElem = document.getElementById('detectedStoreTitle');
+      const slugElem = document.getElementById('detectedStoreSlug');
+      const subInput = document.getElementById('loginSubdomain');
+
+      if (!val) {
+        if (badge) badge.style.display = 'none';
+        return;
+      }
+      const cleanVal = val.toLowerCase().trim();
+      let detectedSubdomain = '';
+      let detectedName = '';
+
+      // Check dot notation (e.g. admin.alshifa, doctor.citymed, staff.kmr)
+      if (cleanVal.includes('.')) {
+        detectedSubdomain = cleanVal.split('.')[1];
+      }
+
+      // Check registered tenants in localStorage
+      let regTenants = [];
+      try {
+        regTenants = JSON.parse(localStorage.getItem('digitalsnova_registered_tenants') || '[]');
+      } catch { regTenants = []; }
+
+      const matchedTenant = regTenants.find(t => 
+        (t.subdomain && t.subdomain.toLowerCase() === cleanVal) ||
+        (t.adminUser && t.adminUser.username.toLowerCase() === cleanVal) ||
+        (t.phone && t.phone.replace(/[^0-9]/g, '') === cleanVal.replace(/[^0-9]/g, '')) ||
+        (t.name && t.name.toLowerCase().includes(cleanVal))
+      );
+
+      if (matchedTenant) {
+        detectedSubdomain = matchedTenant.subdomain;
+        detectedName = matchedTenant.name;
+      } else {
+        const demoMap = {
+          'alshifa': 'Al-Shifa Dental & Aesthetic Clinic',
+          'citymed': 'CityMed Specialist Polyclinic',
+          'lifecare': 'LifeCare Hospital & Pharmacy',
+          'altahirclinics': 'Al-Tahir Clinics (HQ)'
+        };
+        for (const [sub, name] of Object.entries(demoMap)) {
+          if (cleanVal.includes(sub)) {
+            detectedSubdomain = sub;
+            detectedName = name;
+            break;
+          }
+        }
+      }
+
+      if (detectedSubdomain) {
+        if (subInput) subInput.value = detectedSubdomain;
+        if (badge) badge.style.display = 'flex';
+        if (titleElem) titleElem.innerHTML = `✨ Auto-Mapped Store: <strong>${detectedName || detectedSubdomain}</strong>`;
+        if (slugElem) slugElem.innerText = `${detectedSubdomain}.digitalsnova.com`;
+      }
+    }
+
     function fillDemoLogin(subdomain, username, password) {
       const subInput = document.getElementById('loginSubdomain');
       const userInput = document.getElementById('loginUsername');
@@ -2115,24 +2173,49 @@
       if (subInput) subInput.value = subdomain;
       if (userInput) userInput.value = username;
       if (passInput) passInput.value = password;
+      autoDetectSlugFromUsername(username);
     }
 
     function handleLoginSubmit(e) {
       e.preventDefault();
-      const subdomain = document.getElementById('loginSubdomain').value.trim().toLowerCase();
+      let subdomain = document.getElementById('loginSubdomain').value.trim().toLowerCase();
       const username = document.getElementById('loginUsername').value.trim();
       const password = document.getElementById('loginPassword').value;
 
-      if (!subdomain || !username) {
-        alert('Please fill in your Business Subdomain and Username.');
+      if (!username) {
+        alert('Please enter your Username or Staff ID.');
         return;
+      }
+
+      // Auto-detect slug if not filled
+      if (!subdomain) {
+        const cleanU = username.toLowerCase();
+        if (cleanU.includes('.')) {
+          subdomain = cleanU.split('.')[1];
+        } else {
+          let regTenants = [];
+          try {
+            regTenants = JSON.parse(localStorage.getItem('digitalsnova_registered_tenants') || '[]');
+          } catch { regTenants = []; }
+          const match = regTenants.find(t => 
+            (t.adminUser && t.adminUser.username.toLowerCase() === cleanU) ||
+            (t.subdomain && t.subdomain.toLowerCase() === cleanU) ||
+            (t.phone && t.phone.replace(/[^0-9]/g, '') === cleanU.replace(/[^0-9]/g, ''))
+          );
+          if (match) {
+            subdomain = match.subdomain;
+          } else {
+            subdomain = localStorage.getItem('digitalsnova_subdomain') || 'alshifa';
+          }
+        }
       }
 
       // Persist auth user & subdomain in localStorage for DigitalsNova Portal
       const demoNames = {
         'alshifa': 'Al-Shifa Dental & Aesthetic Clinic',
         'citymed': 'CityMed Specialist Polyclinic',
-        'lifecare': 'LifeCare Hospital & Pharmacy'
+        'lifecare': 'LifeCare Hospital & Pharmacy',
+        'altahirclinics': 'Al-Tahir Clinics (HQ)'
       };
       const resolvedTenantName = demoNames[subdomain] || (subdomain.charAt(0).toUpperCase() + subdomain.slice(1) + ' Healthcare Center');
 
@@ -2145,6 +2228,28 @@
         clinicName: resolvedTenantName,
         subdomain: subdomain
       }));
+
+      // Trigger first login real-time notification
+      try {
+        let loggedTenants = JSON.parse(localStorage.getItem('digitalsnova_logged_in_tenants') || '[]');
+        if (!username.includes('superadmin') && !loggedTenants.includes(subdomain)) {
+          loggedTenants.push(subdomain);
+          localStorage.setItem('digitalsnova_logged_in_tenants', JSON.stringify(loggedTenants));
+
+          let notifs = JSON.parse(localStorage.getItem('digitalsnova_superadmin_notifications') || '[]');
+          notifs.unshift({
+            id: 'notif_login_' + Date.now(),
+            timestamp: new Date().toISOString(),
+            type: 'FIRST_LOGIN',
+            title: '🚀 Tenant First Live Login',
+            message: `Tenant "${resolvedTenantName}" (@${username}) completed first login to active workspace.`,
+            tenantName: resolvedTenantName,
+            subdomain: subdomain,
+            unread: true
+          });
+          localStorage.setItem('digitalsnova_superadmin_notifications', JSON.stringify(notifs.slice(0, 50)));
+        }
+      } catch (err) {}
 
       closeLoginModal();
 
@@ -2185,6 +2290,48 @@
       const business = document.getElementById('obBusiness').value.trim();
       const phone = document.getElementById('obPhone').value.trim();
       const bType = document.getElementById('obType').value;
+      const emailElem = document.getElementById('obEmail');
+      const email = emailElem ? emailElem.value.trim() : '';
+
+      // Strict Duplicate Registration Security Check
+      const cleanPhone = phone.replace(/[^0-9]/g, '');
+      const cleanEmail = email.toLowerCase().trim();
+      const cleanSlug = business.toLowerCase().replace(/[^a-z0-9]/g, '') || 'clinic';
+
+      let regTenants = [];
+      try {
+        regTenants = JSON.parse(localStorage.getItem('digitalsnova_registered_tenants') || '[]');
+      } catch { regTenants = []; }
+
+      const demoTenants = [
+        { phone: '03000000000', email: 'alshifa@digitalsnova.com', subdomain: 'alshifa' },
+        { phone: '03000000001', email: 'citymed@digitalsnova.com', subdomain: 'citymed' },
+        { phone: '03000000002', email: 'lifecare@digitalsnova.com', subdomain: 'lifecare' }
+      ];
+
+      const allExisting = [...demoTenants, ...regTenants];
+      const isDuplicate = allExisting.some(t => {
+        const tP = (t.phone || '').replace(/[^0-9]/g, '');
+        const tE = (t.email || t.adminUser?.email || '').trim().toLowerCase();
+        const tS = (t.subdomain || '').toLowerCase();
+        return (cleanPhone && tP && cleanPhone === tP) ||
+               (cleanEmail && tE && cleanEmail === tE) ||
+               (cleanSlug && tS && cleanSlug === tS);
+      });
+
+      if (isDuplicate) {
+        let errBox = document.getElementById('obErrorMsg');
+        if (!errBox) {
+          errBox = document.createElement('div');
+          errBox.id = 'obErrorMsg';
+          errBox.style.cssText = 'background: rgba(239,68,68,0.15); border: 1px solid #ef4444; color: #fca5a5; font-size: 12px; font-weight: 700; padding: 10px 14px; border-radius: 8px; margin-bottom: 14px; text-align: center; animation: modalPop 0.25s ease;';
+          const form = document.getElementById('onboardingForm');
+          form.insertBefore(errBox, form.firstChild);
+        }
+        errBox.style.display = 'block';
+        errBox.innerText = 'An account with this email/phone already exists.';
+        return;
+      }
 
       document.getElementById('modalFormView').style.display = 'none';
       document.getElementById('modalLoadingView').style.display = 'block';
@@ -2273,6 +2420,24 @@
           regTenants = regTenants.filter(t => t.id !== newTenantRecord.id && t.subdomain !== slug);
           regTenants.push(newTenantRecord);
           localStorage.setItem('digitalsnova_registered_tenants', JSON.stringify(regTenants));
+
+          // Real-Time Super Admin Notification
+          let notifs = JSON.parse(localStorage.getItem('digitalsnova_superadmin_notifications') || '[]');
+          notifs.unshift({
+            id: 'notif_web_' + Date.now(),
+            timestamp: new Date().toISOString(),
+            type: 'NEW_REGISTRATION',
+            title: '🎉 New Store Registered (Website)',
+            message: `Store/Clinic "${business}" (${slug}.digitalsnova.com) registered! Owner: ${name} • Phone: ${phone} • Email: ${email}`,
+            tenantName: business,
+            subdomain: slug,
+            phone: phone,
+            email: email,
+            plan: isYearly ? 'YEARLY' : 'TRIAL_3_DAYS',
+            adminUser: 'admin.' + slug,
+            unread: true
+          });
+          localStorage.setItem('digitalsnova_superadmin_notifications', JSON.stringify(notifs.slice(0, 50)));
         } catch(e) {
           console.warn('Error saving registered tenant to localStorage:', e);
         }
