@@ -29,12 +29,12 @@ jobs:
           set net:max-retries 3;
           open -u $FTP_USERNAME,$FTP_PASSWORD $FTP_SERVER;
           mirror --reverse --delete --verbose \
-            --exclude .git/ \
-            --exclude .github/ \
-            --exclude node_modules/ \
-            --exclude src/ \
-            --exclude *.zip \
-            --exclude .env \
+            --exclude-glob .git/ \
+            --exclude-glob .github/ \
+            --exclude-glob node_modules/ \
+            --exclude-glob src/ \
+            --exclude-glob *.zip \
+            --exclude-glob .env \
             ./ public_html/;
           quit;
           "
