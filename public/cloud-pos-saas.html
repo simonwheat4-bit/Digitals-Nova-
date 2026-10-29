@@ -1763,14 +1763,14 @@
       <form id="loginForm" onsubmit="handleLoginSubmit(event)">
         <!-- Smart Auto-Detected Store Indicator (Replaces manual subdomain requirement) -->
         <div id="smartSlugBadge" style="display: none; background: rgba(0,229,255,0.08); border: 1px solid rgba(0,229,255,0.3); border-radius: 8px; padding: 8px 12px; font-size: 11px; margin-bottom: 12px; color: #00e5ff; align-items: center; justify-content: space-between;">
-          <span id="detectedStoreTitle">✨ Auto-Mapped Store: <strong>Al-Shifa Dental</strong></span>
-          <span style="font-family: monospace; color: #94a3b8;" id="detectedStoreSlug">alshifa.digitalsnova.com</span>
+          <span id="detectedStoreTitle">✨ Auto-Mapped Store: <strong>Store Name</strong></span>
+          <span style="font-family: monospace; color: #94a3b8;" id="detectedStoreSlug">store.digitalsnova.com</span>
         </div>
         <input type="hidden" id="loginSubdomain" value="">
 
         <div class="saas-form-group">
           <label>Username / Staff ID *</label>
-          <input type="text" id="loginUsername" class="saas-input" placeholder="e.g. admin.alshifa, cashier1, or phone" required oninput="autoDetectSlugFromUsername(this.value)">
+          <input type="text" id="loginUsername" class="saas-input" placeholder="e.g. admin.yourstore, cashier1, or phone" required oninput="autoDetectSlugFromUsername(this.value)">
         </div>
 
         <div class="saas-form-group">
@@ -2127,20 +2127,6 @@
       if (matchedTenant) {
         detectedSubdomain = matchedTenant.subdomain;
         detectedName = matchedTenant.name;
-      } else {
-        const demoMap = {
-          'alshifa': 'Al-Shifa Dental & Aesthetic Clinic',
-          'citymed': 'CityMed Specialist Polyclinic',
-          'lifecare': 'LifeCare Hospital & Pharmacy',
-          'altahirclinics': 'Al-Tahir Clinics (HQ)'
-        };
-        for (const [sub, name] of Object.entries(demoMap)) {
-          if (cleanVal.includes(sub)) {
-            detectedSubdomain = sub;
-            detectedName = name;
-            break;
-          }
-        }
       }
 
       if (detectedSubdomain) {
@@ -2560,6 +2546,26 @@
         });
       }
     });
+
+    // Automatic cleanup of legacy dummy stores
+    (function purgeLegacyDummies() {
+      try {
+        const dummySubs = ['alshifa', 'citymed', 'lifecare', 'altahirclinics'];
+        const savedSub = localStorage.getItem('digitalsnova_subdomain');
+        if (savedSub && dummySubs.includes(savedSub.toLowerCase())) {
+          localStorage.removeItem('digitalsnova_subdomain');
+        }
+        const regStr = localStorage.getItem('digitalsnova_registered_tenants');
+        if (regStr) {
+          const list = JSON.parse(regStr);
+          const filtered = list.filter(t => !dummySubs.includes((t.subdomain || '').toLowerCase()));
+          if (filtered.length !== list.length) {
+            localStorage.setItem('digitalsnova_registered_tenants', JSON.stringify(filtered));
+          }
+        }
+        dummySubs.forEach(s => localStorage.removeItem('digitalsnova_cache_' + s));
+      } catch (err) {}
+    })();
   </script>
 </body>
 </html>
