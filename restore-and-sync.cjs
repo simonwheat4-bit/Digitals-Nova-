@@ -1,6 +1,5 @@
 const fs = require('fs');
 const path = require('path');
-const { execSync } = require('child_process');
 
 function copyFolderRecursiveSync(source, target) {
   if (!fs.existsSync(target)) {
@@ -21,25 +20,15 @@ function copyFolderRecursiveSync(source, target) {
   }
 }
 
-console.log('--- 1. Preparing SaaS Landing Page as Root index.html ---');
-const saasLandingPath = path.resolve('cloud-pos-saas.html');
-if (!fs.existsSync(saasLandingPath)) {
-  console.error('ERROR: cloud-pos-saas.html not found!');
-  process.exit(1);
+console.log('--- 1. Setting Authentic Agency Homepage as Root index.html ---');
+// If netlify-live.html exists, that is the exact 100% authentic working live page from Netlify
+if (fs.existsSync('netlify-live.html')) {
+  fs.copyFileSync('netlify-live.html', 'index.html');
+  console.log('✓ Restored root index.html directly from netlify-live.html');
+} else if (fs.existsSync('agency-home.html')) {
+  fs.copyFileSync('agency-home.html', 'index.html');
+  console.log('✓ Restored root index.html from agency-home.html');
 }
-
-// Backup old agency index.html if not backed up
-if (fs.existsSync('index.html') && !fs.existsSync('agency-home.html')) {
-  const currentIdx = fs.readFileSync('index.html', 'utf8');
-  if (currentIdx.includes('Think Digital. Go Global.') && !currentIdx.includes('Enterprise Cloud POS')) {
-    fs.copyFileSync('index.html', 'agency-home.html');
-    console.log('Backed up old agency index to agency-home.html');
-  }
-}
-
-// Set root index.html to the complete SaaS landing page
-fs.copyFileSync(saasLandingPath, 'index.html');
-console.log('✓ Successfully set index.html to Cloud POS SaaS Landing Page');
 
 console.log('--- 2. Synchronizing to digitalsnove-hostinger-cpanel, public, and dist ---');
 const targetDirectories = ['digitalsnove-hostinger-cpanel', 'public', 'dist'];
@@ -50,14 +39,26 @@ targetDirectories.forEach(destDir => {
   }
 
   // Copy root HTML files
-  fs.copyFileSync(saasLandingPath, path.join(destDir, 'index.html'));
-  fs.copyFileSync(saasLandingPath, path.join(destDir, 'cloud-pos-saas.html'));
+  if (fs.existsSync('index.html')) {
+    fs.copyFileSync('index.html', path.join(destDir, 'index.html'));
+  }
+  if (fs.existsSync('cloud-pos-saas.html')) {
+    fs.copyFileSync('cloud-pos-saas.html', path.join(destDir, 'cloud-pos-saas.html'));
+  }
   if (fs.existsSync('agency-home.html')) {
     fs.copyFileSync('agency-home.html', path.join(destDir, 'agency-home.html'));
   }
   if (fs.existsSync('style.css')) {
     fs.copyFileSync('style.css', path.join(destDir, 'style.css'));
   }
+
+  // Copy all other subpage HTML files
+  const rootFiles = fs.readdirSync('.');
+  rootFiles.forEach(file => {
+    if (file.endsWith('.html') && file !== 'index.html' && file !== 'netlify-live.html') {
+      fs.copyFileSync(file, path.join(destDir, file));
+    }
+  });
 
   // Copy folders: css, js, assets, portal
   ['css', 'js', 'assets', 'portal'].forEach(folder => {
@@ -92,10 +93,12 @@ const redirectRules = `/admin              /portal/index.html?view=super-admin 2
 fs.writeFileSync('_redirects', redirectRules, 'utf8');
 fs.writeFileSync('public/_redirects', redirectRules, 'utf8');
 fs.writeFileSync('dist/_redirects', redirectRules, 'utf8');
-console.log('✓ Wrote _redirects to root, public/, and dist/');
+fs.writeFileSync('digitalsnove-hostinger-cpanel/_redirects', redirectRules, 'utf8');
+console.log('✓ Wrote _redirects to root, public/, dist/, and cPanel');
 
 const tomlContent = `[build]
-  publish = "."
+  publish = "dist"
+  command = "npm run build"
 
 [[redirects]]
   from = "/admin"
