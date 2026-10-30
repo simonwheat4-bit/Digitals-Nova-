@@ -1,2 +1,8 @@
-/cloud-pos-saas    /cloud-pos-saas.html    200
-/portal/*          /portal/index.html      200
+/admin              /portal/index.html?view=super-admin 200
+/admin/*            /portal/index.html?view=super-admin 200
+/super-admin        /portal/index.html?view=super-admin 200
+/super-admin/*      /portal/index.html?view=super-admin 200
+/portal/super-admin /portal/index.html?view=super-admin 200
+/portal/admin       /portal/index.html?view=super-admin 200
+/cloud-pos-saas     /cloud-pos-saas.html    200
+/portal/*           /portal/index.html      200
