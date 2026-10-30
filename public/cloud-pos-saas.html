@@ -1749,23 +1749,10 @@
           &#128274;
         </div>
         <h3 style="font-size: 22px; font-weight: 900; color: #ffffff; margin: 0 0 6px;">Sign In to DigitalsNova Portal</h3>
-        <p style="color: #94a3b8; font-size: 13px; margin: 0;">Access your dedicated cloud clinic, hospital, or pharmacy workspace.</p>
+        <p style="color: #94a3b8; font-size: 13px; margin: 0;">Access your dedicated cloud POS, store, mart, pharmacy, or clinic workspace.</p>
       </div>
 
-      <!-- Restricted to Platform Owner (Ubaid) ONLY - Hidden for regular tenants -->
-      <div id="ownerNoticeBox" style="display: none; background: rgba(234, 179, 8, 0.1); border: 1px solid rgba(234, 179, 8, 0.4); border-radius: 10px; padding: 10px 14px; margin-bottom: 16px; font-size: 11px; color: #facc15; justify-content: space-between; align-items: center;">
-        <span>👑 <strong>Platform Owner Mode:</strong> Ubaid Ur Rehman</span>
-        <button type="button" id="ownerSuperAdminBtn" onclick="fillDemoLogin('hq', 'superadmin', '2200230')" style="background: #eab308; border: none; color: #04091a; font-size: 10px; font-weight: 800; padding: 4px 8px; border-radius: 6px; cursor: pointer;">
-          Fill Master Access
-        </button>
-      </div>
-
-      <form id="loginForm" onsubmit="handleLoginSubmit(event)">
-        <!-- Smart Auto-Detected Store Indicator (Replaces manual subdomain requirement) -->
-        <div id="smartSlugBadge" style="display: none; background: rgba(0,229,255,0.08); border: 1px solid rgba(0,229,255,0.3); border-radius: 8px; padding: 8px 12px; font-size: 11px; margin-bottom: 12px; color: #00e5ff; align-items: center; justify-content: space-between;">
-          <span id="detectedStoreTitle">✨ Auto-Mapped Store: <strong>Store Name</strong></span>
-          <span style="font-family: monospace; color: #94a3b8;" id="detectedStoreSlug">store.digitalsnova.com</span>
-        </div>
+      
         <input type="hidden" id="loginSubdomain" value="">
 
         <div class="saas-form-group">
@@ -2145,8 +2132,11 @@
       let detectedName = '';
 
       // Check dot notation (e.g. admin.alshifa, doctor.citymed, staff.kmr)
-      if (cleanVal.includes('.')) {
-        detectedSubdomain = cleanVal.split('.')[1];
+      if (cleanVal.includes('.') && !cleanVal.includes('@')) {
+        const parts = cleanVal.split('.');
+        if (parts.length === 2 && parts[1].length >= 2 && !['com', 'pk', 'net', 'org', 'io'].includes(parts[1])) {
+          detectedSubdomain = parts[1];
+        }
       }
 
       // Check registered tenants in localStorage
@@ -2167,7 +2157,7 @@
         detectedName = matchedTenant.name;
       }
 
-      if (detectedSubdomain) {
+      if (detectedSubdomain && !['com', 'pk', 'net', 'org', 'io'].includes(detectedSubdomain)) {
         if (subInput) subInput.value = detectedSubdomain;
         if (badge) badge.style.display = 'flex';
         if (titleElem) titleElem.innerHTML = `✨ Auto-Mapped Store: <strong>${detectedName || detectedSubdomain}</strong>`;
