@@ -186,7 +186,8 @@ AddDefaultCharset UTF-8
 `;
 
 fs.writeFileSync('.htaccess', htaccessRules, 'utf8');
+fs.writeFileSync('dist/.htaccess', htaccessRules, 'utf8');
 fs.writeFileSync('digitalsnove-hostinger-cpanel/.htaccess', htaccessRules, 'utf8');
-console.log('✓ Wrote .htaccess to root and digitalsnove-hostinger-cpanel/');
+console.log('✓ Wrote .htaccess to root, dist/, and digitalsnove-hostinger-cpanel/');
 
 console.log('--- RESTORE & SYNC FINISHED SUCCESSFULLY! ---');
