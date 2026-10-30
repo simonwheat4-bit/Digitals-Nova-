@@ -18,6 +18,12 @@ ErrorDocument 404 /404.html
   RewriteCond %{THE_REQUEST} ^[A-Z]{3,9}\ /([^.]+)\.html\ HTTP/ [NC]
   RewriteRule ^ %1 [R=301,L]
 
+  # Dedicated Super Admin SaaS Control Panel Routes
+  RewriteRule ^admin/?$ portal/index.html?view=super-admin [L,QSA]
+  RewriteRule ^super-admin/?$ portal/index.html?view=super-admin [L,QSA]
+  RewriteRule ^portal/super-admin/?$ portal/index.html?view=super-admin [L,QSA]
+  RewriteRule ^portal/admin/?$ portal/index.html?view=super-admin [L,QSA]
+
   # If requested path does not exist as a directory, but exists with .html, serve it silently
   RewriteCond %{REQUEST_FILENAME} !-d
   RewriteCond %{REQUEST_FILENAME}\.html -f

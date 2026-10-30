@@ -2,6 +2,26 @@
   publish = "."
 
 [[redirects]]
+  from = "/admin"
+  to = "/portal/index.html?view=super-admin"
+  status = 200
+
+[[redirects]]
+  from = "/super-admin"
+  to = "/portal/index.html?view=super-admin"
+  status = 200
+
+[[redirects]]
+  from = "/portal/super-admin"
+  to = "/portal/index.html?view=super-admin"
+  status = 200
+
+[[redirects]]
+  from = "/portal/admin"
+  to = "/portal/index.html?view=super-admin"
+  status = 200
+
+[[redirects]]
   from = "/cloud-pos-saas"
   to = "/cloud-pos-saas.html"
   status = 200
