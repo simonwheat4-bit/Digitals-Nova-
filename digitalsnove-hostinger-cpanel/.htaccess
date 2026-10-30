@@ -2,23 +2,19 @@
 # DigitalSnove — Hostinger / cPanel Apache Configuration (.htaccess)
 # ==============================================================================
 
+# 1. Custom 404 Error Page
 ErrorDocument 404 /404.html
 
+# 2. Clean URLs (Strip .html from address bar & silently serve .html files)
 <IfModule mod_rewrite.c>
   RewriteEngine On
   RewriteBase /
-
-  # Dedicated Super Admin SaaS Control Panel Routes
-  RewriteRule ^admin/?$ portal/index.html?view=super-admin [L,QSA]
-  RewriteRule ^super-admin/?$ portal/index.html?view=super-admin [L,QSA]
-  RewriteRule ^portal/super-admin/?$ portal/index.html?view=super-admin [L,QSA]
-  RewriteRule ^portal/admin/?$ portal/index.html?view=super-admin [L,QSA]
 
   # Redirect /index.html to /
   RewriteCond %{THE_REQUEST} ^[A-Z]{3,9}\ /.*index\.html\ HTTP/ [NC]
   RewriteRule ^(.*)index\.html$ /$1 [R=301,L]
 
-  # Clean URLs
+  # Redirect /page.html to /page (Strip .html from visible URL in address bar)
   RewriteCond %{THE_REQUEST} ^[A-Z]{3,9}\ /([^.]+)\.html\ HTTP/ [NC]
   RewriteRule ^ %1 [R=301,L]
 
@@ -28,6 +24,7 @@ ErrorDocument 404 /404.html
   RewriteRule ^(.*)$ $1.html [L]
 </IfModule>
 
+# 3. GZIP Compression for Fast Loading
 <IfModule mod_deflate.c>
   AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css
   AddOutputFilterByType DEFLATE application/javascript application/x-javascript text/javascript
@@ -35,6 +32,7 @@ ErrorDocument 404 /404.html
   AddOutputFilterByType DEFLATE image/svg+xml
 </IfModule>
 
+# 4. Browser Caching Headers
 <IfModule mod_expires.c>
   ExpiresActive On
   ExpiresDefault "access plus 1 month"
@@ -48,4 +46,10 @@ ErrorDocument 404 /404.html
   ExpiresByType image/svg+xml "access plus 1 year"
 </IfModule>
 
+# 5. Security & UTF-8 Encoding
 AddDefaultCharset UTF-8
+<IfModule mod_headers.c>
+  Header set X-Content-Type-Options "nosniff"
+  Header set X-Frame-Options "SAMEORIGIN"
+  Header set X-XSS-Protection "1; mode=block"
+</IfModule>

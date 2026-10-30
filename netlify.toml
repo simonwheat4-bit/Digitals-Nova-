@@ -1,5 +1,6 @@
 [build]
-  publish = "."
+  publish = "dist"
+  command = "npm run build"
 
 [[redirects]]
   from = "/admin"
@@ -29,4 +30,9 @@
 [[redirects]]
   from = "/portal/*"
   to = "/portal/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
   status = 200

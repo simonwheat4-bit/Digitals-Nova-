@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "node restore-and-sync.cjs",
+    "build": "vite build",
     "preview": "vite preview"
   },
   "dependencies": {
