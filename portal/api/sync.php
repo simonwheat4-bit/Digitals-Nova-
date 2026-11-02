@@ -42,20 +42,95 @@ function writeJsonFile($path, $data) {
     @file_put_contents($path, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE), LOCK_EX);
 }
 
-// Helper to send professional HTML email from digitalsnovaofficial@gmail.com
+// ==============================================================================
+// GMAIL SMTP AUTHENTICATED MAILER ENGINE (smtp.gmail.com:465 SSL)
+// ==============================================================================
+function sendGmailSmtp($toEmail, $subject, $htmlBody) {
+    $smtpHost = 'ssl://smtp.gmail.com';
+    $smtpPort = 465;
+    $smtpUser = 'digitalsnovaofficial@gmail.com';
+    $smtpPass = 'rfnygyzvohahoqde';
+    $senderName = 'DigitalsNova Team';
+
+    $context = stream_context_create([
+        'ssl' => [
+            'verify_peer' => false,
+            'verify_peer_name' => false,
+            'allow_self_signed' => true
+        ]
+    ]);
+
+    $socket = @stream_socket_client($smtpHost . ':' . $smtpPort, $errno, $errstr, 15, STREAM_CLIENT_CONNECT, $context);
+    if (!$socket) {
+        // Fallback to PHP native mail() if socket is restricted
+        $headers = [];
+        $headers[] = 'MIME-Version: 1.0';
+        $headers[] = 'Content-type: text/html; charset=utf-8';
+        $headers[] = 'From: ' . $senderName . ' <' . $smtpUser . '>';
+        $headers[] = 'Reply-To: ' . $smtpUser;
+        return @mail($toEmail, $subject, $htmlBody, implode("\r\n", $headers));
+    }
+
+    $read = function($sock, $expectedCode) {
+        $response = '';
+        while ($line = fgets($sock, 515)) {
+            $response .= $line;
+            if (substr($line, 3, 1) === ' ') break;
+        }
+        $code = intval(substr($response, 0, 3));
+        return ($code === $expectedCode || ($expectedCode === 250 && ($code === 250 || $code === 251)));
+    };
+
+    $send = function($sock, $cmd) {
+        fputs($sock, $cmd . "\r\n");
+    };
+
+    if (!$read($socket, 220)) { fclose($socket); return false; }
+
+    $send($socket, "EHLO " . ($_SERVER['SERVER_NAME'] ?? 'digitalsnova.com'));
+    if (!$read($socket, 250)) { fclose($socket); return false; }
+
+    $send($socket, "AUTH LOGIN");
+    if (!$read($socket, 334)) { fclose($socket); return false; }
+
+    $send($socket, base64_encode($smtpUser));
+    if (!$read($socket, 334)) { fclose($socket); return false; }
+
+    $send($socket, base64_encode($smtpPass));
+    if (!$read($socket, 235)) { fclose($socket); return false; }
+
+    $send($socket, "MAIL FROM:<" . $smtpUser . ">");
+    if (!$read($socket, 250)) { fclose($socket); return false; }
+
+    $send($socket, "RCPT TO:<" . $toEmail . ">");
+    if (!$read($socket, 250)) { fclose($socket); return false; }
+
+    $send($socket, "DATA");
+    if (!$read($socket, 354)) { fclose($socket); return false; }
+
+    $headers = [
+        "MIME-Version: 1.0",
+        "Content-Type: text/html; charset=UTF-8",
+        "From: " . $senderName . " <" . $smtpUser . ">",
+        "Reply-To: " . $smtpUser,
+        "To: <" . $toEmail . ">",
+        "Date: " . date('r'),
+        "Subject: " . $subject,
+        "X-Mailer: DigitalsNova-Gmail-SMTP"
+    ];
+
+    $payload = implode("\r\n", $headers) . "\r\n\r\n" . $htmlBody . "\r\n.";
+    $send($socket, $payload);
+    $sent = $read($socket, 250);
+
+    $send($socket, "QUIT");
+    fclose($socket);
+
+    return $sent;
+}
+
 function sendDigitalsNovaEmail($toEmail, $subject, $htmlContent) {
-    $senderEmail = 'digitalsnovaofficial@gmail.com';
-    $senderName = 'DigitalsNova Cloud POS';
-
-    $headers = [];
-    $headers[] = 'MIME-Version: 1.0';
-    $headers[] = 'Content-type: text/html; charset=utf-8';
-    $headers[] = 'From: ' . $senderName . ' <' . $senderEmail . '>';
-    $headers[] = 'Reply-To: ' . $senderEmail;
-    $headers[] = 'X-Mailer: PHP/' . phpversion();
-
-    $mailSent = @mail($toEmail, $subject, $htmlContent, implode("\r\n", $headers));
-    return $mailSent;
+    return sendGmailSmtp($toEmail, $subject, $htmlContent);
 }
 
 // Read incoming request
@@ -68,6 +143,25 @@ if (empty($action) && isset($body['action'])) {
 }
 
 // ==============================================================================
+// Action: Test Email
+if ($action === 'test_email' || $action === 'send_test_email') {
+    $testTo = !empty($_GET['to']) ? $_GET['to'] : (!empty($body['to']) ? $body['to'] : 'digitalsnovaofficial@gmail.com');
+    $testSubject = '🎉 Welcome to DigitalsNova - Your Cloud POS Portal is Ready! [SMTP TEST]';
+    $testBody = '<div style="font-family: Arial, sans-serif; background: #030712; color: #fff; padding: 20px; border-radius: 12px; border: 1px solid #00e5ff;">'
+        . '<h2 style="color: #00e5ff;">DigitalsNova Gmail SMTP Test Successful</h2>'
+        . '<p>Gmail SMTP (smtp.gmail.com:465 SSL) is actively working and connected!</p>'
+        . '<p>Recipient: ' . htmlspecialchars($testTo) . '<br>Server time: ' . date('c') . '</p>'
+        . '</div>';
+    $ok = sendGmailSmtp($testTo, $testSubject, $testBody);
+    echo json_encode([
+        'success' => $ok,
+        'message' => $ok ? "Test email successfully sent to {$testTo} via Gmail SMTP (465 SSL)!" : "Failed to send email via SMTP",
+        'recipient' => $testTo,
+        'smtpHost' => 'smtp.gmail.com:465'
+    ]);
+    exit();
+}
+
 // 1. ACTION: REGISTER TENANT (Called from website or portal registration)
 // ==============================================================================
 if ($action === 'register_tenant' || $action === 'register') {
@@ -168,7 +262,7 @@ if ($action === 'register_tenant' || $action === 'register') {
     // AUTOMATED EMAIL 1: WELCOME & ACCESS PASS TO CLIENT
     // -------------------------------------------------------------------------
     if (!empty($ownerEmail) && filter_var($ownerEmail, FILTER_VALIDATE_EMAIL)) {
-        $clientSubject = "🎉 Welcome to DigitalsNova! Your Cloud POS Portal is Ready [{$storeName}]";
+        $clientSubject = "🎉 Welcome to DigitalsNova - Your Cloud POS Portal is Ready!";
         $clientHtml = '
         <!DOCTYPE html>
         <html>
