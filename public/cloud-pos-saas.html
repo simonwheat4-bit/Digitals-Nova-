@@ -2172,7 +2172,7 @@
       autoDetectSlugFromUsername(username);
     }
 
-    function handleLoginSubmit(e) {
+    async function handleLoginSubmit(e) {
       e.preventDefault();
       let subdomain = document.getElementById('loginSubdomain').value.trim().toLowerCase();
       const username = document.getElementById('loginUsername').value.trim();
@@ -2207,7 +2207,32 @@
         targetSubdomain = 'hq';
       }
 
-      // 2. Custom staff authentication
+      // 2. Central Cloud Backend Authentication (Multi-Device SaaS Sync)
+      if (!authenticatedUser) {
+        try {
+          const apiRes = await fetch('/api/sync.php?action=login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ identifier: cleanU, password: cleanP })
+          });
+          if (apiRes.ok) {
+            const apiData = await apiRes.json();
+            if (apiData && apiData.success && apiData.user) {
+              authenticatedUser = apiData.user;
+              if (apiData.tenant && apiData.tenant.subdomain) {
+                targetSubdomain = apiData.tenant.subdomain;
+                authenticatedUser.subdomain = apiData.tenant.subdomain;
+                authenticatedUser.tenantName = apiData.tenant.name;
+                authenticatedUser.clinicName = apiData.tenant.name;
+              }
+            }
+          }
+        } catch (netErr) {
+          console.warn('Central API login check error, falling back to local cache:', netErr);
+        }
+      }
+
+      // 3. Custom staff authentication
       if (!authenticatedUser) {
         let staffList = [];
         try { staffList = JSON.parse(localStorage.getItem('digitalsnova_custom_staff') || '[]'); } catch {}
@@ -2324,6 +2349,8 @@
       const bType = document.getElementById('obType').value;
       const emailElem = document.getElementById('obEmail');
       const email = emailElem ? emailElem.value.trim() : '';
+      const passElem = document.getElementById('obPass');
+      const password = passElem ? passElem.value.trim() : '123456';
 
       // Strict Duplicate Registration Security Check
       const cleanPhone = phone.replace(/[^0-9]/g, '');
@@ -2432,11 +2459,17 @@
             graceDaysRemaining: 3,
             totalDays: isYearly ? 365 : 3
           },
+          adminUsername: 'admin.' + slug,
+          adminPassword: password,
+          email: email,
+          businessType: bType,
           adminUser: {
             username: 'admin.' + slug,
-            password: '123',
+            password: password,
             name: name,
-            phone: phone
+            email: email,
+            phone: phone,
+            role: 'CLINIC_ADMIN'
           }
         };
 
@@ -2467,10 +2500,19 @@
           console.warn('Error saving registered tenant to localStorage:', e);
         }
 
+        // Hostinger Central Cloud Sync & Email Automation (/api/sync.php)
+        try {
+          fetch('/api/sync.php?action=register_tenant', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(newTenantRecord)
+          }).catch(err => console.warn('Cloud sync error:', err));
+        } catch(e) {}
+
         // Wire up Launch Web App button
         const launchWebAppBtn = document.getElementById('btnLaunchWebApp');
         if (launchWebAppBtn) {
-          launchWebAppBtn.href = `portal/index.html?store=${encodeURIComponent(slug)}`;
+          launchWebAppBtn.href = `/portal/?store=${encodeURIComponent(slug)}`;
         }
 
         // Wire up In-Page Simulator button
