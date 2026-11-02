@@ -6,13 +6,13 @@
   <title>DigitalsNova Portal — Enterprise Cloud POS, HMS &amp; Pharmacy Management SaaS</title>
   <meta name="description" content="Pakistan's premier enterprise cloud POS, Hospital Management System (HMS), and Pharmacy ERP platform. Experience 1.8-second barcode billing, automated Z-report cash reconciliation, multi-session treatment ledgers, and strict anti-fraud discount controls.">
   <meta name="keywords" content="cloud pos software, clinic management system, hospital pos system pakistan, pharmacy billing software, retail pos system, automated z report, multi-session treatment ledgers, digitalsnova portal">
-  <link rel="canonical" href="https://digitalsnove.com/cloud-pos-saas">
+  <link rel="canonical" href="https://digitalsnova.com/cloud-pos-saas">
 
   <!-- OpenGraph & Social Cards -->
   <meta property="og:type" content="website">
   <meta property="og:title" content="DigitalsNova Portal — Enterprise Cloud POS &amp; Healthcare Management Platform">
   <meta property="og:description" content="All-in-one cloud POS, HMS, and Pharmacy ERP platform. Sub-second barcode checkout, automated Z-Reports, multi-session treatment ledgers, and zero-fraud PIN discount locks.">
-  <meta property="og:url" content="https://digitalsnove.com/cloud-pos-saas">
+  <meta property="og:url" content="https://digitalsnova.com/cloud-pos-saas">
   <meta property="og:image" content="assets/og-cloud-pos.png">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="DigitalsNova Portal — Enterprise Cloud POS &amp; Healthcare Management Platform">
@@ -1138,7 +1138,7 @@
             <span style="background: #10b981;"></span>
           </div>
           <div class="terminal-title" id="terminalSubdomainTitle">
-            <span>&#128187;</span> portal.digitalsnove.com/pos-terminal
+            <span>&#128187;</span> portal.digitalsnova.com/pos-terminal
           </div>
           <span id="terminalStatusBadge" style="background: rgba(16, 185, 129, 0.2); color: #10b981; font-size: 10px; padding: 2px 8px; border-radius: 9999px; font-weight: 800;">
             ● CLOUD SYNCED (99.99% UPTIME)
@@ -1897,7 +1897,7 @@
           <div style="font-size: 11px; color: #64748b; margin-bottom: 4px; font-weight: 700;">YOUR UNIQUE 16-CHAR LICENSE KEY:</div>
           <div class="license-key-badge" id="displayLicenseKey">DNP-8892-4410-9124</div>
           <div style="font-size: 12px; color: #cbd5e1; margin-top: 8px;">
-            <strong>Tenant URL:</strong> <span style="color: #00e5ff;" id="displayTenantUrl">https://clinic.digitalsnove.com</span>
+            <strong>Tenant URL:</strong> <span style="color: #00e5ff;" id="displayTenantUrl">https://clinic.digitalsnova.com</span>
             <span style="background: rgba(16,185,129,0.15); color: #10b981; font-size: 10px; padding: 2px 6px; border-radius: 4px; margin-left: 6px;">Cloud Allocated</span>
           </div>
           <div style="font-size: 11px; color: #10b981; margin-top: 6px; font-weight: 700;">
@@ -2302,10 +2302,10 @@
       // Launch portal web app with role-based redirection
       if (authenticatedUser.role === 'SUPER_ADMIN') {
         // Automatically redirect master admin directly to the Super Admin Control Panel
-        window.location.href = 'portal/index.html?view=super-admin&subdomain=hq#/super-admin';
+        window.location.href = '/super-admin';
       } else {
         // Regular store accounts continue to redirect to their standard store dashboard
-        const portalTarget = `portal/index.html?subdomain=${encodeURIComponent(targetSubdomain)}`;
+        const portalTarget = targetSubdomain ? `/portal?store=${encodeURIComponent(targetSubdomain)}` : '/portal';
         window.location.href = portalTarget;
       }
     }
@@ -2385,7 +2385,7 @@
         const randHex = () => Math.floor(1000 + Math.random() * 9000);
         const licenseKey = `DNP-${randHex()}-${randHex()}-${randHex()}`;
         const slug = business.toLowerCase().replace(/[^a-z0-9]/g, '') || 'myclinic';
-        const tenantUrl = `https://${slug}.digitalsnove.com`;
+        const tenantUrl = `https://${slug}.digitalsnova.com`;
 
         document.getElementById('displayLicenseKey').innerText = licenseKey;
         document.getElementById('displayTenantUrl').innerText = tenantUrl;
@@ -2473,7 +2473,7 @@
         // Wire up Launch Web App button
         const launchWebAppBtn = document.getElementById('btnLaunchWebApp');
         if (launchWebAppBtn) {
-          launchWebAppBtn.href = `portal/index.html?subdomain=${encodeURIComponent(slug)}`;
+          launchWebAppBtn.href = `portal/index.html?store=${encodeURIComponent(slug)}`;
         }
 
         // Wire up In-Page Simulator button
@@ -2491,7 +2491,7 @@
 
             if (facilityElem) facilityElem.innerText = business + ' — Cloud POS Portal';
             if (cashierElem) cashierElem.innerHTML = `Cashier: ${name} &bull; Master Superadmin &bull; Counter #01`;
-            if (subTitleElem) subTitleElem.innerHTML = `<span>💻</span> ${slug}.digitalsnove.com/pos`;
+            if (subTitleElem) subTitleElem.innerHTML = `<span>💻</span> ${slug}.digitalsnova.com/pos`;
             if (statusBadge) {
               statusBadge.innerHTML = `● TRIAL ACTIVE (${licenseKey})`;
               statusBadge.style.background = 'rgba(0, 229, 255, 0.25)';
