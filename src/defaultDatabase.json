@@ -1,0 +1,33 @@
+{
+  "platformBrand": {
+    "name": "Digital Snove Portal",
+    "logoUrl": "",
+    "tagline": "Secure Multi-Tenant Clinical POS & Healthcare SaaS",
+    "address": "Digital Snove SaaS Headquarters",
+    "phone": "03131094557"
+  },
+  "passwordResetRequests": [],
+  "tenants": [],
+  "users": [
+    {
+      "id": "u_super",
+      "tenantId": "GLOBAL",
+      "name": "Ubaid Ur Rehman (Platform Owner)",
+      "username": "superadmin",
+      "role": "SUPER_ADMIN",
+      "password": "123"
+    }
+  ],
+  "patients": [],
+  "treatments": [],
+  "treatmentCatalog": [],
+  "inventory": [],
+  "sales": [],
+  "parkedSales": [],
+  "shifts": [],
+  "licenseKeys": [],
+  "cronLogs": [],
+  "auditLogs": [],
+  "smsLogs": [],
+  "discountRequests": []
+}

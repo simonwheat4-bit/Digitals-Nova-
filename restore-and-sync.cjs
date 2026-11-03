@@ -61,7 +61,7 @@ targetDirectories.forEach(destDir => {
   });
 
   // Copy folders: css, js, assets, portal
-  ['css', 'js', 'assets', 'portal'].forEach(folder => {
+  ['css', 'js', 'assets', 'portal', 'api'].forEach(folder => {
     if (fs.existsSync(folder)) {
       copyFolderRecursiveSync(folder, path.join(destDir, folder));
     }

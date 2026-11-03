@@ -1,0 +1,1632 @@
+{
+  "platformBrand": {
+    "name": "Digital Snove Portal",
+    "logoUrl": "https://digitalsnova.com/index.html",
+    "tagline": "Secure Multi-Tenant Clinical POS & Healthcare SaaS",
+    "address": "Digital Snove SaaS Headquarters",
+    "phone": "03131094557"
+  },
+  "passwordResetRequests": [],
+  "tenants": [
+    {
+      "id": "tenant_alshifa_4688",
+      "subdomain": "alshifa",
+      "domain": "alshifa.digitalsnova.com",
+      "name": "Al-Shifa Healthcare & Dental Center",
+      "logoUrl": "",
+      "address": "Main Medical Boulevard, Pakistan",
+      "phone": "+92-300-0000000",
+      "receiptHeader": "Quality Healthcare & Diagnostics",
+      "receiptFooter": "Thank you for visiting! Get well soon.",
+      "smsApiUrl": "https://api.whatsapp-gateway.pk/v1/send",
+      "smsApiKey": "sk_live_alshifa_78061",
+      "smsEnabled": true,
+      "adminPin": "1234",
+      "monthlyFee": 0,
+      "billingCycleDay": 2,
+      "manualBlocked": false,
+      "enabledModules": {
+        "pos": true,
+        "inventory": true,
+        "patientsLedger": false
+      },
+      "createdAt": "2026-10-21T10:24:04.688Z",
+      "lastPaymentDate": "2026-10-21T10:24:04.688Z",
+      "planType": "TRIAL_3_DAYS",
+      "cycleDays": 3
+    }
+  ],
+  "users": [
+    {
+      "id": "u_super",
+      "tenantId": "GLOBAL",
+      "name": "Ubaid Ur Rehman (Platform Owner)",
+      "username": "superadmin",
+      "role": "SUPER_ADMIN",
+      "password": "2200230"
+    },
+    {
+      "id": "u_alshifa_admin",
+      "tenantId": "tenant_alshifa_4688",
+      "name": "Talha Ali ",
+      "username": "admin.alshifa",
+      "password": "123",
+      "role": "CLINIC_ADMIN",
+      "active": true
+    },
+    {
+      "id": "u_alshifa_staff",
+      "tenantId": "tenant_alshifa_4688",
+      "name": "Front Desk POS (Al-Shifa Healthcare & Dental Center)",
+      "username": "pos.alshifa",
+      "password": "123",
+      "role": "STAFF",
+      "active": true
+    }
+  ],
+  "patients": [],
+  "treatments": [],
+  "inventory": [
+    {
+      "id": "inv_1792578244688",
+      "tenantId": "tenant_alshifa_4688",
+      "barcode": "SRV-OPD",
+      "name": "Standard OPD Consultation / Item",
+      "category": "Medicine",
+      "supplier": "In-House",
+      "purchasePrice": 500,
+      "sellingPrice": 1500,
+      "quantity": 48,
+      "minStockAlert": 10,
+      "expiryDate": "2030-12-31"
+    }
+  ],
+  "sales": [
+    {
+      "id": "sale_1793076817658",
+      "tenantId": "tenant_alshifa_4688",
+      "invoiceNumber": "INV-PHL-5733",
+      "patientId": "pat_walkin",
+      "patientName": "huzaifa",
+      "patientCode": "WALK-IN",
+      "patientPhone": "0300-1234567",
+      "cashierId": "u_alshifa_admin",
+      "cashierName": "Talha Ali ",
+      "items": [
+        {
+          "id": "inv_1792578244688",
+          "type": "PRODUCT",
+          "name": "Standard OPD Consultation / Item",
+          "qty": 1,
+          "unitPrice": 1500,
+          "costPrice": 500,
+          "subtotal": 1500
+        }
+      ],
+      "subtotal": 1500,
+      "discountAmount": 0,
+      "discountApprovedBy": null,
+      "netTotal": 1500,
+      "amountPaidToday": 1500,
+      "previousLedgerBalance": 0,
+      "remainingLedgerBalance": 0,
+      "paymentMethod": "CASH",
+      "status": "COMPLETED",
+      "smsSent": true,
+      "createdAt": "2026-10-27T04:53:37.658Z"
+    }
+  ],
+  "discountRequests": [],
+  "auditLogs": [
+    {
+      "id": "aud_1793077704795",
+      "tenantId": "tenant_alshifa_4688",
+      "action": "BLOCKED_UNAUTHORIZED_VOID_ATTEMPT",
+      "staffId": "STAFF_POS",
+      "staffName": "Talha Ali ",
+      "approvingAdmin": "SECURITY_BLOCK",
+      "discountAmount": 0,
+      "receiptId": "sale_1793076817658",
+      "details": "STRICT SECURITY BLOCK: Staff attempted to cancel/refund sale without Clinic Admin authorization.",
+      "timestamp": "2026-10-27T05:08:24.795Z"
+    },
+    {
+      "id": "aud_1793077704614",
+      "tenantId": "tenant_alshifa_4688",
+      "action": "BLOCKED_UNAUTHORIZED_VOID_ATTEMPT",
+      "staffId": "STAFF_POS",
+      "staffName": "Talha Ali ",
+      "approvingAdmin": "SECURITY_BLOCK",
+      "discountAmount": 0,
+      "receiptId": "sale_1793076817658",
+      "details": "STRICT SECURITY BLOCK: Staff attempted to cancel/refund sale without Clinic Admin authorization.",
+      "timestamp": "2026-10-27T05:08:24.614Z"
+    },
+    {
+      "id": "aud_1793077704071",
+      "tenantId": "tenant_alshifa_4688",
+      "action": "BLOCKED_UNAUTHORIZED_VOID_ATTEMPT",
+      "staffId": "STAFF_POS",
+      "staffName": "Talha Ali ",
+      "approvingAdmin": "SECURITY_BLOCK",
+      "discountAmount": 0,
+      "receiptId": "sale_1793076817658",
+      "details": "STRICT SECURITY BLOCK: Staff attempted to cancel/refund sale without Clinic Admin authorization.",
+      "timestamp": "2026-10-27T05:08:24.071Z"
+    },
+    {
+      "id": "aud_1793076817658",
+      "tenantId": "tenant_alshifa_4688",
+      "action": "POS_SALE_COMPLETED",
+      "staffId": "u_alshifa_admin",
+      "staffName": "Talha Ali ",
+      "approvingAdmin": "No Discount",
+      "discountAmount": 0,
+      "receiptId": "INV-PHL-5733",
+      "details": "POS Invoice INV-PHL-5733 completed (Standard OPD Consultation / Item x1). Paid Today: Rs. 1500 | Remaining Balance: Rs. 0.",
+      "timestamp": "2026-10-27T04:53:37.658Z"
+    },
+    {
+      "id": "aud_1793075600909",
+      "tenantId": "tenant_alshifa_4688",
+      "action": "SHIFT_CLOSED_Z_REPORT",
+      "staffId": "STAFF",
+      "staffName": "Ayesha Khan",
+      "approvingAdmin": "SYSTEM",
+      "discountAmount": 0,
+      "receiptId": "SH-261027-239",
+      "details": "Shift closed. Invoices: 0, Net Cash: Rs. 0, Difference: Rs. 0 (BALANCED).",
+      "timestamp": "2026-10-27T04:33:20.909Z"
+    },
+    {
+      "id": "aud_1793075490883",
+      "tenantId": "tenant_alshifa_4688",
+      "action": "SHIFT_CLOSED_Z_REPORT",
+      "staffId": "STAFF",
+      "staffName": "Ayesha Khan",
+      "approvingAdmin": "SYSTEM",
+      "discountAmount": 0,
+      "receiptId": "SH-261027-841",
+      "details": "Shift closed. Invoices: 0, Net Cash: Rs. 0, Difference: Rs. -5000 (SHORTAGE).",
+      "timestamp": "2026-10-27T04:31:30.882Z"
+    },
+    {
+      "id": "aud_1792652076086",
+      "tenantId": "tenant_altahirclinics_3789",
+      "action": "INVOICE_RECORD_DELETED",
+      "staffId": "CLINIC_ADMIN",
+      "staffName": "Clinic Admin",
+      "approvingAdmin": "Clinic Admin",
+      "discountAmount": 0,
+      "receiptId": "INV-ALT-9388",
+      "details": "Clinic Admin permanently deleted invoice \"INV-ALT-9388\" (Total: Rs. 1500) for patient Walk-in Customer.",
+      "timestamp": "2026-10-22T06:54:36.086Z"
+    },
+    {
+      "id": "aud_1792652074065",
+      "tenantId": "tenant_altahirclinics_3789",
+      "action": "INVOICE_RECORD_DELETED",
+      "staffId": "CLINIC_ADMIN",
+      "staffName": "Clinic Admin",
+      "approvingAdmin": "Clinic Admin",
+      "discountAmount": 0,
+      "receiptId": "INV-ALT-8677",
+      "details": "Clinic Admin permanently deleted invoice \"INV-ALT-8677\" (Total: Rs. 1500) for patient Talha aloi.",
+      "timestamp": "2026-10-22T06:54:34.065Z"
+    },
+    {
+      "id": "aud_1792652023130",
+      "tenantId": "tenant_altahirclinics_3789",
+      "action": "POS_SALE_COMPLETED",
+      "staffId": "u_altahirclinics_admin",
+      "staffName": "Al Tahir Clinics  Owner",
+      "approvingAdmin": "No Discount",
+      "discountAmount": 0,
+      "receiptId": "INV-ALT-8677",
+      "details": "POS Invoice INV-ALT-8677 completed (Standard OPD Consultation x1). Paid Today: Rs. 1500 | Remaining Balance: Rs. 0.",
+      "timestamp": "2026-10-22T06:53:43.131Z"
+    },
+    {
+      "id": "aud_1792649201619",
+      "tenantId": "tenant_altahirclinics_3789",
+      "action": "BLOCKED_UNAUTHORIZED_VOID_ATTEMPT",
+      "staffId": "STAFF_POS",
+      "staffName": "Al Tahir Clinics  Owner",
+      "approvingAdmin": "SECURITY_BLOCK",
+      "discountAmount": 0,
+      "receiptId": "sale_1792591128539",
+      "details": "STRICT SECURITY BLOCK: Staff attempted to cancel/refund sale without Clinic Admin authorization.",
+      "timestamp": "2026-10-22T06:06:41.619Z"
+    },
+    {
+      "id": "aud_1792649200788",
+      "tenantId": "tenant_altahirclinics_3789",
+      "action": "BLOCKED_UNAUTHORIZED_VOID_ATTEMPT",
+      "staffId": "STAFF_POS",
+      "staffName": "Al Tahir Clinics  Owner",
+      "approvingAdmin": "SECURITY_BLOCK",
+      "discountAmount": 0,
+      "receiptId": "sale_1792591128539",
+      "details": "STRICT SECURITY BLOCK: Staff attempted to cancel/refund sale without Clinic Admin authorization.",
+      "timestamp": "2026-10-22T06:06:40.788Z"
+    },
+    {
+      "id": "aud_1792649155611",
+      "tenantId": "tenant_altahirclinics_3789",
+      "action": "SUBSCRIPTION_RENEWED_UNLOCKED",
+      "staffId": "SYSTEM_BILLING",
+      "staffName": "CLINIC_ADMIN_PORTAL_RENEWAL",
+      "approvingAdmin": "Super Admin / Payment Gateway",
+      "discountAmount": 0,
+      "receiptId": "PAY-155611",
+      "details": "Subscription unlocked & reset to Day 1 (30-Day Active Cycle) via CLINIC_ADMIN_PORTAL_RENEWAL. Fee Rs. 0.",
+      "timestamp": "2026-10-22T06:05:55.611Z"
+    },
+    {
+      "id": "aud_1792649145380",
+      "tenantId": "tenant_altahirclinics_3789",
+      "action": "SUBSCRIPTION_RENEWED_UNLOCKED",
+      "staffId": "SYSTEM_BILLING",
+      "staffName": "LOCK_MODAL_INSTANT_PAYMENT_WEBHOOK",
+      "approvingAdmin": "Super Admin / Payment Gateway",
+      "discountAmount": 0,
+      "receiptId": "PAY-145380",
+      "details": "Subscription unlocked & reset to Day 1 (30-Day Active Cycle) via LOCK_MODAL_INSTANT_PAYMENT_WEBHOOK. Fee Rs. 0.",
+      "timestamp": "2026-10-22T06:05:45.380Z"
+    },
+    {
+      "id": "aud_1792648932319",
+      "tenantId": "tenant_altahirclinics_3789",
+      "action": "INVOICE_RECORD_DELETED",
+      "staffId": "CLINIC_ADMIN",
+      "staffName": "Clinic Admin",
+      "approvingAdmin": "Clinic Admin",
+      "discountAmount": 0,
+      "receiptId": "INV-ALT-3182",
+      "details": "Clinic Admin permanently deleted invoice \"INV-ALT-3182\" (Total: Rs. 350) for patient Ali Khan.",
+      "timestamp": "2026-10-22T06:02:12.319Z"
+    },
+    {
+      "id": "aud_1792648900953",
+      "tenantId": "tenant_altahirclinics_3789",
+      "action": "POS_SALE_COMPLETED",
+      "staffId": "STAFF_POS",
+      "staffName": "Receptionist POS",
+      "approvingAdmin": "No Discount",
+      "discountAmount": 0,
+      "receiptId": "INV-ALT-3182",
+      "details": "POS Invoice INV-ALT-3182 completed (Augmentin 625mg x1). Paid Today: Rs. 350 | Remaining Balance: Rs. 0.",
+      "timestamp": "2026-10-22T06:01:40.953Z"
+    },
+    {
+      "id": "aud_1792648834521",
+      "tenantId": "tenant_altahirclinics_3789",
+      "action": "SUBSCRIPTION_CARD_CHECKOUT",
+      "staffId": "CLINIC_ADMIN",
+      "staffName": "Dr. Tariq",
+      "approvingAdmin": "Digital Snove Payment Gateway Engine",
+      "discountAmount": 0,
+      "receiptId": "DS-ALTAHIRC-TRIAL-AVPX-8932",
+      "details": "Card ending in 4242 authorized. Package TRIAL_3_DAYS (3 Days) auto-activated. Key: DS-ALTAHIRC-TRIAL-AVPX-8932.",
+      "timestamp": "2026-10-22T06:00:34.521Z"
+    },
+    {
+      "id": "aud_1792648814532",
+      "tenantId": "tenant_altahirclinics_3789",
+      "action": "LICENSE_KEY_DEACTIVATED",
+      "staffId": "CLINIC_ADMIN",
+      "staffName": "Clinic Administrator",
+      "approvingAdmin": "Clinic Admin",
+      "discountAmount": 0,
+      "receiptId": "DS-ALTAHIRC-MONTH-9ZKJ-1942",
+      "details": "Active License Key \"DS-ALTAHIRC-MONTH-9ZKJ-1942\" was deactivated. Portal locked pending new key / subscription.",
+      "timestamp": "2026-10-22T06:00:14.532Z"
+    },
+    {
+      "id": "aud_1792648780816",
+      "tenantId": "tenant_altahirclinics_3789",
+      "action": "SUBSCRIPTION_CARD_CHECKOUT",
+      "staffId": "CLINIC_ADMIN",
+      "staffName": "Dr. Tariq",
+      "approvingAdmin": "Digital Snove Payment Gateway Engine",
+      "discountAmount": 0,
+      "receiptId": "DS-ALTAHIRC-MONTH-9ZKJ-1942",
+      "details": "Card ending in 4242 authorized. Package MONTHLY (30 Days) auto-activated. Key: DS-ALTAHIRC-MONTH-9ZKJ-1942.",
+      "timestamp": "2026-10-22T05:59:40.816Z"
+    },
+    {
+      "id": "aud_1792591128539",
+      "tenantId": "tenant_altahirclinics_3789",
+      "action": "POS_SALE_COMPLETED",
+      "staffId": "u_altahirclinics_admin",
+      "staffName": "Al Tahir Clinics  Owner",
+      "approvingAdmin": "No Discount",
+      "discountAmount": 0,
+      "receiptId": "INV-ALT-9388",
+      "details": "POS Invoice INV-ALT-9388 completed (Standard OPD Consultation x1). Paid Today: Rs. 1500 | Remaining Balance: Rs. 0.",
+      "timestamp": "2026-10-21T13:58:48.539Z"
+    },
+    {
+      "id": "aud_1792590362890",
+      "tenantId": "tenant_altahirclinics_3789",
+      "action": "SUBSCRIPTION_RENEWED_UNLOCKED",
+      "staffId": "SYSTEM_BILLING",
+      "staffName": "CLINIC_ADMIN_PORTAL_RENEWAL",
+      "approvingAdmin": "Super Admin / Payment Gateway",
+      "discountAmount": 0,
+      "receiptId": "PAY-362890",
+      "details": "Subscription unlocked & reset to Day 1 (30-Day Active Cycle) via CLINIC_ADMIN_PORTAL_RENEWAL. Fee Rs. 0.",
+      "timestamp": "2026-10-21T13:46:02.890Z"
+    },
+    {
+      "id": "aud_1792590362367",
+      "tenantId": "tenant_altahirclinics_3789",
+      "action": "SUBSCRIPTION_RENEWED_UNLOCKED",
+      "staffId": "SYSTEM_BILLING",
+      "staffName": "CLINIC_ADMIN_PORTAL_RENEWAL",
+      "approvingAdmin": "Super Admin / Payment Gateway",
+      "discountAmount": 0,
+      "receiptId": "PAY-362367",
+      "details": "Subscription unlocked & reset to Day 1 (30-Day Active Cycle) via CLINIC_ADMIN_PORTAL_RENEWAL. Fee Rs. 0.",
+      "timestamp": "2026-10-21T13:46:02.367Z"
+    },
+    {
+      "id": "aud_1792590361464",
+      "tenantId": "tenant_altahirclinics_3789",
+      "action": "SUBSCRIPTION_RENEWED_UNLOCKED",
+      "staffId": "SYSTEM_BILLING",
+      "staffName": "CLINIC_ADMIN_PORTAL_RENEWAL",
+      "approvingAdmin": "Super Admin / Payment Gateway",
+      "discountAmount": 0,
+      "receiptId": "PAY-361464",
+      "details": "Subscription unlocked & reset to Day 1 (30-Day Active Cycle) via CLINIC_ADMIN_PORTAL_RENEWAL. Fee Rs. 0.",
+      "timestamp": "2026-10-21T13:46:01.464Z"
+    },
+    {
+      "id": "aud_1792590347160",
+      "tenantId": "tenant_altahirclinics_3789",
+      "action": "LICENSE_KEY_ACTIVATED",
+      "staffId": "CLINIC_ADMIN",
+      "staffName": "Clinic Administrator",
+      "approvingAdmin": "Digital Snove SaaS Licensing Engine",
+      "discountAmount": 0,
+      "receiptId": "DS-ALTAHIRC-TRIAL-D4RV-4110",
+      "details": "Portal successfully activated with License Key \"DS-ALTAHIRC-TRIAL-D4RV-4110\". Plan: TRIAL_3_DAYS (3 Days). Reset to Day 1.",
+      "timestamp": "2026-10-21T13:45:47.160Z"
+    },
+    {
+      "id": "aud_1792590306680",
+      "tenantId": "tenant_altahirclinics_3789",
+      "action": "SUBSCRIPTION_RENEWED_UNLOCKED",
+      "staffId": "SYSTEM_BILLING",
+      "staffName": "SUPER_ADMIN_1_CLICK_UNLOCK",
+      "approvingAdmin": "Super Admin / Payment Gateway",
+      "discountAmount": 0,
+      "receiptId": "PAY-306680",
+      "details": "Subscription unlocked & reset to Day 1 (30-Day Active Cycle) via SUPER_ADMIN_1_CLICK_UNLOCK. Fee Rs. 15000.",
+      "timestamp": "2026-10-21T13:45:06.680Z"
+    },
+    {
+      "id": "aud_1792590303624",
+      "tenantId": "tenant_altahirclinics_3789",
+      "action": "SUBSCRIPTION_RENEWED_UNLOCKED",
+      "staffId": "SYSTEM_BILLING",
+      "staffName": "SUPER_ADMIN_1_CLICK_UNLOCK",
+      "approvingAdmin": "Super Admin / Payment Gateway",
+      "discountAmount": 0,
+      "receiptId": "PAY-303624",
+      "details": "Subscription unlocked & reset to Day 1 (30-Day Active Cycle) via SUPER_ADMIN_1_CLICK_UNLOCK. Fee Rs. 15000.",
+      "timestamp": "2026-10-21T13:45:03.624Z"
+    },
+    {
+      "id": "aud_1792589968131",
+      "tenantId": "tenant_altahirclinics_3789",
+      "action": "LICENSE_KEY_ACTIVATED",
+      "staffId": "CLINIC_ADMIN",
+      "staffName": "Clinic Administrator",
+      "approvingAdmin": "Digital Snove SaaS Licensing Engine",
+      "discountAmount": 0,
+      "receiptId": "DS-ALTAHIRC-MONTH-ZATF-6251",
+      "details": "Portal successfully activated with License Key \"DS-ALTAHIRC-MONTH-ZATF-6251\". Plan: MONTHLY (30 Days). Reset to Day 1.",
+      "timestamp": "2026-10-21T13:39:28.131Z"
+    },
+    {
+      "id": "aud_1792587545049",
+      "tenantId": "tenant_altahirclinics_3789",
+      "action": "INVOICE_RECORD_DELETED",
+      "staffId": "CLINIC_ADMIN",
+      "staffName": "Clinic Admin",
+      "approvingAdmin": "Clinic Admin",
+      "discountAmount": 0,
+      "receiptId": "INV-ALT-7838",
+      "details": "Clinic Admin permanently deleted invoice \"INV-ALT-7838\" (Total: Rs. 2000) for patient Talha aloi.",
+      "timestamp": "2026-10-21T12:59:05.049Z"
+    },
+    {
+      "id": "aud_1792587510439",
+      "tenantId": "tenant_altahirclinics_3789",
+      "action": "TREATMENT_LEDGER_DELETED",
+      "staffId": "CLINIC_ADMIN",
+      "staffName": "Clinic Admin",
+      "approvingAdmin": "Clinic Admin",
+      "discountAmount": 0,
+      "receiptId": "trt_1792582587472",
+      "details": "Clinic Admin permanently deleted treatment ledger \"Hair transplan \" for patient Talha aloi (ALT-2026-1001). Remaining balance Rs. 8000 cleared.",
+      "timestamp": "2026-10-21T12:58:30.439Z"
+    },
+    {
+      "id": "aud_1792587429335",
+      "tenantId": "tenant_alshifa_4688",
+      "action": "INVOICE_RECORD_DELETED",
+      "staffId": "CLINIC_ADMIN",
+      "staffName": "Clinic Admin",
+      "approvingAdmin": "Clinic Admin",
+      "discountAmount": 0,
+      "receiptId": "INV-PHL-4359",
+      "details": "Clinic Admin permanently deleted invoice \"INV-PHL-4359\" (Total: Rs. 1500) for patient Walk-in Customer.",
+      "timestamp": "2026-10-21T12:57:09.335Z"
+    },
+    {
+      "id": "aud_1792585921565",
+      "tenantId": "tenant_altahirclinics_3789",
+      "action": "SALE_REFUNDED_BY_ADMIN",
+      "staffId": "STAFF_POS",
+      "staffName": "Ubaid Ur Rehman (Platform Owner)",
+      "approvingAdmin": "Al Tahir Clinics  Owner",
+      "discountAmount": 0,
+      "receiptId": "INV-ALT-7838",
+      "details": "Invoice INV-ALT-7838 (Rs. 2000) marked REFUNDED by Clinic Admin. Stock restored.",
+      "timestamp": "2026-10-21T12:32:01.565Z"
+    },
+    {
+      "id": "aud_1792582706786",
+      "tenantId": "tenant_altahirclinics_3789",
+      "action": "BLOCKED_UNAUTHORIZED_VOID_ATTEMPT",
+      "staffId": "STAFF_POS",
+      "staffName": "Ubaid Ur Rehman (Platform Owner)",
+      "approvingAdmin": "SECURITY_BLOCK",
+      "discountAmount": 0,
+      "receiptId": "sale_1792582587472",
+      "details": "STRICT SECURITY BLOCK: Staff attempted to cancel/refund sale without Clinic Admin authorization.",
+      "timestamp": "2026-10-21T11:38:26.786Z"
+    },
+    {
+      "id": "aud_1792578920151",
+      "tenantId": "tenant_altahirclinics_3789",
+      "action": "WHITE_LABEL_SETTINGS_UPDATED",
+      "staffId": "CLINIC_ADMIN",
+      "staffName": "Clinic Admin",
+      "approvingAdmin": "Clinic Admin",
+      "discountAmount": 0,
+      "receiptId": "SETTINGS",
+      "details": "Updated White-Label Branding, Receipt Header/Footer, SMS Gateway & 4-Digit Admin PIN.",
+      "timestamp": "2026-10-21T10:35:20.151Z"
+    },
+    {
+      "id": "aud_1792578870864",
+      "tenantId": "tenant_altahirclinics_3789",
+      "action": "WHITE_LABEL_SETTINGS_UPDATED",
+      "staffId": "CLINIC_ADMIN",
+      "staffName": "Clinic Admin",
+      "approvingAdmin": "Clinic Admin",
+      "discountAmount": 0,
+      "receiptId": "SETTINGS",
+      "details": "Updated White-Label Branding, Receipt Header/Footer, SMS Gateway & 4-Digit Admin PIN.",
+      "timestamp": "2026-10-21T10:34:30.864Z"
+    },
+    {
+      "id": "aud_1792578859268",
+      "tenantId": "tenant_altahirclinics_3789",
+      "action": "WHITE_LABEL_SETTINGS_UPDATED",
+      "staffId": "CLINIC_ADMIN",
+      "staffName": "Clinic Admin",
+      "approvingAdmin": "Clinic Admin",
+      "discountAmount": 0,
+      "receiptId": "SETTINGS",
+      "details": "Updated White-Label Branding, Receipt Header/Footer, SMS Gateway & 4-Digit Admin PIN.",
+      "timestamp": "2026-10-21T10:34:19.268Z"
+    },
+    {
+      "id": "aud_1792578844017",
+      "tenantId": "tenant_altahirclinics_3789",
+      "action": "WHITE_LABEL_SETTINGS_UPDATED",
+      "staffId": "CLINIC_ADMIN",
+      "staffName": "Clinic Admin",
+      "approvingAdmin": "Clinic Admin",
+      "discountAmount": 0,
+      "receiptId": "SETTINGS",
+      "details": "Updated White-Label Branding, Receipt Header/Footer, SMS Gateway & 4-Digit Admin PIN.",
+      "timestamp": "2026-10-21T10:34:04.017Z"
+    },
+    {
+      "id": "aud_1792578665557",
+      "tenantId": "tenant_alshifa_4688",
+      "action": "POS_SALE_COMPLETED",
+      "staffId": "u_super",
+      "staffName": "Ubaid Ur Rehman (Platform Owner)",
+      "approvingAdmin": "No Discount",
+      "discountAmount": 0,
+      "receiptId": "INV-PHL-4359",
+      "details": "POS Invoice INV-PHL-4359 completed (Standard OPD Consultation / Item x1). Paid Today: Rs. 1500 | Remaining Balance: Rs. 0.",
+      "timestamp": "2026-10-21T10:31:05.557Z"
+    },
+    {
+      "id": "aud_1792578543000",
+      "tenantId": "tenant_altahirclinics_3789",
+      "action": "SUBSCRIPTION_RENEWED_UNLOCKED",
+      "staffId": "SYSTEM_BILLING",
+      "staffName": "SUPER_ADMIN_1_CLICK_UNLOCK",
+      "approvingAdmin": "Super Admin / Payment Gateway",
+      "discountAmount": 0,
+      "receiptId": "PAY-543000",
+      "details": "Subscription unlocked & reset to Day 1 (30-Day Active Cycle) via SUPER_ADMIN_1_CLICK_UNLOCK. Fee Rs. 15000.",
+      "timestamp": "2026-10-21T10:29:03.000Z"
+    },
+    {
+      "id": "aud_1792578542810",
+      "tenantId": "tenant_altahirclinics_3789",
+      "action": "SUBSCRIPTION_RENEWED_UNLOCKED",
+      "staffId": "SYSTEM_BILLING",
+      "staffName": "SUPER_ADMIN_1_CLICK_UNLOCK",
+      "approvingAdmin": "Super Admin / Payment Gateway",
+      "discountAmount": 0,
+      "receiptId": "PAY-542810",
+      "details": "Subscription unlocked & reset to Day 1 (30-Day Active Cycle) via SUPER_ADMIN_1_CLICK_UNLOCK. Fee Rs. 15000.",
+      "timestamp": "2026-10-21T10:29:02.810Z"
+    },
+    {
+      "id": "aud_1792578542363",
+      "tenantId": "tenant_altahirclinics_3789",
+      "action": "SUBSCRIPTION_RENEWED_UNLOCKED",
+      "staffId": "SYSTEM_BILLING",
+      "staffName": "SUPER_ADMIN_1_CLICK_UNLOCK",
+      "approvingAdmin": "Super Admin / Payment Gateway",
+      "discountAmount": 0,
+      "receiptId": "PAY-542363",
+      "details": "Subscription unlocked & reset to Day 1 (30-Day Active Cycle) via SUPER_ADMIN_1_CLICK_UNLOCK. Fee Rs. 15000.",
+      "timestamp": "2026-10-21T10:29:02.363Z"
+    },
+    {
+      "id": "aud_1792578540905",
+      "tenantId": "tenant_altahirclinics_3789",
+      "action": "SUBSCRIPTION_RENEWED_UNLOCKED",
+      "staffId": "SYSTEM_BILLING",
+      "staffName": "SUPER_ADMIN_1_CLICK_UNLOCK",
+      "approvingAdmin": "Super Admin / Payment Gateway",
+      "discountAmount": 0,
+      "receiptId": "PAY-540905",
+      "details": "Subscription unlocked & reset to Day 1 (30-Day Active Cycle) via SUPER_ADMIN_1_CLICK_UNLOCK. Fee Rs. 15000.",
+      "timestamp": "2026-10-21T10:29:00.905Z"
+    },
+    {
+      "id": "aud_1792578529844",
+      "tenantId": "tenant_altahirclinics_3789",
+      "action": "SUBSCRIPTION_RENEWED_UNLOCKED",
+      "staffId": "SYSTEM_BILLING",
+      "staffName": "SUPER_ADMIN_1_CLICK_UNLOCK",
+      "approvingAdmin": "Super Admin / Payment Gateway",
+      "discountAmount": 0,
+      "receiptId": "PAY-529844",
+      "details": "Subscription unlocked & reset to Day 1 (30-Day Active Cycle) via SUPER_ADMIN_1_CLICK_UNLOCK. Fee Rs. 15000.",
+      "timestamp": "2026-10-21T10:28:49.844Z"
+    },
+    {
+      "id": "aud_1792571803517",
+      "tenantId": "tenant_altahirclinics_3789",
+      "action": "WHITE_LABEL_SETTINGS_UPDATED",
+      "staffId": "CLINIC_ADMIN",
+      "staffName": "Clinic Admin",
+      "approvingAdmin": "Clinic Admin",
+      "discountAmount": 0,
+      "receiptId": "SETTINGS",
+      "details": "Updated White-Label Branding, Receipt Header/Footer, SMS Gateway & 4-Digit Admin PIN.",
+      "timestamp": "2026-10-21T08:36:43.517Z"
+    },
+    {
+      "id": "aud_1792571798702",
+      "tenantId": "tenant_altahirclinics_3789",
+      "action": "WHITE_LABEL_SETTINGS_UPDATED",
+      "staffId": "CLINIC_ADMIN",
+      "staffName": "Clinic Admin",
+      "approvingAdmin": "Clinic Admin",
+      "discountAmount": 0,
+      "receiptId": "SETTINGS",
+      "details": "Updated White-Label Branding, Receipt Header/Footer, SMS Gateway & 4-Digit Admin PIN.",
+      "timestamp": "2026-10-21T08:36:38.702Z"
+    },
+    {
+      "id": "aud_1792569647243",
+      "tenantId": "tenant_alshifa",
+      "action": "POS_SALE_COMPLETED",
+      "staffId": "u_1792569547195",
+      "staffName": "HUZAIFA sHAKEEL ",
+      "approvingAdmin": "No Discount",
+      "discountAmount": 0,
+      "receiptId": "INV-ALS-5724",
+      "details": "POS Invoice INV-ALS-5724 completed (cream x3). Paid Today: Rs. 9000 | Remaining Balance: Rs. 0.",
+      "timestamp": "2026-10-21T08:00:47.243Z"
+    },
+    {
+      "id": "aud_1792569176309",
+      "tenantId": "tenant_alshifa",
+      "action": "POS_SALE_COMPLETED",
+      "staffId": "u_super",
+      "staffName": "Ubaid Ur Rehman (Platform Owner)",
+      "approvingAdmin": "No Discount",
+      "discountAmount": 0,
+      "receiptId": "INV-ALS-9944",
+      "details": "POS Invoice INV-ALS-9944 completed (cream x3). Paid Today: Rs. 9000 | Remaining Balance: Rs. 0.",
+      "timestamp": "2026-10-21T07:52:56.309Z"
+    },
+    {
+      "id": "aud_1792569061275",
+      "tenantId": "tenant_lifecare",
+      "action": "SUBSCRIPTION_RENEWED_UNLOCKED",
+      "staffId": "SYSTEM_BILLING",
+      "staffName": "SUPER_ADMIN_1_CLICK_UNLOCK",
+      "approvingAdmin": "Super Admin / Payment Gateway",
+      "discountAmount": 0,
+      "receiptId": "PAY-061275",
+      "details": "Subscription unlocked & reset to Day 1 (30-Day Active Cycle) via SUPER_ADMIN_1_CLICK_UNLOCK. Fee Rs. 15000.",
+      "timestamp": "2026-10-21T07:51:01.275Z"
+    },
+    {
+      "id": "aud_1792566983937",
+      "tenantId": "tenant_alshifa",
+      "action": "SUBSCRIPTION_RENEWED_UNLOCKED",
+      "staffId": "SYSTEM_BILLING",
+      "staffName": "SUPER_ADMIN_1_CLICK_UNLOCK",
+      "approvingAdmin": "Super Admin / Payment Gateway",
+      "discountAmount": 0,
+      "receiptId": "PAY-983937",
+      "details": "Subscription unlocked & reset to Day 1 (30-Day Active Cycle) via SUPER_ADMIN_1_CLICK_UNLOCK. Fee Rs. 15000.",
+      "timestamp": "2026-10-21T07:16:23.937Z"
+    },
+    {
+      "id": "aud_1792566539001",
+      "tenantId": "tenant_alshifa",
+      "action": "LEDGER_SESSION_PAYMENT",
+      "staffId": "STAFF_POS",
+      "staffName": "Ayesha Siddiqui (Receptionist)",
+      "approvingAdmin": "Auto Ledger Engine",
+      "discountAmount": 0,
+      "receiptId": "INV-ALS-6078",
+      "details": "Session #3 payment Rs. 30000 recorded for Naveed. Remaining Balance: Rs. 38000.",
+      "timestamp": "2026-10-21T07:08:59.001Z"
+    },
+    {
+      "id": "aud_1792566463410",
+      "tenantId": "tenant_alshifa",
+      "action": "POS_SALE_COMPLETED",
+      "staffId": "u_alshifa_staff1",
+      "staffName": "Ayesha Siddiqui (Receptionist)",
+      "approvingAdmin": "No Discount",
+      "discountAmount": 0,
+      "receiptId": "INV-ALS-1097",
+      "details": "POS Invoice INV-ALS-1097 completed. Paid Today: Rs. 9000 | Remaining Balance: Rs. 0.",
+      "timestamp": "2026-10-21T07:07:43.410Z"
+    },
+    {
+      "id": "aud_1792565849656",
+      "tenantId": "tenant_alshifa",
+      "action": "BLOCKED_UNAUTHORIZED_VOID_ATTEMPT",
+      "staffId": "STAFF_POS",
+      "staffName": "Ayesha Siddiqui (Receptionist)",
+      "approvingAdmin": "SECURITY_BLOCK",
+      "discountAmount": 0,
+      "receiptId": "sale_1792565330224",
+      "details": "STRICT SECURITY BLOCK: Staff attempted to cancel/refund sale without Clinic Admin authorization.",
+      "timestamp": "2026-10-21T06:57:29.656Z"
+    },
+    {
+      "id": "aud_1792565849505",
+      "tenantId": "tenant_alshifa",
+      "action": "BLOCKED_UNAUTHORIZED_VOID_ATTEMPT",
+      "staffId": "STAFF_POS",
+      "staffName": "Ayesha Siddiqui (Receptionist)",
+      "approvingAdmin": "SECURITY_BLOCK",
+      "discountAmount": 0,
+      "receiptId": "sale_1792565330224",
+      "details": "STRICT SECURITY BLOCK: Staff attempted to cancel/refund sale without Clinic Admin authorization.",
+      "timestamp": "2026-10-21T06:57:29.505Z"
+    },
+    {
+      "id": "aud_1792565849313",
+      "tenantId": "tenant_alshifa",
+      "action": "BLOCKED_UNAUTHORIZED_VOID_ATTEMPT",
+      "staffId": "STAFF_POS",
+      "staffName": "Ayesha Siddiqui (Receptionist)",
+      "approvingAdmin": "SECURITY_BLOCK",
+      "discountAmount": 0,
+      "receiptId": "sale_1792565330224",
+      "details": "STRICT SECURITY BLOCK: Staff attempted to cancel/refund sale without Clinic Admin authorization.",
+      "timestamp": "2026-10-21T06:57:29.313Z"
+    },
+    {
+      "id": "aud_1792565849145",
+      "tenantId": "tenant_alshifa",
+      "action": "BLOCKED_UNAUTHORIZED_VOID_ATTEMPT",
+      "staffId": "STAFF_POS",
+      "staffName": "Ayesha Siddiqui (Receptionist)",
+      "approvingAdmin": "SECURITY_BLOCK",
+      "discountAmount": 0,
+      "receiptId": "sale_1792565330224",
+      "details": "STRICT SECURITY BLOCK: Staff attempted to cancel/refund sale without Clinic Admin authorization.",
+      "timestamp": "2026-10-21T06:57:29.145Z"
+    },
+    {
+      "id": "aud_1792565848937",
+      "tenantId": "tenant_alshifa",
+      "action": "BLOCKED_UNAUTHORIZED_VOID_ATTEMPT",
+      "staffId": "STAFF_POS",
+      "staffName": "Ayesha Siddiqui (Receptionist)",
+      "approvingAdmin": "SECURITY_BLOCK",
+      "discountAmount": 0,
+      "receiptId": "sale_1792565330224",
+      "details": "STRICT SECURITY BLOCK: Staff attempted to cancel/refund sale without Clinic Admin authorization.",
+      "timestamp": "2026-10-21T06:57:28.937Z"
+    },
+    {
+      "id": "aud_1792565848616",
+      "tenantId": "tenant_alshifa",
+      "action": "BLOCKED_UNAUTHORIZED_VOID_ATTEMPT",
+      "staffId": "STAFF_POS",
+      "staffName": "Ayesha Siddiqui (Receptionist)",
+      "approvingAdmin": "SECURITY_BLOCK",
+      "discountAmount": 0,
+      "receiptId": "sale_1792565330224",
+      "details": "STRICT SECURITY BLOCK: Staff attempted to cancel/refund sale without Clinic Admin authorization.",
+      "timestamp": "2026-10-21T06:57:28.616Z"
+    },
+    {
+      "id": "aud_1792565847905",
+      "tenantId": "tenant_alshifa",
+      "action": "BLOCKED_UNAUTHORIZED_VOID_ATTEMPT",
+      "staffId": "STAFF_POS",
+      "staffName": "Ayesha Siddiqui (Receptionist)",
+      "approvingAdmin": "SECURITY_BLOCK",
+      "discountAmount": 0,
+      "receiptId": "sale_1792565330224",
+      "details": "STRICT SECURITY BLOCK: Staff attempted to cancel/refund sale without Clinic Admin authorization.",
+      "timestamp": "2026-10-21T06:57:27.905Z"
+    },
+    {
+      "id": "aud_1792565845353",
+      "tenantId": "tenant_alshifa",
+      "action": "BLOCKED_UNAUTHORIZED_VOID_ATTEMPT",
+      "staffId": "STAFF_POS",
+      "staffName": "Ayesha Siddiqui (Receptionist)",
+      "approvingAdmin": "SECURITY_BLOCK",
+      "discountAmount": 0,
+      "receiptId": "sale_1792565330224",
+      "details": "STRICT SECURITY BLOCK: Staff attempted to cancel/refund sale without Clinic Admin authorization.",
+      "timestamp": "2026-10-21T06:57:25.353Z"
+    },
+    {
+      "id": "aud_1792565381227",
+      "tenantId": "tenant_alshifa",
+      "action": "BLOCKED_UNAUTHORIZED_VOID_ATTEMPT",
+      "staffId": "STAFF_POS",
+      "staffName": "Ayesha Siddiqui (Receptionist)",
+      "approvingAdmin": "SECURITY_BLOCK",
+      "discountAmount": 0,
+      "receiptId": "sale_1792565330224",
+      "details": "STRICT SECURITY BLOCK: Staff attempted to cancel/refund sale without Clinic Admin authorization.",
+      "timestamp": "2026-10-21T06:49:41.227Z"
+    },
+    {
+      "id": "aud_1792565330224",
+      "tenantId": "tenant_alshifa",
+      "action": "POS_SALE_COMPLETED",
+      "staffId": "u_alshifa_staff1",
+      "staffName": "Ayesha Siddiqui (Receptionist)",
+      "approvingAdmin": "No Discount",
+      "discountAmount": 0,
+      "receiptId": "INV-ALS-7807",
+      "details": "POS Invoice INV-ALS-7807 completed. Paid Today: Rs. 15000 | Remaining Balance: Rs. 0.",
+      "timestamp": "2026-10-21T06:48:50.224Z"
+    },
+    {
+      "id": "aud_1792565306360",
+      "tenantId": "tenant_alshifa",
+      "action": "POS_SALE_COMPLETED",
+      "staffId": "u_alshifa_staff1",
+      "staffName": "Ayesha Siddiqui (Receptionist)",
+      "approvingAdmin": "No Discount",
+      "discountAmount": 0,
+      "receiptId": "INV-ALS-9894",
+      "details": "POS Invoice INV-ALS-9894 completed. Paid Today: Rs. 15000 | Remaining Balance: Rs. 0.",
+      "timestamp": "2026-10-21T06:48:26.360Z"
+    },
+    {
+      "id": "aud_1792565246600",
+      "tenantId": "tenant_alshifa",
+      "action": "POS_SALE_COMPLETED",
+      "staffId": "u_alshifa_staff1",
+      "staffName": "Ayesha Siddiqui (Receptionist)",
+      "approvingAdmin": "No Discount",
+      "discountAmount": 0,
+      "receiptId": "INV-ALS-5897",
+      "details": "POS Invoice INV-ALS-5897 completed. Paid Today: Rs. 3000 | Remaining Balance: Rs. 0.",
+      "timestamp": "2026-10-21T06:47:26.600Z"
+    },
+    {
+      "id": "aud_1792565111182",
+      "tenantId": "tenant_alshifa",
+      "action": "POS_SALE_COMPLETED",
+      "staffId": "u_alshifa_staff1",
+      "staffName": "Ayesha Siddiqui (Receptionist)",
+      "approvingAdmin": "No Discount",
+      "discountAmount": 0,
+      "receiptId": "INV-ALS-8841",
+      "details": "POS Invoice INV-ALS-8841 completed. Paid Today: Rs. 57000 | Remaining Balance: Rs. 68000.",
+      "timestamp": "2026-10-21T06:45:11.182Z"
+    },
+    {
+      "id": "aud_1792564895056",
+      "tenantId": "tenant_alshifa",
+      "action": "SUBSCRIPTION_RENEWED_UNLOCKED",
+      "staffId": "SYSTEM_BILLING",
+      "staffName": "CLINIC_ADMIN_PORTAL_RENEWAL",
+      "approvingAdmin": "Super Admin / Payment Gateway",
+      "discountAmount": 0,
+      "receiptId": "PAY-895056",
+      "details": "Subscription unlocked & reset to Day 1 (30-Day Active Cycle) via CLINIC_ADMIN_PORTAL_RENEWAL. Fee Rs. 15000.",
+      "timestamp": "2026-10-21T06:41:35.056Z"
+    },
+    {
+      "id": "aud_1792564403567",
+      "tenantId": "tenant_alshifa",
+      "action": "POS_SALE_COMPLETED",
+      "staffId": "u_alshifa_staff1",
+      "staffName": "Ayesha Siddiqui (Receptionist)",
+      "approvingAdmin": "No Discount",
+      "discountAmount": 0,
+      "receiptId": "INV-ALS-3946",
+      "details": "POS Invoice INV-ALS-3946 completed. Paid Today: Rs. 6000 | Remaining Balance: Rs. 68000.",
+      "timestamp": "2026-10-21T06:33:23.567Z"
+    },
+    {
+      "id": "aud_1792564344492",
+      "tenantId": "tenant_alshifa",
+      "action": "LEDGER_SESSION_PAYMENT",
+      "staffId": "STAFF_POS",
+      "staffName": "Ayesha Siddiqui (Receptionist)",
+      "approvingAdmin": "Auto Ledger Engine",
+      "discountAmount": 0,
+      "receiptId": "INV-ALS-6894",
+      "details": "Session #2 payment Rs. 50000 recorded for Naveed. Remaining Balance: Rs. 68000.",
+      "timestamp": "2026-10-21T06:32:24.492Z"
+    },
+    {
+      "id": "aud_1792563637272",
+      "tenantId": "tenant_alshifa",
+      "action": "DISCOUNTED_SALE_COMPLETED",
+      "staffId": "u_alshifa_staff1",
+      "staffName": "Ayesha Siddiqui (Receptionist)",
+      "approvingAdmin": "Clinic Admin (4-Digit PIN)",
+      "discountAmount": 200,
+      "receiptId": "INV-ALS-3914",
+      "details": "POS Invoice INV-ALS-3914 completed with Rs. 200 discount approved by Clinic Admin (4-Digit PIN). Net Paid: Rs. 5800.",
+      "timestamp": "2026-10-21T06:20:37.272Z"
+    },
+    {
+      "id": "aud_1792563532175",
+      "tenantId": "tenant_alshifa",
+      "action": "POS_SALE_COMPLETED",
+      "staffId": "u_alshifa_staff1",
+      "staffName": "Ayesha Siddiqui (Receptionist)",
+      "approvingAdmin": "No Discount",
+      "discountAmount": 0,
+      "receiptId": "INV-ALS-8579",
+      "details": "POS Invoice INV-ALS-8579 completed. Paid Today: Rs. 3000 | Remaining Balance: Rs. 8000.",
+      "timestamp": "2026-10-21T06:18:52.175Z"
+    },
+    {
+      "id": "aud_1792563412247",
+      "tenantId": "tenant_alshifa",
+      "action": "SUBSCRIPTION_RENEWED_UNLOCKED",
+      "staffId": "SYSTEM_BILLING",
+      "staffName": "SUPER_ADMIN_1_CLICK_UNLOCK",
+      "approvingAdmin": "Super Admin / Payment Gateway",
+      "discountAmount": 0,
+      "receiptId": "PAY-412247",
+      "details": "Subscription unlocked & reset to Day 1 (30-Day Active Cycle) via SUPER_ADMIN_1_CLICK_UNLOCK. Fee Rs. 15000.",
+      "timestamp": "2026-10-21T06:16:52.247Z"
+    },
+    {
+      "id": "aud_1792563410967",
+      "tenantId": "tenant_alshifa",
+      "action": "SUBSCRIPTION_RENEWED_UNLOCKED",
+      "staffId": "SYSTEM_BILLING",
+      "staffName": "SUPER_ADMIN_1_CLICK_UNLOCK",
+      "approvingAdmin": "Super Admin / Payment Gateway",
+      "discountAmount": 0,
+      "receiptId": "PAY-410967",
+      "details": "Subscription unlocked & reset to Day 1 (30-Day Active Cycle) via SUPER_ADMIN_1_CLICK_UNLOCK. Fee Rs. 15000.",
+      "timestamp": "2026-10-21T06:16:50.967Z"
+    },
+    {
+      "id": "aud_1792563408470",
+      "tenantId": "tenant_alshifa",
+      "action": "SUBSCRIPTION_RENEWED_UNLOCKED",
+      "staffId": "SYSTEM_BILLING",
+      "staffName": "SUPER_ADMIN_1_CLICK_UNLOCK",
+      "approvingAdmin": "Super Admin / Payment Gateway",
+      "discountAmount": 0,
+      "receiptId": "PAY-408470",
+      "details": "Subscription unlocked & reset to Day 1 (30-Day Active Cycle) via SUPER_ADMIN_1_CLICK_UNLOCK. Fee Rs. 15000.",
+      "timestamp": "2026-10-21T06:16:48.470Z"
+    },
+    {
+      "id": "aud_1792563269037",
+      "tenantId": "tenant_alshifa",
+      "action": "WHITE_LABEL_SETTINGS_UPDATED",
+      "staffId": "CLINIC_ADMIN",
+      "staffName": "Clinic Admin",
+      "approvingAdmin": "Clinic Admin",
+      "discountAmount": 0,
+      "receiptId": "SETTINGS",
+      "details": "Updated White-Label Branding, Receipt Header/Footer, SMS Gateway & 4-Digit Admin PIN.",
+      "timestamp": "2026-10-21T06:14:29.037Z"
+    },
+    {
+      "id": "aud_1",
+      "tenantId": "tenant_alshifa",
+      "action": "DISCOUNT_APPROVED",
+      "staffId": "u_alshifa_staff1",
+      "staffName": "Ayesha Siddiqui (Receptionist)",
+      "approvingAdmin": "Dr. Kamran Tariq (PIN Verified)",
+      "discountAmount": 150,
+      "receiptId": "INV-ALS-8804",
+      "details": "Rs. 150 discount authorized via 4-Digit Admin PIN for Fatima Zahra Noor",
+      "timestamp": "2026-10-21T08:44:35Z"
+    },
+    {
+      "id": "aud_2",
+      "tenantId": "tenant_alshifa",
+      "action": "INVOICE_GENERATED_AND_SMS_SENT",
+      "staffId": "u_alshifa_staff1",
+      "staffName": "Ayesha Siddiqui (Receptionist)",
+      "approvingAdmin": "System Auto",
+      "discountAmount": 0,
+      "receiptId": "INV-ALS-8815",
+      "details": "POS Sale Rs. 680 completed. WhatsApp/SMS triggered to 0300-4112233.",
+      "timestamp": "2026-10-21T09:30:05Z"
+    }
+  ],
+  "smsLogs": [
+    {
+      "id": "sms_1793076817685",
+      "tenantId": "tenant_alshifa_4688",
+      "recipientPhone": "0300-1234567",
+      "patientName": "huzaifa",
+      "message": "Dear huzaifa, Thank you for visiting Al-Shifa Healthcare & Dental Center. Amount Paid: Rs. 1,500 | Remaining Balance: Rs. 0.",
+      "channel": "WhatsApp + SMS Gateway",
+      "status": "DELIVERED",
+      "invoiceNumber": "INV-PHL-5733",
+      "timestamp": "2026-10-27T04:53:37.685Z"
+    },
+    {
+      "id": "sms_1792652023141",
+      "tenantId": "tenant_altahirclinics_3789",
+      "recipientPhone": "12345678901",
+      "patientName": "Talha aloi",
+      "message": "Dear Talha aloi, Thank you for visiting Al Tahir Clinics. Amount Paid: Rs. 1,500 | Remaining Balance: Rs. 0.",
+      "channel": "WhatsApp + SMS Gateway",
+      "status": "DELIVERED",
+      "invoiceNumber": "INV-ALT-8677",
+      "timestamp": "2026-10-22T06:53:43.141Z"
+    },
+    {
+      "id": "sms_1792648901013",
+      "tenantId": "tenant_altahirclinics_3789",
+      "recipientPhone": "0300-1234567",
+      "patientName": "Ali Khan",
+      "message": "Dear Ali Khan, Thank you for visiting Al Tahir Clinics. Amount Paid: Rs. 350 | Remaining Balance: Rs. 0.",
+      "channel": "WhatsApp + SMS Gateway",
+      "status": "DELIVERED",
+      "invoiceNumber": "INV-ALT-3182",
+      "timestamp": "2026-10-22T06:01:41.013Z"
+    },
+    {
+      "id": "sms_1792591128579",
+      "tenantId": "tenant_altahirclinics_3789",
+      "recipientPhone": "0300-0000000",
+      "patientName": "Walk-in Customer",
+      "message": "Dear Walk-in Customer, Thank you for visiting Al Tahir Clinics. Amount Paid: Rs. 1,500 | Remaining Balance: Rs. 0.",
+      "channel": "WhatsApp + SMS Gateway",
+      "status": "DELIVERED",
+      "invoiceNumber": "INV-ALT-9388",
+      "timestamp": "2026-10-21T13:58:48.579Z"
+    },
+    {
+      "id": "sms_1792582587472",
+      "tenantId": "tenant_altahirclinics_3789",
+      "recipientPhone": "12345678901",
+      "patientName": "Talha aloi",
+      "message": "Dear Talha aloi, Thank you for visiting Al Tahir Clinics. Amount Paid: Rs. 2,000 | Remaining Balance: Rs. 8,000.",
+      "channel": "WhatsApp + SMS",
+      "status": "DELIVERED",
+      "invoiceNumber": "INV-ALT-7838",
+      "timestamp": "2026-10-21T06:33:00.000Z"
+    },
+    {
+      "id": "sms_1792578665637",
+      "tenantId": "tenant_alshifa_4688",
+      "recipientPhone": "0300-0000000",
+      "patientName": "Walk-in Customer",
+      "message": "Dear Walk-in Customer, Thank you for visiting Al-Shifa Healthcare & Dental Center. Amount Paid: Rs. 1,500 | Remaining Balance: Rs. 0.",
+      "channel": "WhatsApp + SMS Gateway",
+      "status": "DELIVERED",
+      "invoiceNumber": "INV-PHL-4359",
+      "timestamp": "2026-10-21T10:31:05.637Z"
+    },
+    {
+      "id": "sms_1792569647243",
+      "tenantId": "tenant_alshifa",
+      "recipientPhone": "03131234567",
+      "patientName": "XYZ",
+      "message": "Dear XYZ, Thank you for visiting Al tahir Clininc. Amount Paid: Rs. 9,000 | Remaining Balance: Rs. 0.",
+      "channel": "WhatsApp + SMS Gateway",
+      "status": "DELIVERED",
+      "invoiceNumber": "INV-ALS-5724",
+      "timestamp": "2026-10-21T08:00:47.243Z"
+    },
+    {
+      "id": "sms_1792569176355",
+      "tenantId": "tenant_alshifa",
+      "recipientPhone": "0300-0000000",
+      "patientName": "Walk-in Customer",
+      "message": "Dear Walk-in Customer, Thank you for visiting Al tahir Clininc. Amount Paid: Rs. 9,000 | Remaining Balance: Rs. 0.",
+      "channel": "WhatsApp + SMS Gateway",
+      "status": "DELIVERED",
+      "invoiceNumber": "INV-ALS-9944",
+      "timestamp": "2026-10-21T07:52:56.355Z"
+    },
+    {
+      "id": "sms_1792566539001",
+      "tenantId": "tenant_alshifa",
+      "recipientPhone": "12345678901",
+      "patientName": "Naveed",
+      "message": "Dear Naveed, Thank you for visiting Al tahir Clininc. Amount Paid: Rs. 30,000 | Remaining Balance: Rs. 38,000.",
+      "channel": "WhatsApp + SMS",
+      "status": "DELIVERED",
+      "invoiceNumber": "INV-ALS-6078",
+      "timestamp": "2026-10-21T07:08:59.001Z"
+    },
+    {
+      "id": "sms_1792566463410",
+      "tenantId": "tenant_alshifa",
+      "recipientPhone": "0300-0000000",
+      "patientName": "Walk-in Patient",
+      "message": "Dear Walk-in Patient, Thank you for visiting Al tahir Clininc. Amount Paid: Rs. 9,000 | Remaining Balance: Rs. 0.",
+      "channel": "WhatsApp + SMS Gateway",
+      "status": "DELIVERED",
+      "invoiceNumber": "INV-ALS-1097",
+      "timestamp": "2026-10-21T07:07:43.410Z"
+    },
+    {
+      "id": "sms_1792565330224",
+      "tenantId": "tenant_alshifa",
+      "recipientPhone": "0300-0000000",
+      "patientName": "Walk-in Patient",
+      "message": "Dear Walk-in Patient, Thank you for visiting Al tahir Clininc. Amount Paid: Rs. 15,000 | Remaining Balance: Rs. 0.",
+      "channel": "WhatsApp + SMS Gateway",
+      "status": "DELIVERED",
+      "invoiceNumber": "INV-ALS-7807",
+      "timestamp": "2026-10-21T06:48:50.224Z"
+    },
+    {
+      "id": "sms_1792565306360",
+      "tenantId": "tenant_alshifa",
+      "recipientPhone": "0300-0000000",
+      "patientName": "Walk-in Patient",
+      "message": "Dear Walk-in Patient, Thank you for visiting Al tahir Clininc. Amount Paid: Rs. 15,000 | Remaining Balance: Rs. 0.",
+      "channel": "WhatsApp + SMS Gateway",
+      "status": "DELIVERED",
+      "invoiceNumber": "INV-ALS-9894",
+      "timestamp": "2026-10-21T06:48:26.360Z"
+    },
+    {
+      "id": "sms_1792565246600",
+      "tenantId": "tenant_alshifa",
+      "recipientPhone": "0300-0000000",
+      "patientName": "Walk-in Patient",
+      "message": "Dear Walk-in Patient, Thank you for visiting Al tahir Clininc. Amount Paid: Rs. 3,000 | Remaining Balance: Rs. 0.",
+      "channel": "WhatsApp + SMS Gateway",
+      "status": "DELIVERED",
+      "invoiceNumber": "INV-ALS-5897",
+      "timestamp": "2026-10-21T06:47:26.600Z"
+    },
+    {
+      "id": "sms_1792565111182",
+      "tenantId": "tenant_alshifa",
+      "recipientPhone": "12345678901",
+      "patientName": "Naveed",
+      "message": "Dear Naveed, Thank you for visiting Al tahir Clininc. Amount Paid: Rs. 57,000 | Remaining Balance: Rs. 68,000.",
+      "channel": "WhatsApp + SMS Gateway",
+      "status": "DELIVERED",
+      "invoiceNumber": "INV-ALS-8841",
+      "timestamp": "2026-10-21T06:45:11.182Z"
+    },
+    {
+      "id": "sms_1792564403567",
+      "tenantId": "tenant_alshifa",
+      "recipientPhone": "12345678901",
+      "patientName": "Naveed",
+      "message": "Dear Naveed, Thank you for visiting Al tahir Clininc. Amount Paid: Rs. 6,000 | Remaining Balance: Rs. 68,000.",
+      "channel": "WhatsApp + SMS Gateway",
+      "status": "DELIVERED",
+      "invoiceNumber": "INV-ALS-3946",
+      "timestamp": "2026-10-21T06:33:23.567Z"
+    },
+    {
+      "id": "sms_1792564344492",
+      "tenantId": "tenant_alshifa",
+      "recipientPhone": "12345678901",
+      "patientName": "Naveed",
+      "message": "Dear Naveed, Thank you for visiting Al tahir Clininc. Amount Paid: Rs. 50,000 | Remaining Balance: Rs. 68,000.",
+      "channel": "WhatsApp + SMS",
+      "status": "DELIVERED",
+      "invoiceNumber": "INV-ALS-6894",
+      "timestamp": "2026-10-21T06:32:24.492Z"
+    },
+    {
+      "id": "sms_1792564275589",
+      "tenantId": "tenant_alshifa",
+      "recipientPhone": "12345678901",
+      "patientName": "Naveed",
+      "message": "Dear Naveed, Thank you for visiting Al tahir Clininc. Amount Paid: Rs. 2,000 | Remaining Balance: Rs. 118,000.",
+      "channel": "WhatsApp + SMS",
+      "status": "DELIVERED",
+      "invoiceNumber": "INV-ALS-5131",
+      "timestamp": "2026-10-21T06:31:15.590Z"
+    },
+    {
+      "id": "sms_1792563637272",
+      "tenantId": "tenant_alshifa",
+      "recipientPhone": "123456789012",
+      "patientName": "huzaifa",
+      "message": "Dear huzaifa, Thank you for visiting Al tahir Clininc. Amount Paid: Rs. 5,800 | Remaining Balance: Rs. 8,000.",
+      "channel": "WhatsApp + SMS Gateway",
+      "status": "DELIVERED",
+      "invoiceNumber": "INV-ALS-3914",
+      "timestamp": "2026-10-21T06:20:37.272Z"
+    },
+    {
+      "id": "sms_1792563532175",
+      "tenantId": "tenant_alshifa",
+      "recipientPhone": "123456789012",
+      "patientName": "huzaifa",
+      "message": "Dear huzaifa, Thank you for visiting Al tahir Clininc. Amount Paid: Rs. 3,000 | Remaining Balance: Rs. 8,000.",
+      "channel": "WhatsApp + SMS Gateway",
+      "status": "DELIVERED",
+      "invoiceNumber": "INV-ALS-8579",
+      "timestamp": "2026-10-21T06:18:52.175Z"
+    },
+    {
+      "id": "sms_1792563340781",
+      "tenantId": "tenant_alshifa",
+      "recipientPhone": "123456789012",
+      "patientName": "huzaifa",
+      "message": "Dear huzaifa, Thank you for visiting Al tahir Clininc. Amount Paid: Rs. 2,000 | Remaining Balance: Rs. 8,000.",
+      "channel": "WhatsApp + SMS",
+      "status": "DELIVERED",
+      "invoiceNumber": "INV-ALS-7552",
+      "timestamp": "2026-10-21T06:15:40.818Z"
+    },
+    {
+      "id": "sms_1",
+      "tenantId": "tenant_alshifa",
+      "recipientPhone": "0321-9887766",
+      "patientName": "Fatima Zahra Noor",
+      "message": "Dear Fatima Zahra Noor, Thank you for visiting Al-Shifa Dental & Derma Aesthetics. Amount Paid: Rs. 2,300 | Remaining Balance: Rs. 8,000.",
+      "channel": "WhatsApp + SMS",
+      "status": "DELIVERED",
+      "invoiceNumber": "INV-ALS-8804",
+      "timestamp": "2026-10-21T08:45:02Z"
+    },
+    {
+      "id": "sms_2",
+      "tenantId": "tenant_alshifa",
+      "recipientPhone": "0300-4112233",
+      "patientName": "Muhammad Haris Khan",
+      "message": "Dear Muhammad Haris Khan, Thank you for visiting Al-Shifa Dental & Derma Aesthetics. Amount Paid: Rs. 680 | Remaining Balance: Rs. 15,000.",
+      "channel": "WhatsApp + SMS",
+      "status": "DELIVERED",
+      "invoiceNumber": "INV-ALS-8815",
+      "timestamp": "2026-10-21T09:30:04Z"
+    }
+  ],
+  "cronLogs": [
+    {
+      "id": "cron_1793023925514",
+      "timestamp": "2026-10-26T14:12:05.514Z",
+      "summary": "[SUPER_ADMIN_DELETE] Deleted tenant \"Al Tahir Clinics\" (altahirclinics.digitalsnova.com) and all associated tenant records."
+    },
+    {
+      "id": "cron_1792654048311",
+      "timestamp": "2026-10-22T07:27:28.311Z",
+      "summary": "[MANUAL_MIDNIGHT_CRON_TRIGGER] Advanced billing cycle day (+1) for 2 clinics -> Active: 2, Grace Warning (Days 31-33): 0, Auto-Locked (Day 34+): 0"
+    },
+    {
+      "id": "cron_1792649155611",
+      "timestamp": "2026-10-22T06:05:55.611Z",
+      "summary": "[CLINIC_ADMIN_PORTAL_RENEWAL] Auto-Unlocked \"Al Tahir Clinics\" (altahirclinics.digitalsnova.com) upon payment receipt Rs. 0. Cycle reset to Day 1."
+    },
+    {
+      "id": "cron_1792649145380",
+      "timestamp": "2026-10-22T06:05:45.380Z",
+      "summary": "[LOCK_MODAL_INSTANT_PAYMENT_WEBHOOK] Auto-Unlocked \"Al Tahir Clinics\" (altahirclinics.digitalsnova.com) upon payment receipt Rs. 0. Cycle reset to Day 1."
+    },
+    {
+      "id": "cron_1792648834521",
+      "timestamp": "2026-10-22T06:00:34.521Z",
+      "summary": "[CARD_PAYMENT_VERIFIED] \"Al Tahir Clinics\" authorized Card (...4242) -> Key \"DS-ALTAHIRC-TRIAL-AVPX-8932\" generated & activated. Reset to Day 1."
+    },
+    {
+      "id": "cron_1792648814532",
+      "timestamp": "2026-10-22T06:00:14.532Z",
+      "summary": "[KEY_DEACTIVATION] \"Al Tahir Clinics\" deactivated key \"DS-ALTAHIRC-MONTH-9ZKJ-1942\". Portal locked."
+    },
+    {
+      "id": "cron_1792648780816",
+      "timestamp": "2026-10-22T05:59:40.816Z",
+      "summary": "[CARD_PAYMENT_VERIFIED] \"Al Tahir Clinics\" authorized Card (...4242) -> Key \"DS-ALTAHIRC-MONTH-9ZKJ-1942\" generated & activated. Reset to Day 1."
+    },
+    {
+      "id": "cron_1792590362890",
+      "timestamp": "2026-10-21T13:46:02.890Z",
+      "summary": "[CLINIC_ADMIN_PORTAL_RENEWAL] Auto-Unlocked \"Al Tahir Clinics\" (altahirclinics.digitalsnova.com) upon payment receipt Rs. 0. Cycle reset to Day 1."
+    },
+    {
+      "id": "cron_1792590362367",
+      "timestamp": "2026-10-21T13:46:02.367Z",
+      "summary": "[CLINIC_ADMIN_PORTAL_RENEWAL] Auto-Unlocked \"Al Tahir Clinics\" (altahirclinics.digitalsnova.com) upon payment receipt Rs. 0. Cycle reset to Day 1."
+    },
+    {
+      "id": "cron_1792590361464",
+      "timestamp": "2026-10-21T13:46:01.464Z",
+      "summary": "[CLINIC_ADMIN_PORTAL_RENEWAL] Auto-Unlocked \"Al Tahir Clinics\" (altahirclinics.digitalsnova.com) upon payment receipt Rs. 0. Cycle reset to Day 1."
+    },
+    {
+      "id": "cron_1792590347160",
+      "timestamp": "2026-10-21T13:45:47.160Z",
+      "summary": "[KEY_ACTIVATION] \"Al Tahir Clinics\" activated Key \"DS-ALTAHIRC-TRIAL-D4RV-4110\" -> Plan: TRIAL_3_DAYS (3 Days). Unlocked & Reset to Day 1."
+    },
+    {
+      "id": "cron_1792590306680",
+      "timestamp": "2026-10-21T13:45:06.680Z",
+      "summary": "[SUPER_ADMIN_1_CLICK_UNLOCK] Auto-Unlocked \"Al Tahir Clinics\" (altahirclinics.digitalsnova.com) upon payment receipt Rs. 15000. Cycle reset to Day 1."
+    },
+    {
+      "id": "cron_1792590303624",
+      "timestamp": "2026-10-21T13:45:03.624Z",
+      "summary": "[SUPER_ADMIN_1_CLICK_UNLOCK] Auto-Unlocked \"Al Tahir Clinics\" (altahirclinics.digitalsnova.com) upon payment receipt Rs. 15000. Cycle reset to Day 1."
+    },
+    {
+      "id": "cron_1792590059912",
+      "timestamp": "2026-10-21T13:40:59.912Z",
+      "summary": "[SUPER_ADMIN_DELETE] Deleted tenant \"Shifa Care Center\" (shifacare.digitalsnova.com) and all associated tenant records."
+    },
+    {
+      "id": "cron_1792590001441",
+      "timestamp": "2026-10-21T13:40:01.441Z",
+      "summary": "[PUBLIC_REGISTER] New Client Onboarded: \"Shifa Care Center\" (shifacare.digitalsnova.com) with Plan: TRIAL_3_DAYS (3 Days)."
+    },
+    {
+      "id": "cron_1792589968131",
+      "timestamp": "2026-10-21T13:39:28.131Z",
+      "summary": "[KEY_ACTIVATION] \"Al Tahir Clinics\" activated Key \"DS-ALTAHIRC-MONTH-ZATF-6251\" -> Plan: MONTHLY (30 Days). Unlocked & Reset to Day 1."
+    },
+    {
+      "id": "cron_1792587601159",
+      "timestamp": "2026-10-21T13:00:01.159Z",
+      "summary": "[MANUAL_MIDNIGHT_CRON_TRIGGER] Advanced billing cycle day (+1) for 2 clinics -> Active: 2, Grace Warning (Days 31-33): 0, Auto-Locked (Day 34+): 0"
+    },
+    {
+      "id": "cron_1792581023695",
+      "timestamp": "2026-10-21T11:10:23.695Z",
+      "summary": "[MANUAL_MIDNIGHT_CRON_TRIGGER] Advanced billing cycle day (+1) for 2 clinics -> Active: 1, Grace Warning (Days 31-33): 0, Auto-Locked (Day 34+): 1"
+    },
+    {
+      "id": "cron_1792578685522",
+      "timestamp": "2026-10-21T10:31:25.522Z",
+      "summary": "[MANUAL_MIDNIGHT_CRON_TRIGGER] Advanced billing cycle day (+1) for 2 clinics -> Active: 1, Grace Warning (Days 31-33): 1, Auto-Locked (Day 34+): 0"
+    },
+    {
+      "id": "cron_1792578543000",
+      "timestamp": "2026-10-21T10:29:03.000Z",
+      "summary": "[SUPER_ADMIN_1_CLICK_UNLOCK] Auto-Unlocked \"Al Tahir Clinics \" (altahirclinics.digitalsnova.com) upon payment receipt Rs. 15000. Cycle reset to Day 1."
+    },
+    {
+      "id": "cron_1792578542811",
+      "timestamp": "2026-10-21T10:29:02.811Z",
+      "summary": "[SUPER_ADMIN_1_CLICK_UNLOCK] Auto-Unlocked \"Al Tahir Clinics \" (altahirclinics.digitalsnova.com) upon payment receipt Rs. 15000. Cycle reset to Day 1."
+    },
+    {
+      "id": "cron_1792578542363",
+      "timestamp": "2026-10-21T10:29:02.363Z",
+      "summary": "[SUPER_ADMIN_1_CLICK_UNLOCK] Auto-Unlocked \"Al Tahir Clinics \" (altahirclinics.digitalsnova.com) upon payment receipt Rs. 15000. Cycle reset to Day 1."
+    },
+    {
+      "id": "cron_1792578540905",
+      "timestamp": "2026-10-21T10:29:00.905Z",
+      "summary": "[SUPER_ADMIN_1_CLICK_UNLOCK] Auto-Unlocked \"Al Tahir Clinics \" (altahirclinics.digitalsnova.com) upon payment receipt Rs. 15000. Cycle reset to Day 1."
+    },
+    {
+      "id": "cron_1792578529844",
+      "timestamp": "2026-10-21T10:28:49.844Z",
+      "summary": "[SUPER_ADMIN_1_CLICK_UNLOCK] Auto-Unlocked \"Al Tahir Clinics \" (altahirclinics.digitalsnova.com) upon payment receipt Rs. 15000. Cycle reset to Day 1."
+    },
+    {
+      "id": "cron_1792577893042",
+      "timestamp": "2026-10-21T10:18:13.042Z",
+      "summary": "[SUPER_ADMIN_DELETE] Deleted tenant \"LifeCare Eye & Laser Hospital\" (lifecare.digitalsnova.com) and all associated tenant records."
+    },
+    {
+      "id": "cron_1792577878724",
+      "timestamp": "2026-10-21T10:17:58.724Z",
+      "summary": "[SUPER_ADMIN_DELETE] Deleted tenant \"Al tahir Clininc\" (alshifa.digitalsnova.com) and all associated tenant records."
+    },
+    {
+      "id": "cron_1792577876119",
+      "timestamp": "2026-10-21T10:17:56.119Z",
+      "summary": "[SUPER_ADMIN_DELETE] Deleted tenant \"CityMed PolyClinic & Trauma Center\" (citymed.digitalsnova.com) and all associated tenant records."
+    },
+    {
+      "id": "cron_1792569061275",
+      "timestamp": "2026-10-21T07:51:01.275Z",
+      "summary": "[SUPER_ADMIN_1_CLICK_UNLOCK] Auto-Unlocked \"LifeCare Eye & Laser Hospital\" (lifecare.digitalsnova.com) upon payment receipt Rs. 15000. Cycle reset to Day 1."
+    },
+    {
+      "id": "cron_1792566983937",
+      "timestamp": "2026-10-21T07:16:23.937Z",
+      "summary": "[SUPER_ADMIN_1_CLICK_UNLOCK] Auto-Unlocked \"Al tahir Clininc\" (alshifa.digitalsnova.com) upon payment receipt Rs. 15000. Cycle reset to Day 1."
+    },
+    {
+      "id": "cron_1792564895056",
+      "timestamp": "2026-10-21T06:41:35.056Z",
+      "summary": "[CLINIC_ADMIN_PORTAL_RENEWAL] Auto-Unlocked \"Al tahir Clininc\" (alshifa.digitalsnova.com) upon payment receipt Rs. 15000. Cycle reset to Day 1."
+    },
+    {
+      "id": "cron_1792563412247",
+      "timestamp": "2026-10-21T06:16:52.247Z",
+      "summary": "[SUPER_ADMIN_1_CLICK_UNLOCK] Auto-Unlocked \"Al tahir Clininc\" (alshifa.digitalsnova.com) upon payment receipt Rs. 15000. Cycle reset to Day 1."
+    },
+    {
+      "id": "cron_1792563410967",
+      "timestamp": "2026-10-21T06:16:50.967Z",
+      "summary": "[SUPER_ADMIN_1_CLICK_UNLOCK] Auto-Unlocked \"Al tahir Clininc\" (alshifa.digitalsnova.com) upon payment receipt Rs. 15000. Cycle reset to Day 1."
+    },
+    {
+      "id": "cron_1792563408470",
+      "timestamp": "2026-10-21T06:16:48.470Z",
+      "summary": "[SUPER_ADMIN_1_CLICK_UNLOCK] Auto-Unlocked \"Al tahir Clininc\" (alshifa.digitalsnova.com) upon payment receipt Rs. 15000. Cycle reset to Day 1."
+    },
+    {
+      "id": "cron_init",
+      "timestamp": "2026-10-21T00:00:00Z",
+      "summary": "Midnight Subscription Audit Executed: 1 Active (alshifa), 1 Grace Period Warning (citymed - Day 32), 1 Auto-Locked (lifecare - Day 34)."
+    }
+  ],
+  "treatmentCatalog": [
+    {
+      "id": "cat_1",
+      "tenantId": "tenant_alshifa",
+      "name": "Hair Transplant (FUE Sapphire Full Package)",
+      "category": "Hair Restoration",
+      "defaultCost": 120000,
+      "defaultSessions": 5
+    },
+    {
+      "id": "cat_2",
+      "tenantId": "tenant_alshifa",
+      "name": "PRP Hair Regrowth Therapy (6 Sessions)",
+      "category": "Hair Restoration",
+      "defaultCost": 24000,
+      "defaultSessions": 6
+    },
+    {
+      "id": "cat_3",
+      "tenantId": "tenant_alshifa",
+      "name": "HydraFacial + Carbon Laser Peel (5-Session Package)",
+      "category": "Dermatology & Aesthetics",
+      "defaultCost": 10000,
+      "defaultSessions": 5
+    },
+    {
+      "id": "cat_4",
+      "tenantId": "tenant_alshifa",
+      "name": "Full Body Diode Laser Hair Removal (6 Sessions)",
+      "category": "Laser Aesthetics",
+      "defaultCost": 45000,
+      "defaultSessions": 6
+    },
+    {
+      "id": "cat_5",
+      "tenantId": "tenant_alshifa",
+      "name": "Root Canal + Zirconia Crown (Tooth #16 & #17)",
+      "category": "Dental Surgery",
+      "defaultCost": 25000,
+      "defaultSessions": 4
+    },
+    {
+      "id": "cat_6",
+      "tenantId": "tenant_alshifa",
+      "name": "Orthodontic Metal / Ceramic Braces (12 Sessions)",
+      "category": "Orthodontics",
+      "defaultCost": 65000,
+      "defaultSessions": 12
+    },
+    {
+      "id": "cat_7",
+      "tenantId": "tenant_alshifa",
+      "name": "Full Mouth Dental Implants Rehab",
+      "category": "Dental Implants",
+      "defaultCost": 80000,
+      "defaultSessions": 3
+    },
+    {
+      "id": "cat_201",
+      "tenantId": "tenant_citymed",
+      "name": "Physiotherapy Knee Rehabilitation (6 Sessions)",
+      "category": "Physiotherapy",
+      "defaultCost": 12000,
+      "defaultSessions": 6
+    }
+  ],
+  "licenseKeys": [
+    {
+      "id": "key_1792648834521",
+      "keyCode": "DS-ALTAHIRC-TRIAL-AVPX-8932",
+      "tenantId": "tenant_altahirclinics_3789",
+      "tenantName": "Al Tahir Clinics",
+      "subdomain": "altahirclinics",
+      "planType": "TRIAL_3_DAYS",
+      "cycleDays": 3,
+      "fee": 0,
+      "notes": "Card payment verified (4242) - Auto generated for Al Tahir Clinics",
+      "status": "REVOKED",
+      "createdAt": "2026-10-22T06:00:34.521Z",
+      "activatedAt": "2026-10-22T06:00:34.521Z",
+      "activatedByTenant": "tenant_altahirclinics_3789"
+    },
+    {
+      "id": "key_1792648780816",
+      "keyCode": "DS-ALTAHIRC-MONTH-9ZKJ-1942",
+      "tenantId": "tenant_altahirclinics_3789",
+      "tenantName": "Al Tahir Clinics",
+      "subdomain": "altahirclinics",
+      "planType": "MONTHLY",
+      "cycleDays": 30,
+      "fee": 15000,
+      "notes": "Card payment verified (4242) - Auto generated for Al Tahir Clinics",
+      "status": "INACTIVE",
+      "createdAt": "2026-10-22T05:59:40.816Z",
+      "activatedAt": "2026-10-22T05:59:40.816Z",
+      "activatedByTenant": "tenant_altahirclinics_3789",
+      "inactivatedAt": "2026-10-22T06:00:14.532Z"
+    },
+    {
+      "id": "key_1792590240374",
+      "keyCode": "DS-ALTAHIRC-TRIAL-D4RV-4110",
+      "tenantId": "tenant_altahirclinics_3789",
+      "tenantName": "Al Tahir Clinics",
+      "subdomain": "altahirclinics",
+      "planType": "TRIAL_3_DAYS",
+      "cycleDays": 3,
+      "fee": 0,
+      "notes": "Issued by Super Admin for Al Tahir Clinics",
+      "status": "REVOKED",
+      "createdAt": "2026-10-21T13:44:00.374Z",
+      "activatedAt": "2026-10-21T13:45:47.160Z",
+      "activatedByTenant": "tenant_altahirclinics_3789"
+    },
+    {
+      "id": "key_1792589929324",
+      "keyCode": "DS-ALTAHIRC-MONTH-ZATF-6251",
+      "tenantId": "tenant_altahirclinics_3789",
+      "tenantName": "Al Tahir Clinics",
+      "subdomain": "altahirclinics",
+      "planType": "MONTHLY",
+      "cycleDays": 30,
+      "fee": 15000,
+      "notes": "Generated by Super Admin for Al Tahir Clinics",
+      "status": "REVOKED",
+      "createdAt": "2026-10-21T13:38:49.324Z",
+      "activatedAt": "2026-10-21T13:39:28.131Z",
+      "activatedByTenant": "tenant_altahirclinics_3789"
+    }
+  ],
+  "parkedSales": [],
+  "shifts": [
+    {
+      "id": "shift_1793076739741",
+      "shiftNumber": "SH-261027-522",
+      "code": "SH-261027-522",
+      "tenantId": "tenant_alshifa_4688",
+      "cashierName": "Talha Ali ",
+      "openedAt": "2026-10-27T04:52:19.741Z",
+      "openingFloat": 1000,
+      "status": "OPEN",
+      "notes": "",
+      "summary": null
+    },
+    {
+      "id": "shift_1793075600846",
+      "shiftNumber": "SH-261027-239",
+      "code": "SH-261027-239",
+      "tenantId": "tenant_alshifa_4688",
+      "cashierName": "Ayesha Khan",
+      "openedAt": "2026-10-27T04:33:20.846Z",
+      "openingFloat": 3500,
+      "status": "CLOSED",
+      "notes": "",
+      "summary": {
+        "totalInvoices": 0,
+        "totalGross": 0,
+        "cashSalesTotal": 0,
+        "cardSalesTotal": 0,
+        "bankTransferSalesTotal": 0,
+        "netCollectedToday": 0,
+        "totalDiscountsGiven": 0,
+        "totalRecoverablesPending": 0,
+        "openingFloat": 3500,
+        "expectedCashInDrawer": 3500,
+        "actualCountedCash": 3500,
+        "cashDifference": 0,
+        "differenceStatus": "BALANCED"
+      },
+      "closedAt": "2026-10-27T04:33:20.909Z",
+      "countedCash": 3500,
+      "actualCashCounted": 3500,
+      "expectedCash": 3500,
+      "expectedCashInDrawer": 3500,
+      "cashDifference": 0,
+      "difference": 0,
+      "closingNotes": "Drawer matched float",
+      "grossSales": 0,
+      "netSales": 0,
+      "netCashCollected": 0,
+      "totalDiscounts": 0,
+      "salesCount": 0,
+      "paymentBreakdown": {
+        "CASH": 0,
+        "CARD": 0,
+        "BANK_TRANSFER": 0
+      }
+    },
+    {
+      "id": "shift_1793075490843",
+      "shiftNumber": "SH-261027-841",
+      "tenantId": "tenant_alshifa_4688",
+      "cashierName": "Ayesha Khan",
+      "openedAt": "2026-10-27T04:31:30.843Z",
+      "openingFloat": 5000,
+      "status": "CLOSED",
+      "notes": "",
+      "summary": {
+        "totalInvoices": 0,
+        "totalGross": 0,
+        "cashSalesTotal": 0,
+        "cardSalesTotal": 0,
+        "bankTransferSalesTotal": 0,
+        "netCollectedToday": 0,
+        "totalDiscountsGiven": 0,
+        "totalRecoverablesPending": 0,
+        "openingFloat": 5000,
+        "expectedCashInDrawer": 5000,
+        "actualCountedCash": 0,
+        "cashDifference": -5000,
+        "differenceStatus": "SHORTAGE"
+      },
+      "closedAt": "2026-10-27T04:31:30.882Z",
+      "countedCash": 0,
+      "expectedCash": 5000,
+      "cashDifference": -5000,
+      "closingNotes": ""
+    }
+  ]
+}
