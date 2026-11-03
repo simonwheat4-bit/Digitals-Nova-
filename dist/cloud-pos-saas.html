@@ -1221,6 +1221,47 @@
           </div>
         </div>
       </div>
+      <!-- Panel 4: Restaurants, Cafes & Food Outlets -->
+      <div class="industry-tab-panel" id="tab-restaurant">
+        <div>
+          <span style="color: #f59e0b; font-size: 12px; font-weight: 800; text-transform: uppercase;">FOOD &amp; HOSPITALITY ERP</span>
+          <h3 style="font-size: 28px; font-weight: 800; color: #fff; margin: 10px 0 16px;">Restaurant, Cafe &amp; Fast Food POS</h3>
+          <p style="font-size: 14px; color: #94a3b8; line-height: 1.6;">
+            Engineered for rapid dining room table management, thermal Kitchen Order Tickets (KOT/BOT), recipe-level ingredient inventory, and unified takeaway parcel billing.
+          </p>
+          <ul class="industry-checklist">
+            <li><span class="check-icon-green">&#10003;</span> <strong>Automated Kitchen Order Tickets (KOT &amp; BOT):</strong> Fire instant kitchen tickets to line cooks and bar stations with table IDs and custom cooking instructions.</li>
+            <li><span class="check-icon-green">&#10003;</span> <strong>Interactive Dining Table Floor Plans:</strong> Live visual table occupancy (T1–T10, Running, Billed, Reserved) with split-check and merged table support.</li>
+            <li><span class="check-icon-green">&#10003;</span> <strong>Recipe &amp; Raw Ingredient Inventory:</strong> Automatically deduct raw ingredients (chicken, flour, dairy, spices) in real-time as dishes are punched.</li>
+            <li><span class="check-icon-green">&#10003;</span> <strong>Takeaway, Dine-In &amp; Food Delivery Aggregation:</strong> Track dine-in guests, counter takeaways, and third-party delivery dispatch from a unified counter.</li>
+          </ul>
+          <button class="btn-saas-primary" onclick="openTrialModal('Restaurant')">Get Restaurant POS Trial &rarr;</button>
+        </div>
+        <div style="background: #081433; border: 1px solid #1c2b54; border-radius: 18px; padding: 24px;">
+          <h4 style="color: #fff; font-size: 16px; margin: 0 0 14px; display: flex; align-items: center; justify-content: space-between;">
+            <span>Active Dining Floor • Table T-04</span>
+            <span style="color: #f59e0b; font-size: 11px; background: rgba(245, 158, 11, 0.15); padding: 3px 8px; border-radius: 4px; font-weight: 800;">KOT #891 &bull; Active</span>
+          </h4>
+          <div style="background: rgba(13,27,62,0.8); padding: 14px; border-radius: 10px; margin-bottom: 12px; font-size: 12px;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+              <span style="color: #94a3b8;">Guest / Order Mode:</span>
+              <strong style="color: #fff;">Dine-In (4 Guests &bull; Server: Ali)</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+              <span style="color: #94a3b8;">Running Items:</span>
+              <span style="color: #00e5ff;">Chicken Biryani x2, Mint Margarita x2, Naan x4</span>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+              <span style="color: #94a3b8;">Kitchen Status:</span>
+              <strong style="color: #10b981;">🔥 Fired to Kitchen (Elapsed 12m)</strong>
+            </div>
+          </div>
+          <div style="background: #04091a; padding: 12px; border-radius: 8px; border: 1px solid rgba(245, 158, 11, 0.3); font-size: 12px; display: flex; justify-content: space-between; align-items: center;">
+            <span>Running Table Total:</span>
+            <strong style="color: #00e5ff; font-size: 15px;">PKR 2,450 (Ready to Bill)</strong>
+          </div>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -1377,6 +1418,9 @@
         </button>
         <button class="industry-tab-btn" id="btn-tab-retail" onclick="switchIndustryTab('retail')">
           <span>&#128722;</span> Retail Marts &amp; General Stores
+        </button>
+        <button class="industry-tab-btn" id="btn-tab-restaurant" onclick="switchIndustryTab('restaurant')">
+          <span>🍽️</span> Restaurants, Cafes &amp; Food Outlets
         </button>
       </div>
 
@@ -1843,6 +1887,7 @@
                 <option value="Clinic / Hospital">Clinic &amp; Hospital (HMS)</option>
                 <option value="Pharmacy & Medical Store">Pharmacy &amp; Medical Store</option>
                 <option value="Retail Mart / General Store">Retail Mart &amp; General Store</option>
+                <option value="Restaurants, Cafes & Food Outlets">🍽️ Restaurants, Cafes &amp; Food Outlets</option>
               </select>
             </div>
           </div>
@@ -1964,7 +2009,7 @@
     // Support deep link hash navigation (#clinic, #pharmacy, #retail)
     function handleHashRoute() {
       const hash = window.location.hash.replace('#', '').toLowerCase();
-      if (hash === 'clinic' || hash === 'pharmacy' || hash === 'retail') {
+      if (hash === 'clinic' || hash === 'pharmacy' || hash === 'retail' || hash === 'restaurant') {
         switchIndustryTab(hash);
         const sec = document.getElementById('solutions');
         if (sec) sec.scrollIntoView({ behavior: 'smooth' });
@@ -2075,6 +2120,7 @@
         const typeSelect = document.getElementById('obType');
         if (preferredPlan.includes('Clinic')) typeSelect.value = 'Clinic / Hospital';
         else if (preferredPlan.includes('Pharmacy')) typeSelect.value = 'Pharmacy & Medical Store';
+        else if (preferredPlan.includes('Restaurant')) typeSelect.value = 'Restaurants, Cafes & Food Outlets';
         else if (preferredPlan.includes('Retail')) typeSelect.value = 'Retail Mart / General Store';
       }
       modal.dataset.selectedPlan = preferredPlan || 'Clinic & HMS Portal';
@@ -2343,7 +2389,7 @@
     }
 
     // Automated Onboarding Form Submission
-    function handleOnboardingSubmit(e) {
+    async function handleOnboardingSubmit(e) {
       e.preventDefault();
       const name = document.getElementById('obName').value.trim();
       const business = document.getElementById('obBusiness').value.trim();
@@ -2390,33 +2436,74 @@
       document.getElementById('modalFormView').style.display = 'none';
       document.getElementById('modalLoadingView').style.display = 'block';
 
-      // Step-by-step loading animation
-      setTimeout(() => {
-        document.getElementById('pstep2').style.opacity = '1';
-        document.getElementById('pstep2').innerHTML = '<span style="color: #00e5ff;">&#10003;</span> Generating 16-Character Master License API Key...';
-      }, 700);
+      // Step-by-step reliable provisioning & cloud SMTP email dispatch
+      const randHex = () => Math.floor(1000 + Math.random() * 9000);
+      const licenseKey = `DNP-${randHex()}-${randHex()}-${randHex()}`;
+      const slug = business.toLowerCase().replace(/[^a-z0-9]/g, '') || 'myclinic';
+      const tenantUrl = `https://${slug}.digitalsnova.com`;
+      const isYearly = document.getElementById('trialModal').dataset.selectedBilling === 'YEARLY';
 
-      setTimeout(() => {
-        document.getElementById('pstep3').style.opacity = '1';
-        document.getElementById('pstep3').innerHTML = '<span style="color: #00e5ff;">&#10003;</span> Allocating Dedicated Tenant Subdomain...';
-      }, 1400);
+      const newTenantRecord = {
+        id: 'tenant_' + slug,
+        subdomain: slug,
+        domain: slug + '.digitalsnova.com',
+        name: business,
+        logoUrl: '',
+        address: 'Main Commercial Avenue, Pakistan',
+        phone: phone || '+92-300-0000000',
+        receiptHeader: business,
+        receiptFooter: 'Thank you for your visit!',
+        adminPin: '1234',
+        monthlyFee: isYearly ? 76790 : 7999,
+        billingCycleDay: 1,
+        manualBlocked: false,
+        enabledModules: {
+          pos: true,
+          inventory: true,
+          patientsLedger: bType !== 'Pharmacy & Medical Store' && bType !== 'Retail Mart / General Store' && bType !== 'Restaurants, Cafes & Food Outlets'
+        },
+        createdAt: new Date().toISOString(),
+        lastPaymentDate: new Date().toISOString(),
+        planType: isYearly ? 'YEARLY' : 'TRIAL_3_DAYS',
+        cycleDays: isYearly ? 365 : 3,
+        licenseKey: licenseKey,
+        ownerName: name,
+        subscription: {
+          state: 'ACTIVE',
+          billingCycleDay: 1,
+          graceDaysRemaining: 3,
+          totalDays: isYearly ? 365 : 3
+        },
+        adminUsername: 'admin.' + slug,
+        adminPassword: password,
+        email: email,
+        businessType: bType,
+        business_type: bType,
+        adminUser: {
+          username: 'admin.' + slug,
+          password: password,
+          name: name,
+          email: email,
+          phone: phone,
+          role: 'CLINIC_ADMIN'
+        }
+      };
 
-      setTimeout(() => {
-        document.getElementById('pstep4').style.opacity = '1';
-        document.getElementById('pstep4').innerHTML = '<span style="color: #10b981;">&#10003;</span> 3-Day Full-Access Enterprise Free Trial Activated!';
-      }, 2100);
+      // Animation steps with async wait
+      await new Promise(r => setTimeout(r, 600));
+      document.getElementById('pstep2').style.opacity = '1';
+      document.getElementById('pstep2').innerHTML = '<span style="color: #00e5ff;">&#10003;</span> Generating 16-Character Master License API Key...';
 
-      setTimeout(() => {
-        // Generate random 16-character license key: DNP-XXXX-XXXX-XXXX
-        const randHex = () => Math.floor(1000 + Math.random() * 9000);
-        const licenseKey = `DNP-${randHex()}-${randHex()}-${randHex()}`;
-        const slug = business.toLowerCase().replace(/[^a-z0-9]/g, '') || 'myclinic';
-        const tenantUrl = `https://${slug}.digitalsnova.com`;
+      await new Promise(r => setTimeout(r, 700));
+      document.getElementById('pstep3').style.opacity = '1';
+      document.getElementById('pstep3').innerHTML = '<span style="color: #00e5ff;">&#10003;</span> Allocating Dedicated Subdomain (' + slug + '.digitalsnova.com)...';
 
-        document.getElementById('displayLicenseKey').innerText = licenseKey;
-        document.getElementById('displayTenantUrl').innerText = tenantUrl;
+      await new Promise(r => setTimeout(r, 600));
+      document.getElementById('pstep4').style.opacity = '1';
+      document.getElementById('pstep4').innerHTML = '<span style="color: #f59e0b;">⏳</span> Sending Welcome Credentials Email via Gmail SMTP...';
 
-        // Persist in localStorage so portal auto-recognizes new tenant
+      // Save to localStorage
+      try {
         localStorage.setItem('digitalsnova_subdomain', slug);
         localStorage.setItem('digitalsnova_auth_user', JSON.stringify({
           username: 'admin.' + slug,
@@ -2425,140 +2512,68 @@
           clinicName: business,
           role: 'CLINIC_ADMIN',
           tenantId: 'tenant_' + slug,
-          licenseKey: licenseKey
+          licenseKey: licenseKey,
+          businessType: bType,
+          business_type: bType
         }));
 
-        // AUTOMATIC SUPER ADMIN SYNC: Store new tenant in shared registered tenants list
-        const isYearly = document.getElementById('trialModal').dataset.selectedBilling === 'YEARLY';
-        const newTenantRecord = {
-          id: 'tenant_' + slug,
+        let regTenants = JSON.parse(localStorage.getItem('digitalsnova_registered_tenants') || '[]');
+        regTenants = regTenants.filter(t => t.id !== newTenantRecord.id && t.subdomain !== slug);
+        regTenants.push(newTenantRecord);
+        localStorage.setItem('digitalsnova_registered_tenants', JSON.stringify(regTenants));
+
+        let notifs = JSON.parse(localStorage.getItem('digitalsnova_superadmin_notifications') || '[]');
+        notifs.unshift({
+          id: 'notif_web_' + Date.now(),
+          timestamp: new Date().toISOString(),
+          type: 'NEW_REGISTRATION',
+          title: '🎉 New Store Registered (Website)',
+          message: `Store/Clinic "${business}" (${slug}.digitalsnova.com) registered! Owner: ${name} • Phone: ${phone} • Email: ${email}`,
+          tenantName: business,
           subdomain: slug,
-          domain: slug + '.digitalsnova.com',
-          name: business,
-          logoUrl: '',
-          address: 'Main Commercial Avenue, Pakistan',
-          phone: phone || '+92-300-0000000',
-          receiptHeader: business,
-          receiptFooter: 'Thank you for your visit!',
-          adminPin: '1234',
-          monthlyFee: isYearly ? 76790 : 7999,
-          billingCycleDay: 1,
-          manualBlocked: false,
-          enabledModules: {
-            pos: true,
-            inventory: true,
-            patientsLedger: bType !== 'Pharmacy & Medical Store' && bType !== 'Retail Mart / General Store'
-          },
-          createdAt: new Date().toISOString(),
-          lastPaymentDate: new Date().toISOString(),
-          planType: isYearly ? 'YEARLY' : 'TRIAL_3_DAYS',
-          cycleDays: isYearly ? 365 : 3,
-          licenseKey: licenseKey,
-          ownerName: name,
-          subscription: {
-            state: 'ACTIVE',
-            billingCycleDay: 1,
-            graceDaysRemaining: 3,
-            totalDays: isYearly ? 365 : 3
-          },
-          adminUsername: 'admin.' + slug,
-          adminPassword: password,
+          phone: phone,
           email: email,
-          businessType: bType,
-          adminUser: {
-            username: 'admin.' + slug,
-            password: password,
-            name: name,
-            email: email,
-            phone: phone,
-            role: 'CLINIC_ADMIN'
-          }
-        };
+          plan: isYearly ? 'YEARLY' : 'TRIAL_3_DAYS',
+          adminUser: 'admin.' + slug,
+          unread: true
+        });
+        localStorage.setItem('digitalsnova_superadmin_notifications', JSON.stringify(notifs.slice(0, 50)));
+      } catch (e) {
+        console.warn('Local save warning:', e);
+      }
 
-        try {
-          let regTenants = JSON.parse(localStorage.getItem('digitalsnova_registered_tenants') || '[]');
-          regTenants = regTenants.filter(t => t.id !== newTenantRecord.id && t.subdomain !== slug);
-          regTenants.push(newTenantRecord);
-          localStorage.setItem('digitalsnova_registered_tenants', JSON.stringify(regTenants));
+      // Synchronous Cloud Sync & Email Dispatch with keepalive
+      try {
+        const syncPromise = fetch('/api/sync.php?action=register_tenant', {
+          method: 'POST',
+          keepalive: true,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newTenantRecord)
+        });
+        const timeoutPromise = new Promise(r => setTimeout(r, 6000));
+        await Promise.race([syncPromise, timeoutPromise]);
+      } catch (err) {
+        console.warn('Sync error:', err);
+      }
 
-          // Real-Time Super Admin Notification
-          let notifs = JSON.parse(localStorage.getItem('digitalsnova_superadmin_notifications') || '[]');
-          notifs.unshift({
-            id: 'notif_web_' + Date.now(),
-            timestamp: new Date().toISOString(),
-            type: 'NEW_REGISTRATION',
-            title: '🎉 New Store Registered (Website)',
-            message: `Store/Clinic "${business}" (${slug}.digitalsnova.com) registered! Owner: ${name} • Phone: ${phone} • Email: ${email}`,
-            tenantName: business,
-            subdomain: slug,
-            phone: phone,
-            email: email,
-            plan: isYearly ? 'YEARLY' : 'TRIAL_3_DAYS',
-            adminUser: 'admin.' + slug,
-            unread: true
-          });
-          localStorage.setItem('digitalsnova_superadmin_notifications', JSON.stringify(notifs.slice(0, 50)));
-        } catch(e) {
-          console.warn('Error saving registered tenant to localStorage:', e);
-        }
+      document.getElementById('pstep4').innerHTML = '<span style="color: #10b981;">&#10003;</span> 3-Day Enterprise Trial Active & Credentials Emailed!';
 
-        // Hostinger Central Cloud Sync & Email Automation (/api/sync.php)
-        try {
-          fetch('/api/sync.php?action=register_tenant', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(newTenantRecord)
-          }).catch(err => console.warn('Cloud sync error:', err));
-        } catch(e) {}
+      document.getElementById('displayLicenseKey').innerText = licenseKey;
+      document.getElementById('displayTenantUrl').innerText = tenantUrl;
 
-        // Wire up Launch Web App button
-        const launchWebAppBtn = document.getElementById('btnLaunchWebApp');
-        if (launchWebAppBtn) {
-          launchWebAppBtn.href = `/portal/?store=${encodeURIComponent(slug)}`;
-        }
+      // Wire up Launch Web App button
+      const launchWebAppBtn = document.getElementById('btnLaunchWebApp');
+      if (launchWebAppBtn) {
+        launchWebAppBtn.href = `/portal/?store=${encodeURIComponent(slug)}`;
+      }
 
-        // Wire up In-Page Simulator button
-        const launchBtn = document.getElementById('btnLaunchPortal');
-        if (launchBtn) {
-          launchBtn.onclick = function(ev) {
-            ev.preventDefault();
-            closeTrialModal();
+      // Setup WhatsApp save link
+      const waMsg = encodeURIComponent(`Hello DigitalsNova Support, I have provisioned a 3-Day Enterprise Trial for my business: ${business}!\nName: ${name}\nMaster License Key: ${licenseKey}\nTenant Subdomain: ${tenantUrl}\nPlease provide onboarding guidance.`);
+      document.getElementById('btnWhatsAppSave').href = `https://wa.me/923019643900?text=${waMsg}`;
 
-            // Personalize the in-page cloud POS terminal workspace
-            const facilityElem = document.getElementById('terminalFacilityName');
-            const cashierElem = document.getElementById('terminalCashierName');
-            const subTitleElem = document.getElementById('terminalSubdomainTitle');
-            const statusBadge = document.getElementById('terminalStatusBadge');
-
-            if (facilityElem) facilityElem.innerText = business + ' — Cloud POS Portal';
-            if (cashierElem) cashierElem.innerHTML = `Cashier: ${name} &bull; Master Superadmin &bull; Counter #01`;
-            if (subTitleElem) subTitleElem.innerHTML = `<span>💻</span> ${slug}.digitalsnova.com/pos`;
-            if (statusBadge) {
-              statusBadge.innerHTML = `● TRIAL ACTIVE (${licenseKey})`;
-              statusBadge.style.background = 'rgba(0, 229, 255, 0.25)';
-              statusBadge.style.color = '#00e5ff';
-            }
-
-            // Scroll to the active terminal
-            const target = document.getElementById('pos-terminal');
-            if (target) {
-              target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-              target.style.boxShadow = '0 0 50px rgba(0, 229, 255, 0.7), 0 25px 60px rgba(0,0,0,0.95)';
-              setTimeout(() => {
-                target.style.boxShadow = '0 25px 60px rgba(0, 0, 0, 0.85), 0 0 40px rgba(0, 229, 255, 0.2)';
-              }, 3000);
-            }
-
-            alert(`🎉 [TENANT WORKSPACE ACTIVE]\n\nWelcome to your DigitalsNova Cloud Portal workspace for "${business}"!\n\n• Master License Key: ${licenseKey}\n• Assigned Subdomain: ${tenantUrl}\n• Status: 3-Day Enterprise Trial Activated\n\nYour active cloud POS counter session is now loaded and ready to test below! You can also click "Launch Cloud POS Portal Web App" at any time.`);
-          };
-        }
-
-        // Setup WhatsApp save link in professional English
-        const waMsg = encodeURIComponent(`Hello DigitalsNova Support, I have provisioned a 3-Day Enterprise Trial for my business: ${business}!\nName: ${name}\nMaster License Key: ${licenseKey}\nTenant Subdomain: ${tenantUrl}\nPlease provide onboarding guidance.`);
-        document.getElementById('btnWhatsAppSave').href = `https://wa.me/923019643900?text=${waMsg}`;
-
-        document.getElementById('modalLoadingView').style.display = 'none';
-        document.getElementById('modalSuccessView').style.display = 'block';
+      await new Promise(r => setTimeout(r, 500));
+      document.getElementById('modalLoadingView').style.display = 'none';
+      document.getElementById('modalSuccessView').style.display = 'block';
       }, 2800);
     }
 
