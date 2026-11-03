@@ -23,6 +23,7 @@ if (!is_dir($dataDir)) {
 $tenantsFile = $dataDir . '/tenants.json';
 $notifsFile = $dataDir . '/notifications.json';
 $staffFile = $dataDir . '/staff.json';
+$deletedTenantsFile = $dataDir . '/deleted_tenants.json';
 
 // Helper to read JSON file safely
 function readJsonFile($path, $default = []) {
@@ -162,6 +163,89 @@ if ($action === 'test_email' || $action === 'send_test_email') {
     exit();
 }
 
+
+// ==============================================================================
+// 1.5 ACTION: DELETE TENANT (Called from Super Admin to permanently wipe store)
+// ==============================================================================
+if ($action === 'delete_tenant' || $action === 'delete') {
+    $tenantId = trim($body['id'] ?? ($body['tenantId'] ?? ($_GET['id'] ?? '')));
+    $subdomain = strtolower(trim($body['subdomain'] ?? ($_GET['subdomain'] ?? '')));
+    $phone = preg_replace('/[^0-9]/', '', $body['phone'] ?? '');
+    $email = strtolower(trim($body['email'] ?? ''));
+
+    $tenants = readJsonFile($tenantsFile);
+    $remainingTenants = [];
+    $deletedTenant = null;
+
+    foreach ($tenants as $t) {
+        $tId = $t['id'] ?? '';
+        $tSub = strtolower($t['subdomain'] ?? '');
+        $tPhone = preg_replace('/[^0-9]/', '', $t['phone'] ?? ($t['adminUser']['phone'] ?? ''));
+        $tEmail = strtolower(trim($t['email'] ?? ($t['adminUser']['email'] ?? '')));
+
+        $isMatch = false;
+        if (!empty($tenantId) && ($tId === $tenantId || $tSub === strtolower($tenantId))) $isMatch = true;
+        if (!empty($subdomain) && $tSub === $subdomain) $isMatch = true;
+        if (!empty($phone) && !empty($tPhone) && $phone === $tPhone) $isMatch = true;
+        if (!empty($email) && !empty($tEmail) && $email === $tEmail) $isMatch = true;
+
+        if ($isMatch) {
+            $deletedTenant = $t;
+        } else {
+            $remainingTenants[] = $t;
+        }
+    }
+    writeJsonFile($tenantsFile, $remainingTenants);
+
+    // Clean associated staff accounts from staff.json
+    $delSub = $subdomain ?: strtolower($deletedTenant['subdomain'] ?? '');
+    $delId = $tenantId ?: ($deletedTenant['id'] ?? '');
+    $allStaff = readJsonFile($staffFile);
+    $remainingStaff = [];
+    foreach ($allStaff as $s) {
+        if ((!empty($delSub) && strtolower($s['subdomain'] ?? '') === $delSub) ||
+            (!empty($delId) && ($s['tenantId'] ?? '') === $delId)) {
+            // Discard staff of deleted tenant
+        } else {
+            $remainingStaff[] = $s;
+        }
+    }
+    writeJsonFile($staffFile, $remainingStaff);
+
+    // Clean notifications for this tenant from notifications.json
+    $allNotifs = readJsonFile($notifsFile);
+    $remainingNotifs = [];
+    foreach ($allNotifs as $n) {
+        if (!empty($delSub) && strtolower($n['subdomain'] ?? '') === $delSub) {
+            // Discard notification
+        } else {
+            $remainingNotifs[] = $n;
+        }
+    }
+    writeJsonFile($notifsFile, $remainingNotifs);
+
+    // Record in deleted_tenants.json
+    $deletedList = readJsonFile($deletedTenantsFile);
+    $deletedList = array_filter($deletedList, function($d) use ($delSub, $delId) {
+        return ($d['subdomain'] ?? '') !== $delSub && ($d['id'] ?? '') !== $delId;
+    });
+    $deletedList[] = [
+        'id' => $delId,
+        'subdomain' => $delSub,
+        'phone' => $phone ?: ($deletedTenant['phone'] ?? ''),
+        'email' => $email ?: ($deletedTenant['email'] ?? ''),
+        'deletedAt' => date('c')
+    ];
+    writeJsonFile($deletedTenantsFile, array_values($deletedList));
+
+    echo json_encode([
+        'success' => true,
+        'message' => 'Store account and all associated data permanently deleted from cloud database.',
+        'deletedTenant' => $deletedTenant
+    ]);
+    exit();
+}
+
 // 1. ACTION: REGISTER TENANT (Called from website or portal registration)
 // ==============================================================================
 if ($action === 'register_tenant' || $action === 'register') {
@@ -232,6 +316,17 @@ if ($action === 'register_tenant' || $action === 'register') {
 
     $newTenants[] = $record;
     writeJsonFile($tenantsFile, $newTenants);
+
+    // Unmark newly registered store from deleted list
+    $deletedList = readJsonFile($deletedTenantsFile);
+    $deletedList = array_filter($deletedList, function($d) use ($subdomain, $ownerPhone, $ownerEmail) {
+        $dSub = strtolower($d['subdomain'] ?? '');
+        $dPhone = preg_replace('/[^0-9]/', '', $d['phone'] ?? '');
+        $dEmail = strtolower(trim($d['email'] ?? ''));
+        $cleanP = preg_replace('/[^0-9]/', '', $ownerPhone);
+        return $dSub !== $subdomain && ($dPhone !== $cleanP || empty($cleanP)) && ($dEmail !== strtolower($ownerEmail) || empty($ownerEmail));
+    });
+    writeJsonFile($deletedTenantsFile, array_values($deletedList));
 
     // Save Real-Time Super Admin Notification
     $notifications = readJsonFile($notifsFile);
@@ -352,12 +447,14 @@ if ($action === 'get_all' || $action === 'tenants') {
     $tenants = readJsonFile($tenantsFile);
     $notifications = readJsonFile($notifsFile);
     $staff = readJsonFile($staffFile);
+    $deletedTenants = readJsonFile($deletedTenantsFile);
 
     echo json_encode([
         'success' => true,
         'tenants' => $tenants,
         'notifications' => $notifications,
         'staff' => $staff,
+        'deleted_tenants' => $deletedTenants,
         'count' => count($tenants),
         'serverTime' => date('c')
     ]);
@@ -394,6 +491,27 @@ if ($action === 'login') {
     }
 
     $cleanPhone = preg_replace('/[^0-9]/', '', $identifier);
+
+    // Check if account has been deleted by Super Admin
+    $deletedList = readJsonFile($deletedTenantsFile);
+    foreach ($deletedList as $dt) {
+        $dtSub = strtolower($dt['subdomain'] ?? '');
+        $dtId = strtolower($dt['id'] ?? '');
+        $dtPhone = preg_replace('/[^0-9]/', '', $dt['phone'] ?? '');
+        $dtEmail = strtolower(trim($dt['email'] ?? ''));
+
+        if (($dtSub && $identifier === $dtSub) ||
+            ($dtId && $identifier === $dtId) ||
+            ($dtEmail && $identifier === $dtEmail) ||
+            (!empty($cleanPhone) && !empty($dtPhone) && $cleanPhone === $dtPhone)) {
+            http_response_code(403);
+            echo json_encode([
+                'success' => false,
+                'error' => 'This store account has been permanently deleted by administrator. Please register a new account.'
+            ]);
+            exit();
+        }
+    }
     $tenants = readJsonFile($tenantsFile);
     $matchedTenant = null;
 
