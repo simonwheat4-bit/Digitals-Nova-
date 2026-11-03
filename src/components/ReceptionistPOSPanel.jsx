@@ -330,7 +330,7 @@ export default function ReceptionistPOSPanel({
           });
           return prev;
         }
-        return prev.map((i) => (i.id === invItem.id ? { ...i, qty: i.qty + 1, maxStock: availableStock } : i));
+        return prev.map((i) => (i.id === invItem.id ? { ...i, qty: i.qty + 1, maxStock: availableStock, subtotal: (i.qty + 1) * Number(i.unitPrice || 0) } : i));
       }
       return [
         ...prev,
@@ -342,7 +342,8 @@ export default function ReceptionistPOSPanel({
           unitPrice: Number(invItem.sellingPrice),
           costPrice: Number(invItem.purchasePrice || 0),
           qty: 1,
-          maxStock: availableStock
+          maxStock: availableStock,
+          subtotal: Number(invItem.sellingPrice || 0)
         }
       ];
     });
@@ -354,6 +355,7 @@ export default function ReceptionistPOSPanel({
       Math.ceil(trt.totalCost / Math.max(1, trt.totalSessions))
     );
     setLinkedTreatmentId(trt.id);
+    const sessionPrice = suggestedInstallment || trt.remainingBalance;
     setCart((prev) => [
       ...prev.filter((i) => i.id !== trt.id),
       {
@@ -361,10 +363,11 @@ export default function ReceptionistPOSPanel({
         type: 'SESSION',
         barcode: 'LEDGER-SESSION',
         name: `${trt.title} (Session #${trt.sessions.length + 1})`,
-        unitPrice: suggestedInstallment || trt.remainingBalance,
+        unitPrice: sessionPrice,
         costPrice: 0,
         qty: 1,
-        maxStock: 1
+        maxStock: 1,
+        subtotal: sessionPrice
       }
     ]);
   };
@@ -382,17 +385,20 @@ export default function ReceptionistPOSPanel({
             });
             return item;
           }
-          return nextQty > 0 ? { ...item, qty: nextQty } : null;
+          return nextQty > 0
+            ? { ...item, qty: nextQty, subtotal: nextQty * Number(item.unitPrice || 0) }
+            : null;
         })
         .filter(Boolean)
     );
   };
 
   const updateCartPrice = (id, newPrice) => {
+    const val = Math.max(0, Number(newPrice) || 0);
     setCart((prev) =>
       prev.map((item) =>
         item.id === id && item.type === 'SESSION'
-          ? { ...item, unitPrice: Math.max(0, Number(newPrice) || 0) }
+          ? { ...item, unitPrice: val, subtotal: (item.qty || 1) * val }
           : item
       )
     );
@@ -576,7 +582,13 @@ export default function ReceptionistPOSPanel({
         patientPhone: selectedPatient.phone,
         cashierId: currentUser?.id || 'u_staff',
         cashierName: currentUser?.name || 'Receptionist POS',
-        items: cart,
+        items: cart.map((i) => ({
+          ...i,
+          subtotal:
+            i.subtotal != null && !isNaN(Number(i.subtotal))
+              ? Number(i.subtotal)
+              : (Number(i.qty || 1) || 1) * (Number(i.unitPrice || 0) || 0)
+        })),
         discountAmount: activeDiscount,
         discountRequestId: approvedDiscountRecord?.id || null,
         amountPaidToday: Number(amountPaidInput !== '' ? amountPaidInput : netTotal),
@@ -610,7 +622,13 @@ export default function ReceptionistPOSPanel({
         patientPhone: selectedPatient.phone,
         walkInName: selectedPatient.id === 'pat_walkin' ? walkInName : '',
         walkInPhone: selectedPatient.id === 'pat_walkin' ? walkInPhone : '',
-        items: cart,
+        items: cart.map((i) => ({
+          ...i,
+          subtotal:
+            i.subtotal != null && !isNaN(Number(i.subtotal))
+              ? Number(i.subtotal)
+              : (Number(i.qty || 1) || 1) * (Number(i.unitPrice || 0) || 0)
+        })),
         subtotal,
         discount: activeDiscount,
         netTotal,
@@ -2357,11 +2375,29 @@ export default function ReceptionistPOSPanel({
               >
                 <div className="grid grid-cols-2 gap-2.5">
                   <div>
-                    <label className="block font-bold text-slate-700 mb-1">Barcode</label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="font-bold text-slate-700">
+                        {isRestaurant ? 'Dish Code / SKU' : 'Barcode / SKU'}
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setStockForm({
+                            ...stockForm,
+                            barcode: isRestaurant
+                              ? `DISH-${Math.floor(100 + Math.random() * 900)}`
+                              : String(Math.floor(100000000 + Math.random() * 900000000))
+                          })
+                        }
+                        className="text-[10px] text-teal hover:underline font-bold"
+                      >
+                        ⚡ Auto
+                      </button>
+                    </div>
                     <input
                       type="text"
-                      required
-                      placeholder="e.g. 8961001099"
+                      required={!isRestaurant}
+                      placeholder={isRestaurant ? 'e.g. DISH-101 (or auto)' : 'e.g. 8961001099'}
                       value={stockForm.barcode}
                       onChange={(e) => setStockForm({ ...stockForm, barcode: e.target.value })}
                       className="w-full px-3 py-2 rounded-xl border border-slate-300 font-mono"
@@ -2372,36 +2408,89 @@ export default function ReceptionistPOSPanel({
                     <select
                       value={stockForm.category}
                       onChange={(e) => setStockForm({ ...stockForm, category: e.target.value })}
-                      className="w-full px-3 py-2 rounded-xl border border-slate-300"
+                      className="w-full px-3 py-2 rounded-xl border border-slate-300 font-semibold"
                     >
-                      <option value="Medicine">Medicine</option>
-                      <option value="Dermatology">Dermatology / Cream</option>
-                      <option value="Antibiotic">Antibiotic</option>
-                      <option value="Analgesic">Analgesic</option>
-                      <option value="Oral Care">Oral Care</option>
-                      <option value="Clinical Service">Clinical Service</option>
+                      {isRestaurant ? (
+                        <>
+                          <option value="Fast Food & Burgers">Fast Food & Burgers</option>
+                          <option value="Desi Karahi & Handi">Desi Karahi & Handi</option>
+                          <option value="Rice & Biryani">Rice & Biryani</option>
+                          <option value="BBQ & Grills">BBQ & Grills</option>
+                          <option value="Beverages & Drinks">Beverages & Drinks</option>
+                          <option value="Hot Drinks & Chai">Hot Drinks & Chai</option>
+                          <option value="Desserts & Sweets">Desserts & Sweets</option>
+                          <option value="Appetizers & Sides">Appetizers & Sides</option>
+                        </>
+                      ) : isPharmacy ? (
+                        <>
+                          <option value="Medicines">Medicines & Tablets</option>
+                          <option value="Syrups">Syrups & Liquids</option>
+                          <option value="Antibiotics">Antibiotics</option>
+                          <option value="Pain Relief">Pain Relief</option>
+                          <option value="Medical Supplies">Medical Supplies</option>
+                        </>
+                      ) : isRetailMart ? (
+                        <>
+                          <option value="Grocery">Grocery & Staples</option>
+                          <option value="Beverages">Beverages & Drinks</option>
+                          <option value="Dairy">Dairy & Bakery</option>
+                          <option value="Personal Care">Personal Care</option>
+                          <option value="Household">Household & Cleaning</option>
+                        </>
+                      ) : (
+                        <>
+                          <option value="Medicine">Medicine</option>
+                          <option value="Dermatology">Dermatology / Cream</option>
+                          <option value="Antibiotic">Antibiotic</option>
+                          <option value="Analgesic">Analgesic</option>
+                          <option value="Oral Care">Oral Care</option>
+                          <option value="Clinical Service">Clinical Service</option>
+                        </>
+                      )}
                     </select>
                   </div>
                 </div>
 
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Item / Product Name</label>
+                  <label className="block font-bold text-slate-700 mb-1">
+                    {isRestaurant
+                      ? 'Dish / Menu Item Name *'
+                      : isPharmacy
+                      ? 'Medicine / Formula Name *'
+                      : isClinic
+                      ? 'Medicine / Treatment Name *'
+                      : 'Product / Item Name *'}
+                  </label>
                   <input
                     type="text"
                     required
-                    placeholder="e.g. Medicated Beauty Cream or Panadol"
+                    placeholder={
+                      isRestaurant
+                        ? 'e.g. Chicken Biryani / Zinger Burger'
+                        : isPharmacy
+                        ? 'e.g. Augmentin 625mg (GSK)'
+                        : isClinic
+                        ? 'e.g. Medicated Skin Cream'
+                        : 'e.g. Super Basmati Rice 5kg'
+                    }
                     value={stockForm.name}
                     onChange={(e) => setStockForm({ ...stockForm, name: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-300"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-300 font-bold"
                   />
                 </div>
 
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Supplier Details</label>
+                  <label className="block font-bold text-slate-700 mb-1">
+                    {isRestaurant ? 'Kitchen Prep / Supplier' : 'Supplier Details'}
+                  </label>
                   <input
                     type="text"
-                    required
-                    placeholder="e.g. Premier Pharma Distributors"
+                    required={!isRestaurant}
+                    placeholder={
+                      isRestaurant
+                        ? 'e.g. Main Kitchen / Cold Storage'
+                        : 'e.g. Premier Pharma Distributors / Al-Karam'
+                    }
                     value={stockForm.supplier}
                     onChange={(e) => setStockForm({ ...stockForm, supplier: e.target.value })}
                     className="w-full px-3 py-2 rounded-xl border border-slate-300"
@@ -2456,9 +2545,16 @@ export default function ReceptionistPOSPanel({
 
                 <button
                   type="submit"
-                  className="w-full py-3 rounded-xl bg-navy hover:bg-navy-light text-gold font-extrabold text-xs shadow transition"
+                  className="w-full py-3 rounded-xl bg-navy hover:bg-navy-light text-gold font-extrabold text-xs shadow transition cursor-pointer"
                 >
-                  + Add Stock to {isClinic ? 'Clinic' : isRestaurant ? 'Restaurant' : isPharmacy ? 'Pharmacy' : 'Store'} Inventory
+                  {isRestaurant
+                    ? '+ Add Dish to Food Menu'
+                    : isPharmacy
+                    ? '+ Add Medicine to Formulary'
+                    : isClinic
+                    ? '+ Add Stock to Clinic Inventory'
+                    : '+ Add Product to Store Inventory'}
+                </button>
                 </button>
               </form>
             </div>

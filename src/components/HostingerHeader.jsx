@@ -1,5 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
+  isRestaurantBusiness,
+  isPharmacyBusiness,
+  isClinicBusiness,
+  getSectorLabel
+} from '../utils/businessTypes.js';
+import {
   Menu,
   X,
   Bell,
@@ -116,8 +122,11 @@ export default function HostingerHeader({
             </div>
           ) : activeRole === 'CLINIC_ADMIN' ? (
             <div className="min-w-0 flex items-center gap-2 text-xs sm:text-sm font-medium">
-              <span className="font-extrabold text-slate-900 dark:text-white truncate max-w-[200px] sm:max-w-[320px]">
+              <span className="font-extrabold text-slate-900 dark:text-white truncate max-w-[180px] sm:max-w-[280px]">
                 {currentTenant?.name || loggedInUser?.tenantName || loggedInUser?.clinicName || 'Store'}
+              </span>
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-blue-50 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-700/50 shrink-0">
+                {getSectorLabel(currentTenant)}
               </span>
               <span className="text-slate-400">/</span>
               <span className="font-bold text-blue-600 dark:text-blue-400 truncate">
@@ -126,8 +135,11 @@ export default function HostingerHeader({
             </div>
           ) : (
             <div className="min-w-0 flex items-center gap-2 text-xs sm:text-sm font-medium">
-              <span className="font-extrabold text-slate-900 dark:text-white truncate max-w-[200px] sm:max-w-[320px]">
+              <span className="font-extrabold text-slate-900 dark:text-white truncate max-w-[180px] sm:max-w-[280px]">
                 {currentTenant?.name || loggedInUser?.tenantName || loggedInUser?.clinicName || 'Store'}
+              </span>
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-blue-50 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-700/50 shrink-0">
+                {getSectorLabel(currentTenant)}
               </span>
               <span className="text-slate-400">/</span>
               <span className="font-bold text-blue-600 dark:text-blue-400 truncate">

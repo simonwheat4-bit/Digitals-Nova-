@@ -369,6 +369,79 @@ export default function ClinicAdminPanel({
         </div>
       )}
 
+      {/* 🚀 DYNAMIC BUSINESS SECTOR SELECTOR & ACTIVE VERTICAL BADGE */}
+      <div className="bg-gradient-to-r from-navy via-navy-light to-navy p-3.5 sm:p-4 rounded-2xl border-2 border-gold/40 text-white shadow-md flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 rounded-xl bg-gold text-navy font-bold text-xl shrink-0 shadow">
+            {isRestaurant ? '🍽️' : isPharmacy ? '💊' : isClinic ? '🏥' : '🛒'}
+          </div>
+          <div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-gold-bright bg-navy-dark px-2 py-0.5 rounded border border-gold/30">
+                Active Industry Vertical
+              </span>
+              <span className="font-extrabold text-sm sm:text-base text-white">
+                {isRestaurant
+                  ? '🍽️ Restaurant, Cafe & Food Outlet POS'
+                  : isPharmacy
+                  ? '💊 Pharmacy & Medical Store'
+                  : isClinic
+                  ? '🏥 Clinic & HMS Healthcare'
+                  : '🛒 Retail Mart & General Store'}
+              </span>
+            </div>
+            <p className="text-[11px] text-ice/80 mt-0.5">
+              Live screens, menus, billing & receipt layouts are dynamically customized for this business type.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <label className="text-xs font-bold text-ice whitespace-nowrap">Switch Vertical:</label>
+          <select
+            value={isRestaurant ? 'RESTAURANT' : isPharmacy ? 'PHARMACY' : isClinic ? 'CLINIC_HMS' : 'RETAIL_MART'}
+            onChange={async (e) => {
+              const newSector = e.target.value;
+              if (onUpdateSettings) {
+                await onUpdateSettings({
+                  businessType: newSector,
+                  business_type: newSector,
+                  vertical: newSector,
+                  industryVertical: newSector
+                });
+              }
+              try {
+                const registered = JSON.parse(localStorage.getItem('digitalsnova_registered_tenants') || '[]');
+                const idx = registered.findIndex(
+                  (t) =>
+                    (t.id && t.id === tenant?.id) ||
+                    (t.subdomain && t.subdomain.toLowerCase() === (tenant?.subdomain || '').toLowerCase())
+                );
+                if (idx !== -1) {
+                  registered[idx].businessType = newSector;
+                  registered[idx].business_type = newSector;
+                  localStorage.setItem('digitalsnova_registered_tenants', JSON.stringify(registered));
+                }
+                const active = JSON.parse(localStorage.getItem('digitalsnova_active_tenant') || 'null');
+                if (active) {
+                  active.businessType = newSector;
+                  active.business_type = newSector;
+                  localStorage.setItem('digitalsnova_active_tenant', JSON.stringify(active));
+                }
+              } catch {}
+              setToast(`Switched Business Sector to ${newSector}! Updating workspace...`);
+              setTimeout(() => window.location.reload(), 400);
+            }}
+            className="bg-navy-dark text-gold font-extrabold text-xs px-3 py-2 rounded-xl border border-gold/60 cursor-pointer focus:outline-none focus:ring-2 focus:ring-gold"
+          >
+            <option value="RESTAURANT">🍽️ Restaurants, Cafes & Food Outlets</option>
+            <option value="RETAIL_MART">🛒 Retail Mart / Supermarket / General Store</option>
+            <option value="PHARMACY">💊 Pharmacy & Medical Store</option>
+            <option value="CLINIC_HMS">🏥 Clinic / Hospital / HMS Healthcare</option>
+          </select>
+        </div>
+      </div>
+
       {/* Sub-navigation Box Cards (Admin Profile tab removed since it is in Top-Right Navbar; Active Box turns Green) */}
       <div
         className={`grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 ${
@@ -1389,95 +1462,114 @@ export default function ClinicAdminPanel({
                 </div>
               </div>
 
-              {/* Outstanding Recoverables Ledger + Admin Refund Control */}
+              {/* Outstanding Recoverables Ledger (Clinic Only) / Order Activity (Mart & Restaurant) */}
               <div className="lg:col-span-7 bg-white rounded-2xl p-5 shadow-sm border border-slate-200 space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="font-extrabold text-sm text-navy">
-                      Outstanding Recoverables Ledger (Patient Installment Dues)
-                    </h3>
-                    <p className="text-[11px] text-slate-500">
-                      Includes start date, last session date, total cost, and remaining balance
-                    </p>
-                  </div>
-                </div>
+                {isClinic ? (
+                  <>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="font-extrabold text-sm text-navy">
+                          Outstanding Recoverables Ledger (Patient Installment Dues)
+                        </h3>
+                        <p className="text-[11px] text-slate-500">
+                          Includes start date, last session date, total cost, and remaining balance
+                        </p>
+                      </div>
+                    </div>
 
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse text-xs">
-                    <thead>
-                      <tr className="border-b border-slate-200 text-[10px] uppercase text-slate-500">
-                        <th className="py-2 px-2">Patient</th>
-                        <th className="py-2 px-2">Treatment & Dates</th>
-                        <th className="py-2 px-2">Total Cost</th>
-                        <th className="py-2 px-2">Paid</th>
-                        <th className="py-2 px-2">Recoverable Balance</th>
-                        <th className="py-2 px-2 text-right">Delete</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      {filteredTreatments.map((t) => {
-                        const lastSes = t.sessions?.[t.sessions.length - 1];
-                        return (
-                          <tr key={t.id}>
-                            <td className="py-2.5 px-2">
-                              <div className="font-bold text-navy">{t.patientName}</div>
-                              <div className="font-mono text-[10px] text-slate-500">
-                                {t.patientPhone} • {t.patientCode}
-                              </div>
-                            </td>
-                            <td className="py-2.5 px-2">
-                              <div className="font-bold text-slate-800">{t.title}</div>
-                              <div className="text-[10px] font-mono text-teal">
-                                Started: {new Date(t.createdAt).toLocaleDateString()}
-                                {lastSes
-                                  ? ` • Last Session (#${lastSes.sessionNumber}): ${new Date(
-                                      lastSes.date
-                                    ).toLocaleDateString()}`
-                                  : ''}
-                              </div>
-                            </td>
-                            <td className="py-2.5 px-2 font-mono">Rs. {t.totalCost.toLocaleString()}</td>
-                            <td className="py-2.5 px-2 font-mono text-emerald-700 font-bold">
-                              Rs. {t.paidAmount.toLocaleString()}
-                            </td>
-                            <td className="py-2.5 px-2">
-                              <span
-                                className={`px-2.5 py-1 rounded-lg font-mono font-extrabold text-xs ${
-                                  t.remainingBalance > 0
-                                    ? 'bg-teal text-white'
-                                    : 'bg-emerald-100 text-emerald-800'
-                                }`}
-                              >
-                                Rs. {t.remainingBalance.toLocaleString()}
-                              </span>
-                            </td>
-                            <td className="py-2.5 px-2 text-right">
-                              <button
-                                type="button"
-                                onClick={async () => {
-                                  if (
-                                    window.confirm(
-                                      `Delete treatment plan "${t.title}" for ${t.patientName} permanently? Remaining balance Rs. ${t.remainingBalance.toLocaleString()} will be cleared.`
-                                    )
-                                  ) {
-                                    if (onDeleteTreatment) {
-                                      await onDeleteTreatment(t.id);
-                                      setToast(`Treatment ledger "${t.title}" deleted.`);
-                                    }
-                                  }
-                                }}
-                                className="p-1.5 rounded-lg text-slate-400 hover:text-alert hover:bg-red-50 transition cursor-pointer"
-                                title="Delete Treatment Ledger Record"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </td>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left border-collapse text-xs">
+                        <thead>
+                          <tr className="border-b border-slate-200 text-[10px] uppercase text-slate-500">
+                            <th className="py-2 px-2">Patient</th>
+                            <th className="py-2 px-2">Treatment & Dates</th>
+                            <th className="py-2 px-2">Total Cost</th>
+                            <th className="py-2 px-2">Paid</th>
+                            <th className="py-2 px-2">Recoverable Balance</th>
+                            <th className="py-2 px-2 text-right">Delete</th>
                           </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {filteredTreatments.map((t) => {
+                            const lastSes = t.sessions?.[t.sessions.length - 1];
+                            return (
+                              <tr key={t.id}>
+                                <td className="py-2.5 px-2">
+                                  <div className="font-bold text-navy">{t.patientName}</div>
+                                  <div className="font-mono text-[10px] text-slate-500">
+                                    {t.patientPhone} • {t.patientCode}
+                                  </div>
+                                </td>
+                                <td className="py-2.5 px-2">
+                                  <div className="font-bold text-slate-800">{t.title}</div>
+                                  <div className="text-[10px] font-mono text-teal">
+                                    Started: {new Date(t.createdAt).toLocaleDateString()}
+                                    {lastSes
+                                      ? ` • Last Session (#${lastSes.sessionNumber}): ${new Date(
+                                          lastSes.date
+                                        ).toLocaleDateString()}`
+                                      : ''}
+                                  </div>
+                                </td>
+                                <td className="py-2.5 px-2 font-mono">Rs. {t.totalCost.toLocaleString()}</td>
+                                <td className="py-2.5 px-2 font-mono text-emerald-700 font-bold">
+                                  Rs. {t.paidAmount.toLocaleString()}
+                                </td>
+                                <td className="py-2.5 px-2">
+                                  <span
+                                    className={`px-2.5 py-1 rounded-lg font-mono font-extrabold text-xs ${
+                                      t.remainingBalance > 0
+                                        ? 'bg-teal text-white'
+                                        : 'bg-emerald-100 text-emerald-800'
+                                    }`}
+                                  >
+                                    Rs. {t.remainingBalance.toLocaleString()}
+                                  </span>
+                                </td>
+                                <td className="py-2.5 px-2 text-right">
+                                  <button
+                                    type="button"
+                                    onClick={async () => {
+                                      if (
+                                        window.confirm(
+                                          `Delete treatment plan "${t.title}" for ${t.patientName} permanently? Remaining balance Rs. ${t.remainingBalance.toLocaleString()} will be cleared.`
+                                        )
+                                      ) {
+                                        if (onDeleteTreatment) {
+                                          await onDeleteTreatment(t.id);
+                                          setToast(`Treatment ledger "${t.title}" deleted.`);
+                                        }
+                                      }
+                                    }}
+                                    className="p-1.5 rounded-lg text-slate-400 hover:text-alert hover:bg-red-50 transition cursor-pointer"
+                                    title="Delete Treatment Ledger Record"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex items-center justify-between pb-1 border-b border-slate-100">
+                    <div>
+                      <h3 className="font-extrabold text-sm text-navy">
+                        {isRestaurant
+                          ? '🍽️ Restaurant Kitchen & Dining Orders Live Activity'
+                          : '🛒 Store Counter Orders & Transactions'}
+                      </h3>
+                      <p className="text-[11px] text-slate-500">
+                        {isRestaurant
+                          ? 'Real-time billing, kitchen tickets and customer receipts overview'
+                          : 'Real-time retail checkout activity, invoices and shift monitoring'}
+                      </p>
+                    </div>
+                  </div>
+                )}
 
                 {/* Admin-Only Invoice Refund / Cancellation Control */}
                 <div className="pt-3 border-t border-slate-200">

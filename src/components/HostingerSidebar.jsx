@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { isClinicBusiness, isRestaurantBusiness, isPharmacyBusiness, isRetailMartBusiness } from '../utils/businessTypes.js';
+import { isClinicBusiness, isRestaurantBusiness, isPharmacyBusiness, isRetailMartBusiness, getSectorLabel } from '../utils/businessTypes.js';
 import {
   LayoutDashboard,
   Crown,
@@ -164,9 +164,14 @@ export default function HostingerSidebar({
                       : 'bg-rose-500'
                   }`}
                 />
-                <span className="font-bold text-white truncate text-[10px]">
-                  {currentTenant?.name || loggedInUser?.tenantName || loggedInUser?.clinicName || 'My Facility'}
-                </span>
+                <div className="min-w-0">
+                  <div className="font-bold text-white truncate text-[10px]">
+                    {currentTenant?.name || loggedInUser?.tenantName || loggedInUser?.clinicName || 'My Facility'}
+                  </div>
+                  <div className="text-[9px] font-semibold text-blue-400 truncate">
+                    {getSectorLabel(currentTenant)}
+                  </div>
+                </div>
               </div>
               <span
                 className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-extrabold shrink-0 ${

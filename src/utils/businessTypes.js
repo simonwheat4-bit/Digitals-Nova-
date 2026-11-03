@@ -20,15 +20,26 @@ export const getBusinessSector = (tenant) => {
   // 1. Restaurant / Food Outlets / Cafes
   if (
     rawType.includes('restaurant') ||
+    rawType.includes('resturent') ||
+    rawType.includes('resturant') ||
     rawType.includes('cafe') ||
+    rawType.includes('kafe') ||
     rawType.includes('food') ||
     rawType.includes('dining') ||
     rawType.includes('pizza') ||
     rawType.includes('burger') ||
     rawType.includes('coffee') ||
+    rawType.includes('chai') ||
+    rawType.includes('tea') ||
+    rawType.includes('dhaba') ||
+    rawType.includes('hotel') ||
     rawType.includes('bbq') ||
     rawType.includes('bistro') ||
     rawType.includes('diner') ||
+    rawType.includes('biryani') ||
+    rawType.includes('karahi') ||
+    rawType.includes('kitchen') ||
+    rawType.includes('bakery') ||
     rawType.includes('fast food') ||
     rawType.includes('catering')
   ) {
@@ -86,12 +97,22 @@ export const getBusinessSector = (tenant) => {
 
   if (
     name.includes('restaurant') ||
+    name.includes('resturent') ||
+    name.includes('resturant') ||
     name.includes('cafe') ||
+    name.includes('kafe') ||
     name.includes('food') ||
     name.includes('pizza') ||
     name.includes('burger') ||
     name.includes('bbq') ||
     name.includes('diner') ||
+    name.includes('dhaba') ||
+    name.includes('hotel') ||
+    name.includes('biryani') ||
+    name.includes('karahi') ||
+    name.includes('kitchen') ||
+    name.includes('bakery') ||
+    name.includes('chai') ||
     name.includes('coffee') ||
     name.includes('bistro')
   ) {
@@ -127,6 +148,22 @@ export const isRestaurantBusiness = (tenant) => getBusinessSector(tenant) === SE
 export const isPharmacyBusiness = (tenant) => getBusinessSector(tenant) === SECTOR_PHARMACY;
 export const isClinicBusiness = (tenant) => getBusinessSector(tenant) === SECTOR_CLINIC_HMS;
 export const isRetailMartBusiness = (tenant) => getBusinessSector(tenant) === SECTOR_RETAIL_MART;
+
+// Sector Label & Emoji Helper
+export const getSectorLabel = (tenantOrSector) => {
+  const sector = typeof tenantOrSector === 'object' ? getBusinessSector(tenantOrSector) : tenantOrSector;
+  switch (sector) {
+    case SECTOR_RESTAURANT:
+      return '🍽️ Restaurant / Cafe POS';
+    case SECTOR_PHARMACY:
+      return '💊 Pharmacy & Medical Store';
+    case SECTOR_CLINIC_HMS:
+      return '🏥 Clinic & HMS Healthcare';
+    case SECTOR_RETAIL_MART:
+    default:
+      return '🛒 Retail Mart / POS';
+  }
+};
 
 // Helper to verify Super Admin role
 export const isSuperAdminUser = (user) => {

@@ -54,7 +54,10 @@ export default function ThermalReceiptModal({
           `--------------------------------\n`;
 
         sale.items.forEach((item) => {
-          receiptText += `${item.name.slice(0, 22)} x${item.qty}  Rs.${item.subtotal}\n`;
+          const itemTotal = (item.subtotal != null && !isNaN(Number(item.subtotal)))
+            ? Number(item.subtotal)
+            : ((Number(item.qty || 1) || 1) * (Number(item.unitPrice || 0) || 0));
+          receiptText += `${item.name.slice(0, 22)} x${item.qty}  Rs.${itemTotal}\n`;
         });
 
         receiptText +=
@@ -198,19 +201,24 @@ export default function ThermalReceiptModal({
                   <span>QTY x AMT</span>
                 </div>
                 <div className="space-y-1.5">
-                  {sale.items.map((item, idx) => (
-                    <div key={idx} className="leading-tight">
-                      <div className="font-semibold">{item.name}</div>
-                      <div className="flex justify-between text-[10px] text-neutral-700">
-                        <span>
-                          {item.qty} x Rs. {Number(item.unitPrice).toLocaleString()}
-                        </span>
-                        <span className="font-bold text-black">
-                          Rs. {Number(item.subtotal).toLocaleString()}
-                        </span>
+                  {sale.items.map((item, idx) => {
+                    const itemTotal = (item.subtotal != null && !isNaN(Number(item.subtotal)))
+                      ? Number(item.subtotal)
+                      : ((Number(item.qty || 1) || 1) * (Number(item.unitPrice || 0) || 0));
+                    return (
+                      <div key={idx} className="leading-tight">
+                        <div className="font-semibold">{item.name}</div>
+                        <div className="flex justify-between text-[10px] text-neutral-700">
+                          <span>
+                            {item.qty} x Rs. {Number(item.unitPrice || 0).toLocaleString()}
+                          </span>
+                          <span className="font-bold text-black">
+                            Rs. {Number(itemTotal).toLocaleString()}
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
 
