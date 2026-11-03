@@ -2442,6 +2442,8 @@
       const slug = business.toLowerCase().replace(/[^a-z0-9]/g, '') || 'myclinic';
       const tenantUrl = `https://${slug}.digitalsnova.com`;
       const isYearly = document.getElementById('trialModal').dataset.selectedBilling === 'YEARLY';
+      const rawSelectedPlan = document.getElementById('trialModal').dataset.selectedPlan || '';
+      const planName = rawSelectedPlan ? (rawSelectedPlan + (isYearly ? ' (Annual)' : ' (Monthly)')) : (isYearly ? '1-Year Annual Package' : '3-Day Enterprise Trial');
 
       const newTenantRecord = {
         id: 'tenant_' + slug,
@@ -2465,6 +2467,7 @@
         createdAt: new Date().toISOString(),
         lastPaymentDate: new Date().toISOString(),
         planType: isYearly ? 'YEARLY' : 'TRIAL_3_DAYS',
+        planName: planName,
         cycleDays: isYearly ? 365 : 3,
         licenseKey: licenseKey,
         ownerName: name,

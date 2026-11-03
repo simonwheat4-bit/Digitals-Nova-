@@ -109,15 +109,22 @@ function sendGmailSmtp($toEmail, $subject, $htmlBody) {
     $send($socket, "DATA");
     if (!$read($socket, 354)) { fclose($socket); return false; }
 
+    $encodedSubject = '=?UTF-8?B?' . base64_encode($subject) . '?=';
+    $encodedSender = '=?UTF-8?B?' . base64_encode($senderName) . '?=';
+    $messageId = '<' . time() . '.' . bin2hex(random_bytes(8)) . '@digitalsnova.com>';
+
     $headers = [
         "MIME-Version: 1.0",
         "Content-Type: text/html; charset=UTF-8",
-        "From: " . $senderName . " <" . $smtpUser . ">",
+        "Content-Transfer-Encoding: 8bit",
+        "From: " . $encodedSender . " <" . $smtpUser . ">",
         "Reply-To: " . $smtpUser,
         "To: <" . $toEmail . ">",
         "Date: " . date('r'),
-        "Subject: " . $subject,
-        "X-Mailer: DigitalsNova-Gmail-SMTP"
+        "Message-ID: " . $messageId,
+        "Subject: " . $encodedSubject,
+        "X-Mailer: DigitalsNova-Gmail-SMTP",
+        "X-Priority: 1 (Highest)"
     ];
 
     $payload = implode("\r\n", $headers) . "\r\n\r\n" . $htmlBody . "\r\n.";
@@ -163,6 +170,17 @@ if ($action === 'test_email' || $action === 'send_test_email') {
     exit();
 }
 
+// ==============================================================================
+// 1.3 ACTION: CLEAR NOTIFICATIONS (Clear Real-Time Feed on Super Admin request)
+// ==============================================================================
+if ($action === 'clear_notifications' || $action === 'clear_feed') {
+    writeJsonFile($notifsFile, []);
+    echo json_encode([
+        'success' => true,
+        'message' => 'All feed notifications have been permanently cleared from cloud storage.'
+    ]);
+    exit();
+}
 
 // ==============================================================================
 // 1.5 ACTION: DELETE TENANT (Called from Super Admin to permanently wipe store)
