@@ -2015,7 +2015,27 @@
         if (sec) sec.scrollIntoView({ behavior: 'smooth' });
       }
     }
-    window.addEventListener('DOMContentLoaded', handleHashRoute);
+    window.addEventListener('DOMContentLoaded', () => {
+      handleHashRoute();
+      try {
+        const demoSubs = ['alshifa', 'citymed', 'lifecare', 'altahirclinics'];
+        const curSub = (localStorage.getItem('digitalsnova_subdomain') || '').toLowerCase();
+        if (demoSubs.includes(curSub)) {
+          localStorage.removeItem('digitalsnova_subdomain');
+          localStorage.removeItem('digitalsnova_auth_user');
+        }
+        let regT = JSON.parse(localStorage.getItem('digitalsnova_registered_tenants') || '[]');
+        const cleanedT = regT.filter(t => !demoSubs.includes((t.subdomain || '').toLowerCase()));
+        if (cleanedT.length !== regT.length) {
+          localStorage.setItem('digitalsnova_registered_tenants', JSON.stringify(cleanedT));
+        }
+        let inv = JSON.parse(localStorage.getItem('digitalsnova_custom_inventory') || '[]');
+        const cleanedInv = inv.filter(item => item.subdomain && !demoSubs.includes(item.subdomain.toLowerCase()) && item.subdomain !== 'default' && item.subdomain !== 'store');
+        if (cleanedInv.length !== inv.length) {
+          localStorage.setItem('digitalsnova_custom_inventory', JSON.stringify(cleanedInv));
+        }
+      } catch (e) {}
+    });
     window.addEventListener('hashchange', handleHashRoute);
 
     let currentBillingCycle = 'MONTHLY'; // 'MONTHLY' | 'YEARLY'
@@ -2507,6 +2527,18 @@
 
       // Save to localStorage
       try {
+        // Guarantee 100% fresh account: zero demo products, zero dummy sales, zero past dues
+        try {
+          localStorage.removeItem('digitalsnova_treatment_catalog_' + slug);
+          localStorage.removeItem('digitalsnova_sales_' + slug);
+          localStorage.removeItem('digitalsnova_active_shift_' + slug);
+          localStorage.removeItem('digitalsnova_closed_shifts_' + slug);
+          localStorage.removeItem('digitalsnova_parked_sales_' + slug);
+          localStorage.removeItem('digitalsnova_cache_' + slug);
+          let customInv = JSON.parse(localStorage.getItem('digitalsnova_custom_inventory') || '[]');
+          customInv = customInv.filter(item => item.subdomain && item.subdomain.toLowerCase() !== slug && !['alshifa', 'citymed', 'lifecare', 'altahirclinics', 'default', 'store'].includes(item.subdomain.toLowerCase()));
+          localStorage.setItem('digitalsnova_custom_inventory', JSON.stringify(customInv));
+        } catch(e) {}
         localStorage.setItem('digitalsnova_subdomain', slug);
         localStorage.setItem('digitalsnova_auth_user', JSON.stringify({
           username: 'admin.' + slug,
