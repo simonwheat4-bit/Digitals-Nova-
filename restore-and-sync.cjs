@@ -87,6 +87,10 @@ const redirectRules = `/admin              /portal/index.html?view=super-admin 2
 /portal/super-admin /portal/index.html?view=super-admin 200
 /portal/admin       /portal/index.html?view=super-admin 200
 /cloud-pos-saas     /cloud-pos-saas.html    200
+/api/subscription/card-checkout   /api/stripe-checkout.php 200
+/api/webhooks/subscription-payment /api/stripe-webhook.php 200
+/api/stripe-checkout              /api/stripe-checkout.php 200
+/api/stripe-webhook               /api/stripe-webhook.php  200
 /portal/*           /portal/index.html      200
 `;
 
@@ -150,6 +154,14 @@ ErrorDocument 404 /404.html
   RewriteRule ^super-admin/?$ portal/index.html?view=super-admin [L,QSA]
   RewriteRule ^portal/super-admin/?$ portal/index.html?view=super-admin [L,QSA]
   RewriteRule ^portal/admin/?$ portal/index.html?view=super-admin [L,QSA]
+
+  # Automated Stripe & Card Payment Gateway Endpoints
+  RewriteRule ^api/subscription/card-checkout/?$ api/stripe-checkout.php [L,QSA]
+  RewriteRule ^api/webhooks/subscription-payment/?$ api/stripe-webhook.php [L,QSA]
+  RewriteRule ^api/stripe-checkout/?$ api/stripe-checkout.php [L,QSA]
+  RewriteRule ^api/stripe-webhook/?$ api/stripe-webhook.php [L,QSA]
+  RewriteRule ^portal/api/subscription/card-checkout/?$ portal/api/stripe-checkout.php [L,QSA]
+  RewriteRule ^portal/api/webhooks/subscription-payment/?$ portal/api/stripe-webhook.php [L,QSA]
 
   # Redirect /index.html to /
   RewriteCond %{THE_REQUEST} ^[A-Z]{3,9}\\ /.*index\\.html\\ HTTP/ [NC]

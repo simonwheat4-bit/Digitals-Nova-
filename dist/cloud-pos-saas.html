@@ -2547,12 +2547,28 @@
 
       // Synchronous Cloud Sync & Email Dispatch with keepalive
       try {
-        const syncPromise = fetch('/api/sync.php?action=register_tenant', {
-          method: 'POST',
-          keepalive: true,
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(newTenantRecord)
-        });
+        const syncPromise = (async () => {
+          let res = null;
+          try {
+            res = await fetch('/api/sync.php?action=register_tenant', {
+              method: 'POST',
+              keepalive: true,
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(newTenantRecord)
+            });
+          } catch(e) {}
+          if (!res || !res.ok) {
+            try {
+              res = await fetch('./api/sync.php?action=register_tenant', {
+                method: 'POST',
+                keepalive: true,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(newTenantRecord)
+              });
+            } catch(e) {}
+          }
+          return res;
+        })();
         const timeoutPromise = new Promise(r => setTimeout(r, 6000));
         await Promise.race([syncPromise, timeoutPromise]);
       } catch (err) {

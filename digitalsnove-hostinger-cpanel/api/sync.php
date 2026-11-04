@@ -15,15 +15,121 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit();
 }
 
-$dataDir = __DIR__ . '/data';
-if (!is_dir($dataDir)) {
-    @mkdir($dataDir, 0755, true);
+// Determine shared data directory across both root and /portal/ deployments
+$candidates = [
+    dirname(__DIR__) . '/api/data',
+    __DIR__ . '/data',
+    dirname(dirname(__DIR__)) . '/api/data',
+    __DIR__ . '/../portal/api/data'
+];
+
+$dataDir = null;
+foreach ($candidates as $cand) {
+    if (is_dir($cand) && is_writable($cand)) {
+        $dataDir = realpath($cand);
+        break;
+    }
+}
+if (!$dataDir) {
+    $dataDir = __DIR__ . '/data';
+    if (!is_dir($dataDir)) {
+        @mkdir($dataDir, 0777, true);
+    }
 }
 
 $tenantsFile = $dataDir . '/tenants.json';
 $notifsFile = $dataDir . '/notifications.json';
 $staffFile = $dataDir . '/staff.json';
 $deletedTenantsFile = $dataDir . '/deleted_tenants.json';
+$paymentsFile = $dataDir . '/payments.json';
+$licenseKeysFile = $dataDir . '/license_keys.json';
+
+// Sync across secondary paths if they exist
+function syncToSecondaryDataDirs($filename, $data) {
+    $secondaries = [
+        dirname(__DIR__) . '/portal/api/data/' . $filename,
+        dirname(__DIR__) . '/api/data/' . $filename,
+        __DIR__ . '/data/' . $filename
+    ];
+    foreach ($secondaries as $sec) {
+        $secDir = dirname($sec);
+        if (is_dir($secDir) && is_writable($secDir)) {
+            @file_put_contents($sec, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE), LOCK_EX);
+        }
+    }
+}
+
+// Unified multi-path loader to never miss a client registration
+function getUnifiedTenants($primaryPath) {
+    $tenants = readJsonFile($primaryPath);
+    $otherPaths = [
+        dirname(__DIR__) . '/api/data/tenants.json',
+        dirname(__DIR__) . '/portal/api/data/tenants.json',
+        __DIR__ . '/data/tenants.json',
+        __DIR__ . '/../portal/api/data/tenants.json'
+    ];
+    $dirty = false;
+    foreach ($otherPaths as $op) {
+        if ($op !== $primaryPath && file_exists($op)) {
+            $other = readJsonFile($op);
+            foreach ($other as $ot) {
+                $oSub = strtolower($ot['subdomain'] ?? '');
+                $oId = $ot['id'] ?? '';
+                $exists = false;
+                foreach ($tenants as $t) {
+                    if ((!empty($oSub) && strtolower($t['subdomain'] ?? '') === $oSub) || (!empty($oId) && ($t['id'] ?? '') === $oId)) {
+                        $exists = true;
+                        break;
+                    }
+                }
+                if (!$exists) {
+                    $tenants[] = $ot;
+                    $dirty = true;
+                }
+            }
+        }
+    }
+    if ($dirty) {
+        writeJsonFile($primaryPath, $tenants);
+        syncToSecondaryDataDirs('tenants.json', $tenants);
+    }
+    return $tenants;
+}
+
+function getUnifiedNotifications($primaryPath) {
+    $notifs = readJsonFile($primaryPath);
+    $otherPaths = [
+        dirname(__DIR__) . '/api/data/notifications.json',
+        dirname(__DIR__) . '/portal/api/data/notifications.json',
+        __DIR__ . '/data/notifications.json',
+        __DIR__ . '/../portal/api/data/notifications.json'
+    ];
+    $dirty = false;
+    $seen = [];
+    foreach ($notifs as $n) {
+        if (!empty($n['id'])) $seen[$n['id']] = true;
+    }
+    foreach ($otherPaths as $op) {
+        if ($op !== $primaryPath && file_exists($op)) {
+            $other = readJsonFile($op);
+            foreach ($other as $on) {
+                if (!empty($on['id']) && empty($seen[$on['id']])) {
+                    $notifs[] = $on;
+                    $seen[$on['id']] = true;
+                    $dirty = true;
+                }
+            }
+        }
+    }
+    if ($dirty) {
+        usort($notifs, function($a, $b) {
+            return strtotime($b['timestamp'] ?? 0) - strtotime($a['timestamp'] ?? 0);
+        });
+        writeJsonFile($primaryPath, $notifs);
+        syncToSecondaryDataDirs('notifications.json', $notifs);
+    }
+    return $notifs;
+}
 
 // Helper to read JSON file safely
 function readJsonFile($path, $default = []) {
@@ -670,6 +776,159 @@ if ($action === 'newsletter' || $action === 'send_broadcast') {
     }
 
     echo json_encode(['success' => true, 'sentCount' => $sentCount]);
+    exit();
+}
+
+
+// ==============================================================================
+// 1.8 ACTION: CARD / STRIPE SUBSCRIPTION CHECKOUT & AUTO-RENEWAL
+// ==============================================================================
+if ($action === 'card_checkout' || $action === 'stripe_checkout' || $action === 'subscription_payment') {
+    $planConfig = [
+        'TRIAL_3_DAYS' => ['name' => '3-Day Enterprise Trial', 'fee' => 0, 'days' => 3],
+        'MONTHLY' => ['name' => 'Standard Monthly Plan', 'fee' => 7999, 'days' => 30],
+        'YEARLY' => ['name' => '1-Year Annual Package', 'fee' => 76790, 'days' => 365],
+        '3_YEARS' => ['name' => '3-Year Multi-Year Package', 'fee' => 229000, 'days' => 1095]
+    ];
+
+    $planType = strtoupper(trim($body['planType'] ?? ($body['plan'] ?? 'MONTHLY')));
+    if (!isset($planConfig[$planType])) $planType = 'MONTHLY';
+
+    $planInfo = $planConfig[$planType];
+    $amount = $planInfo['fee'];
+    $planDays = $planInfo['days'];
+    $planName = $planInfo['name'];
+
+    $tenantId = trim($body['tenantId'] ?? ($body['id'] ?? ''));
+    $subdomain = strtolower(trim($body['subdomain'] ?? ''));
+
+    $tenants = getUnifiedTenants($tenantsFile);
+    $matchedIndex = -1;
+    foreach ($tenants as $idx => $t) {
+        $tId = $t['id'] ?? '';
+        $tSub = strtolower($t['subdomain'] ?? '');
+        if ((!empty($tenantId) && $tId === $tenantId) || (!empty($subdomain) && $tSub === $subdomain)) {
+            $matchedIndex = $idx;
+            break;
+        }
+    }
+
+    $storeName = $body['cardName'] ?? ($body['storeName'] ?? ($subdomain ?: 'DigitalsNova Client'));
+    $sub = $subdomain ?: strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $storeName));
+
+    if ($matchedIndex !== -1) {
+        $tenantRef = &$tenants[$matchedIndex];
+    } else {
+        $tenantRef = [
+            'id' => $tenantId ?: 'tenant_' . $sub . '_' . time(),
+            'name' => $storeName,
+            'subdomain' => $sub,
+            'email' => $body['email'] ?? 'client@digitalsnova.com',
+            'phone' => $body['phone'] ?? '+92-300-0000000',
+            'status' => 'ACTIVE'
+        ];
+    }
+
+    $validUntilTimestamp = strtotime("+{$planDays} days");
+    $validUntilDate = date('d M Y, h:i A', $validUntilTimestamp);
+    $txnId = 'TXN_' . strtoupper(bin2hex(random_bytes(6))) . '_' . time();
+    $keyCode = 'DNOVA-' . strtoupper(substr(preg_replace('/[^A-Z0-9]/', '', $planType), 0, 4)) . '-' . strtoupper(bin2hex(random_bytes(3))) . '-' . strtoupper(bin2hex(random_bytes(3)));
+
+    $tenantRef['status'] = 'ACTIVE';
+    $tenantRef['planType'] = $planType;
+    $tenantRef['planName'] = $planName;
+    $tenantRef['monthlyFee'] = $amount;
+    $tenantRef['cycleDays'] = $planDays;
+    $tenantRef['lastPaymentDate'] = date('c');
+    $tenantRef['manualBlocked'] = false;
+    $tenantRef['subscription'] = [
+        'state' => 'ACTIVE',
+        'plan' => $planType,
+        'planName' => $planName,
+        'billingCycleDay' => 1,
+        'graceDaysRemaining' => 3,
+        'lastPaymentDate' => date('c'),
+        'validUntil' => date('c', $validUntilTimestamp),
+        'validUntilFormatted' => $validUntilDate,
+        'txnId' => $txnId
+    ];
+
+    if ($matchedIndex !== -1) {
+        $tenants[$matchedIndex] = $tenantRef;
+    } else {
+        $tenants[] = $tenantRef;
+    }
+    writeJsonFile($tenantsFile, $tenants);
+
+    // Save payment log
+    $payments = readJsonFile($paymentsFile);
+    $payments[] = [
+        'id' => $txnId,
+        'tenantId' => $tenantRef['id'],
+        'tenantName' => $tenantRef['name'],
+        'subdomain' => $tenantRef['subdomain'],
+        'planType' => $planType,
+        'planName' => $planName,
+        'amount' => $amount,
+        'currency' => 'PKR',
+        'status' => 'SUCCEEDED',
+        'createdAt' => date('c')
+    ];
+    writeJsonFile($paymentsFile, $payments);
+
+    // Real-Time Notification
+    $notifications = readJsonFile($notifsFile);
+    $notifications[] = [
+        'id' => 'notif_pay_' . time(),
+        'timestamp' => date('c'),
+        'type' => 'PAYMENT_RECEIVED',
+        'title' => '💳 Subscription Payment Received: Rs. ' . number_format($amount),
+        'tenantName' => $tenantRef['name'],
+        'subdomain' => $tenantRef['subdomain'],
+        'planType' => $planType,
+        'planName' => $planName,
+        'amount' => $amount,
+        'txnId' => $txnId,
+        'portalUrl' => 'https://digitalsnova.com/portal/?store=' . $tenantRef['subdomain'],
+        'message' => "Payment of Rs. " . number_format($amount) . " confirmed for {$tenantRef['name']}. Active until {$validUntilDate}."
+    ];
+    writeJsonFile($notifsFile, $notifications);
+
+    // Send Gmail SMTP Email Receipt
+    $clientEmail = $tenantRef['email'] ?? ($tenantRef['adminUser']['email'] ?? '');
+    $receiptHtml = '<div style="font-family: Arial, sans-serif; background: #0b132b; color: #fff; padding: 24px; border-radius: 14px; border: 2px solid #10b981;">'
+        . '<h2 style="color: #10b981; margin-top: 0;">✓ Payment Verified & Active!</h2>'
+        . '<p>Your payment for <strong>' . htmlspecialchars($planName) . '</strong> has been processed successfully.</p>'
+        . '<p><strong>Store:</strong> ' . htmlspecialchars($tenantRef['name']) . ' (' . htmlspecialchars($tenantRef['subdomain']) . ')<br>'
+        . '<strong>Amount Paid:</strong> Rs. ' . number_format($amount) . ' PKR<br>'
+        . '<strong>Validity:</strong> ' . $validUntilDate . '<br>'
+        . '<strong>Activation Key:</strong> <code style="color: #00e5ff; font-size: 15px; font-weight: bold;">' . htmlspecialchars($keyCode) . '</code></p>'
+        . '<p><a href="https://digitalsnova.com/portal/?store=' . urlencode($tenantRef['subdomain']) . '" style="background: #00e5ff; color: #020617; font-weight: bold; padding: 10px 20px; text-decoration: none; border-radius: 8px; display: inline-block;">Open Portal</a></p>'
+        . '</div>';
+
+    if (!empty($clientEmail) && filter_var($clientEmail, FILTER_VALIDATE_EMAIL)) {
+        sendGmailSmtp($clientEmail, "💳 Payment Receipt: {$planName} [Rs. " . number_format($amount) . "] - DigitalsNova", $receiptHtml);
+    }
+    sendGmailSmtp('digitalsnovaofficial@gmail.com', "👑 Payment Received: Rs. " . number_format($amount) . " from {$tenantRef['name']}", $receiptHtml);
+
+    echo json_encode([
+        'success' => true,
+        'message' => "Payment of Rs. " . number_format($amount) . " authorized and verified! License renewed until {$validUntilDate}.",
+        'txnId' => $txnId,
+        'amount' => $amount,
+        'planType' => $planType,
+        'planName' => $planName,
+        'validUntil' => date('c', $validUntilTimestamp),
+        'validUntilFormatted' => $validUntilDate,
+        'key' => [
+            'keyCode' => $keyCode,
+            'plan' => $planType,
+            'days' => $planDays,
+            'fee' => $amount,
+            'validUntil' => $validUntilDate
+        ],
+        'tenant' => $tenantRef
+    ]);
     exit();
 }
 

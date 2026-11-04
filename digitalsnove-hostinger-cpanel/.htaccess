@@ -14,6 +14,14 @@ ErrorDocument 404 /404.html
   RewriteRule ^portal/super-admin/?$ portal/index.html?view=super-admin [L,QSA]
   RewriteRule ^portal/admin/?$ portal/index.html?view=super-admin [L,QSA]
 
+  # Automated Stripe & Card Payment Gateway Endpoints
+  RewriteRule ^api/subscription/card-checkout/?$ api/stripe-checkout.php [L,QSA]
+  RewriteRule ^api/webhooks/subscription-payment/?$ api/stripe-webhook.php [L,QSA]
+  RewriteRule ^api/stripe-checkout/?$ api/stripe-checkout.php [L,QSA]
+  RewriteRule ^api/stripe-webhook/?$ api/stripe-webhook.php [L,QSA]
+  RewriteRule ^portal/api/subscription/card-checkout/?$ portal/api/stripe-checkout.php [L,QSA]
+  RewriteRule ^portal/api/webhooks/subscription-payment/?$ portal/api/stripe-webhook.php [L,QSA]
+
   # Redirect /index.html to /
   RewriteCond %{THE_REQUEST} ^[A-Z]{3,9}\ /.*index\.html\ HTTP/ [NC]
   RewriteRule ^(.*)index\.html$ /$1 [R=301,L]

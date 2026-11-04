@@ -127,6 +127,9 @@ export default function SuperAdminPanel({
     }
   };
 
+  // Cloud tenants polled dynamically from server so any new registration appears in real-time
+  const [cloudTenants, setCloudTenants] = useState([]);
+
   // Real-Time Super Admin Notification Feed State
   const [notifications, setNotifications] = useState(() => {
     try {
@@ -161,14 +164,23 @@ export default function SuperAdminPanel({
                 }
               });
 
-              // 2. Synthesize notifications from cloud tenants only if tenant was created AFTER clearedAt
-              if (Array.isArray(syncData.tenants)) {
+              // 2. Update cloudTenants state so registered stores immediately show in KPIs & Subdomain table
+              if (Array.isArray(syncData.tenants) && syncData.tenants.length > 0) {
+                setCloudTenants(syncData.tenants);
+                let cachedReg = [];
+                try {
+                  cachedReg = JSON.parse(localStorage.getItem('digitalsnova_registered_tenants') || '[]');
+                } catch {}
+                syncData.tenants.forEach(ct => {
+                  if (!cachedReg.some(cr => cr.id === ct.id || (cr.subdomain || '').toLowerCase() === (ct.subdomain || '').toLowerCase())) {
+                    cachedReg.push(ct);
+                  }
+                });
+                localStorage.setItem('digitalsnova_registered_tenants', JSON.stringify(cachedReg));
+
+                // Synthesize notifications for all cloud tenants
                 syncData.tenants.forEach(t => {
                   const sub = (t.subdomain || '').toLowerCase();
-                  const tTime = new Date(t.createdAt || 0).getTime();
-                  if (tTime <= clearedAt) {
-                    return; // Skip already cleared tenants
-                  }
                   const alreadyPresent = Array.from(notifMap.values()).some(n => (n.subdomain || '').toLowerCase() === sub);
                   if (!alreadyPresent && t.name) {
                     const synthId = 'notif_tenant_' + (sub || t.id);
@@ -188,14 +200,16 @@ export default function SuperAdminPanel({
                       adminUsername: t.adminUsername || t.adminUser?.username || ('admin.' + sub),
                       adminPassword: t.adminPassword || t.adminUser?.password || '123456',
                       portalUrl: 'https://digitalsnova.com/portal/?store=' + sub,
-                      message: `Store "${t.name}" (${sub}.digitalsnova.com) registered on ${t.planName || '3-Day Enterprise Trial'}! Admin: @${t.adminUsername || t.adminUser?.username || 'admin.' + sub}`,
+                      message: `Store "${t.name}" (${sub}.digitalsnova.com) registered on ${t.planName || '3-Day Enterprise Trial'}! Admin: @${t.adminUsername || t.adminUser?.username || ('admin.' + sub)}`,
                       unread: false
                     });
                   }
                 });
               }
 
-              notifs = Array.from(notifMap.values()).sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
+              notifs = Array.from(notifMap.values()).sort(
+                (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+              );
               localStorage.setItem('digitalsnova_superadmin_notifications', JSON.stringify(notifs.slice(0, 50)));
             }
           }
@@ -212,7 +226,17 @@ export default function SuperAdminPanel({
     };
   }, []);
 
-  const safeTenants = Array.isArray(allTenants) ? allTenants : [];
+  // Safe Fallback Arrays - Combined from props and live server poll
+  const tenantMap = new Map();
+  (Array.isArray(allTenants) ? allTenants : []).forEach(t => { if (t && (t.id || t.subdomain)) tenantMap.set(t.id || t.subdomain, t); });
+  cloudTenants.forEach(t => { if (t && (t.id || t.subdomain)) tenantMap.set(t.id || t.subdomain, t); });
+  try {
+    const localReg = JSON.parse(localStorage.getItem('digitalsnova_registered_tenants') || '[]');
+    if (Array.isArray(localReg)) {
+      localReg.forEach(t => { if (t && (t.id || t.subdomain) && !tenantMap.has(t.id || t.subdomain)) tenantMap.set(t.id || t.subdomain, t); });
+    }
+  } catch {}
+  const safeTenants = Array.from(tenantMap.values());
   const safeCronLogs = Array.isArray(cronLogs) ? cronLogs : [];
   const safeLicenseKeys = Array.isArray(licenseKeys) ? licenseKeys : [];
   const safePasswordRequests = Array.isArray(passwordResetRequests) ? passwordResetRequests : [];
@@ -356,7 +380,7 @@ export default function SuperAdminPanel({
                 : 'text-slate-500 border-slate-100'
             }`}
           >
-            <span>Across {safeTenants.length} Registered Clinics</span>
+            <span>Across {safeTenants.length} Registered Stores</span>
             <span
               className={`underline font-bold ${
                 selectedSaaSKpi === 'MRR' ? 'text-gold-bright' : 'text-navy'
@@ -381,7 +405,7 @@ export default function SuperAdminPanel({
               selectedSaaSKpi === 'ACTIVE' ? 'text-gold-bright' : 'text-slate-500'
             }`}
           >
-            <span>Active Cycle Clinics</span>
+            <span>Active Businesses / Stores</span>
             <ExternalLink
               className={`w-4 h-4 shrink-0 ${
                 selectedSaaSKpi === 'ACTIVE' ? 'text-gold-bright' : 'text-emerald-700'
@@ -393,7 +417,7 @@ export default function SuperAdminPanel({
               selectedSaaSKpi === 'ACTIVE' ? 'text-white' : 'text-emerald-700'
             }`}
           >
-            {activeTenants.length} {activeTenants.length === 1 ? 'Clinic' : 'Clinics'}
+            {activeTenants.length} {activeTenants.length === 1 ? 'Store' : 'Stores'}
           </div>
           <div
             className={`text-xs flex items-center justify-between pt-1 border-t ${
@@ -439,7 +463,7 @@ export default function SuperAdminPanel({
               selectedSaaSKpi === 'GRACE' ? 'text-white' : 'text-amber-600'
             }`}
           >
-            {graceTenants.length} {graceTenants.length === 1 ? 'Clinic' : 'Clinics'}
+            {graceTenants.length} {graceTenants.length === 1 ? 'Store' : 'Stores'}
           </div>
           <div
             className={`text-xs flex items-center justify-between pt-1 border-t ${
@@ -485,7 +509,7 @@ export default function SuperAdminPanel({
               selectedSaaSKpi === 'LOCKED' ? 'text-white' : 'text-alert'
             }`}
           >
-            {lockedTenants.length} {lockedTenants.length === 1 ? 'Clinic' : 'Clinics'}
+            {lockedTenants.length} {lockedTenants.length === 1 ? 'Store' : 'Stores'}
           </div>
           <div
             className={`text-xs flex items-center justify-between pt-1 border-t ${
@@ -670,11 +694,11 @@ export default function SuperAdminPanel({
                 {selectedSaaSKpi === 'MRR' &&
                   `Global Monthly Recurring Revenue Breakdown — Rs. ${totalMRR.toLocaleString()} / Month`}
                 {selectedSaaSKpi === 'ACTIVE' &&
-                  `Active Cycle Clinics (Days 1–30) — ${activeTenants.length} Clinics`}
+                  `Active Cycle Stores (Days 1–30) — ${activeTenants.length} Stores`}
                 {selectedSaaSKpi === 'GRACE' &&
-                  `3-Day Grace Period Clinics (Days 31–33) — ${graceTenants.length} Clinics`}
+                  `3-Day Grace Period Stores (Days 31–33) — ${graceTenants.length} Stores`}
                 {selectedSaaSKpi === 'LOCKED' &&
-                  `Auto-Locked / Suspended Clinics (Day 34+ or Manual Block) — ${lockedTenants.length} Clinics`}
+                  `Auto-Locked / Suspended Stores (Day 34+ or Manual Block) — ${lockedTenants.length} Stores`}
               </h3>
             </div>
             <button
@@ -691,7 +715,7 @@ export default function SuperAdminPanel({
             <table className="w-full text-left border-collapse text-xs">
               <thead>
                 <tr className="border-b-2 border-slate-200 text-[11px] font-extrabold uppercase text-slate-500 bg-slate-50/80">
-                  <th className="py-3 px-3.5">Clinic Name & Subdomain</th>
+                  <th className="py-3 px-3.5">Business Name & Subdomain</th>
                   <th className="py-3 px-3.5">Admin Username & Password</th>
                   <th className="py-3 px-3.5">Contact & Address</th>
                   <th className="py-3 px-3.5">Assigned Modules</th>
@@ -951,10 +975,10 @@ export default function SuperAdminPanel({
               <div>
                 <h3 className="font-extrabold text-base text-navy flex items-center gap-2">
                   <Globe className="w-5 h-5 text-teal" />
-                  <span>Multi-Tenant Clinics, Module Access & Subscription Lifecycle Control</span>
+                  <span>Multi-Tenant Stores, Module Access & Subscription Lifecycle Control</span>
                 </h3>
                 <p className="text-xs text-slate-500">
-                  Click on any Clinic Name or <strong>"Details & Login"</strong> button to view or change that client's Admin Username, Password, PIN, and full account details.
+                  Click on any Store Name or <strong>"Details & Login"</strong> button to view or change that client's Admin Username, Password, PIN, and full account details.
                 </p>
               </div>
 
@@ -977,7 +1001,7 @@ export default function SuperAdminPanel({
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
                   <tr className="border-b-2 border-slate-200 text-[11px] font-extrabold uppercase text-slate-500 bg-slate-50/80">
-                    <th className="py-3 px-3.5">Clinic, Subdomain & Login Credentials (Click for Details)</th>
+                    <th className="py-3 px-3.5">Business, Subdomain & Login Credentials (Click for Details)</th>
                     <th className="py-3 px-3.5">Client Package / Assigned Modules</th>
                     <th className="py-3 px-3.5">Cycle Day & Status</th>
                     <th className="py-3 px-3.5">Simulate Billing Day</th>
@@ -2414,7 +2438,7 @@ export default function SuperAdminPanel({
                   }}
                   className="px-4 py-3 rounded-xl bg-teal text-white font-extrabold text-xs"
                 >
-                  Open This Clinic Portal →
+                  Open Cloud POS Portal →
                 </button>
 
                 <div className="flex items-center gap-2">

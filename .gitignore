@@ -10,3 +10,4 @@ check-*.cjs
 verify-*.cjs
 screenshot-*.cjs
 *.ps1
+scratch/
