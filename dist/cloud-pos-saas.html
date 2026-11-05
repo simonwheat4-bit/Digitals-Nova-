@@ -972,13 +972,103 @@
       margin: 16px 0;
     }
 
-    @media (max-width: 992px) {
-      .hero-container, .features-grid-6, .pricing-grid-3, .industry-tab-panel {
-        grid-template-columns: 1fr;
+    @media (max-width: 1024px) {
+      .hero-container {
+        grid-template-columns: 1fr !important;
+        gap: 36px !important;
       }
-      .saas-hero-title { font-size: 32px; }
-      .pricing-plan-card.popular { transform: none; }
-      .saas-modal-window { padding: 24px; }
+      .features-grid-3 {
+        grid-template-columns: 1fr !important;
+      }
+      .industry-grid-2,
+      .industry-tab-panel {
+        grid-template-columns: 1fr !important;
+        gap: 28px !important;
+        padding: 28px !important;
+      }
+      .pricing-grid-4 {
+        grid-template-columns: repeat(2, 1fr) !important;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .pricing-grid-4 {
+        grid-template-columns: 1fr !important;
+        padding: 0 16px !important;
+      }
+      .pricing-billing-toggle-wrapper {
+        flex-direction: column !important;
+        width: 100% !important;
+        max-width: 360px !important;
+        border-radius: 20px !important;
+        padding: 8px !important;
+        gap: 8px !important;
+      }
+      .billing-toggle-option {
+        width: 100% !important;
+        justify-content: center !important;
+        padding: 10px 14px !important;
+        font-size: 13px !important;
+      }
+      .saas-hero-title {
+        font-size: 28px !important;
+        line-height: 1.25 !important;
+      }
+      .saas-hero-desc {
+        font-size: 14px !important;
+      }
+      .pos-terminal-mockup {
+        width: 100% !important;
+        max-width: 100% !important;
+        overflow-x: auto !important;
+      }
+      .terminal-table-wrapper {
+        overflow-x: auto !important;
+      }
+      .trust-strip-inner {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 16px !important;
+      }
+      .industry-tabs-nav {
+        flex-wrap: wrap !important;
+        justify-content: center !important;
+      }
+      .industry-tab-btn {
+        width: 100% !important;
+        max-width: 300px !important;
+        text-align: center !important;
+      }
+      .pricing-plan-card.popular {
+        transform: none !important;
+      }
+      .saas-modal-window {
+        padding: 20px !important;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .trust-strip-inner {
+        grid-template-columns: 1fr !important;
+      }
+      .saas-hero {
+        padding: 100px 0 50px !important;
+      }
+      .hero-container {
+        padding: 0 12px !important;
+      }
+      .saas-hero-title {
+        font-size: 24px !important;
+      }
+      .saas-hero-ctas {
+        flex-direction: column !important;
+        width: 100% !important;
+      }
+      .saas-hero-ctas a, .saas-hero-ctas button {
+        width: 100% !important;
+        text-align: center !important;
+        justify-content: center !important;
+      }
     }
   </style>
 </head>
@@ -1238,6 +1328,7 @@
           </div>
         </div>
       </div>
+    </div> <!-- Closes .hero-container -->
       
     <!-- TRUST STRIP -->
   <div class="saas-trust-strip">
@@ -1272,6 +1363,7 @@
       </div>
     </div>
   </div>
+  </section> <!-- Closes .saas-hero -->
 
   <!-- SECTION B: CORE FEATURES SOLVING REAL BUSINESS PAINS -->
   <section class="saas-features-section" id="features">
@@ -1547,8 +1639,6 @@
           </div>
         </div>
       </div>
-    </div>
-  </section>
     </div>
   </section>
 
@@ -2222,66 +2312,6 @@
         if (p4) p4.innerText = Number(p.clinicMonthly || 7999).toLocaleString();
         if (pp4) pp4.innerText = '/ month';
         if (ps4) ps4.innerText = 'Standard Monthly Billing (PKR ' + Number(p.clinicMonthly || 7999).toLocaleString() + ' / mo)';
-      }
-    }
-    function _unusedOldSetBilling
-      currentBillingCycle = cycle;
-      const btnMonthly = document.getElementById('btnBillingMonthly');
-      const btnYearly = document.getElementById('btnBillingYearly');
-
-      if (cycle === 'YEARLY') {
-        if (btnMonthly) btnMonthly.classList.remove('active');
-        if (btnYearly) btnYearly.classList.add('active');
-
-        // Update pricing cards to Yearly (20% Off calculations)
-        // Retail: 4999 * 12 * 0.8 = 47,990/yr (~3999/mo)
-        const p1 = document.getElementById('priceVal1');
-        const pp1 = document.getElementById('pricePeriod1');
-        const ps1 = document.getElementById('priceSubtext1');
-        if (p1) p1.innerText = '3,999';
-        if (pp1) pp1.innerText = '/ mo (billed yearly)';
-        if (ps1) ps1.innerHTML = '⚡ PKR 47,990 / year &bull; <strong style="color: #10b981;">Save PKR 11,998</strong>';
-
-        // Clinic: 7999 * 12 * 0.8 = 76,790/yr (~6399/mo)
-        const p2 = document.getElementById('priceVal2');
-        const pp2 = document.getElementById('pricePeriod2');
-        const ps2 = document.getElementById('priceSubtext2');
-        if (p2) p2.innerText = '6,399';
-        if (pp2) pp2.innerText = '/ mo (billed yearly)';
-        if (ps2) ps2.innerHTML = '⚡ PKR 76,790 / year &bull; <strong style="color: #10b981;">Save PKR 19,198</strong>';
-
-        // Enterprise: 12999 * 12 * 0.8 = 124,790/yr (~10399/mo)
-        const p3 = document.getElementById('priceVal3');
-        const pp3 = document.getElementById('pricePeriod3');
-        const ps3 = document.getElementById('priceSubtext3');
-        if (p3) p3.innerText = '10,399';
-        if (pp3) pp3.innerText = '/ mo (billed yearly)';
-        if (ps3) ps3.innerHTML = '⚡ PKR 124,790 / year &bull; <strong style="color: #10b981;">Save PKR 31,198</strong>';
-      } else {
-        if (btnMonthly) btnMonthly.classList.add('active');
-        if (btnYearly) btnYearly.classList.remove('active');
-
-        // Restore to Monthly
-        const p1 = document.getElementById('priceVal1');
-        const pp1 = document.getElementById('pricePeriod1');
-        const ps1 = document.getElementById('priceSubtext1');
-        if (p1) p1.innerText = '4,999';
-        if (pp1) pp1.innerText = '/ month';
-        if (ps1) ps1.innerText = 'Standard Monthly Billing (PKR 4,999 / mo)';
-
-        const p2 = document.getElementById('priceVal2');
-        const pp2 = document.getElementById('pricePeriod2');
-        const ps2 = document.getElementById('priceSubtext2');
-        if (p2) p2.innerText = '7,999';
-        if (pp2) pp2.innerText = '/ month';
-        if (ps2) ps2.innerText = 'Standard Monthly Billing (PKR 7,999 / mo)';
-
-        const p3 = document.getElementById('priceVal3');
-        const pp3 = document.getElementById('pricePeriod3');
-        const ps3 = document.getElementById('priceSubtext3');
-        if (p3) p3.innerText = '12,999';
-        if (pp3) pp3.innerText = '/ month';
-        if (ps3) ps3.innerText = 'Standard Monthly Billing (PKR 12,999 / mo)';
       }
     }
 
