@@ -89,6 +89,40 @@ export default function HostingerHeader({
   const subState = currentTenant?.subscription?.state || 'ACTIVE';
   const cycleDay = currentTenant?.billingCycleDay || 1;
 
+  // Build resilient, fully merged tenants list for Super Admin dropdown
+  const headerTenantsMap = new Map();
+  (allTenants || []).forEach(t => {
+    if (t && (t.id || t.subdomain)) headerTenantsMap.set((t.subdomain || t.id).toLowerCase(), t);
+  });
+  try {
+    const reg = JSON.parse(localStorage.getItem('digitalsnova_registered_tenants') || '[]');
+    if (Array.isArray(reg)) {
+      reg.forEach(t => {
+        if (t && (t.id || t.subdomain)) {
+          const key = (t.subdomain || t.id).toLowerCase();
+          if (!headerTenantsMap.has(key)) headerTenantsMap.set(key, t);
+        }
+      });
+    }
+  } catch {}
+  try {
+    const notifs = JSON.parse(localStorage.getItem('digitalsnova_superadmin_notifications') || '[]');
+    if (Array.isArray(notifs)) {
+      notifs.forEach(n => {
+        const sub = (n.subdomain || '').toLowerCase().trim();
+        if (sub && n.tenantName && !headerTenantsMap.has(sub) && !['admin', 'superadmin', 'hq'].includes(sub)) {
+          headerTenantsMap.set(sub, {
+            id: 'tenant_' + sub,
+            subdomain: sub,
+            name: n.tenantName,
+            domain: sub + '.digitalsnova.com'
+          });
+        }
+      });
+    }
+  } catch {}
+  const safeDropdownTenants = Array.from(headerTenantsMap.values());
+
   // Breadcrumb description
   const roleNameMap = {
     STAFF: 'Receptionist POS Counter',
@@ -162,8 +196,8 @@ export default function HostingerHeader({
                 className="bg-transparent text-slate-800 dark:text-slate-200 text-xs font-semibold outline-none cursor-pointer max-w-[140px] truncate"
                 title="Super Admin Tenant Switcher"
               >
-                {allTenants.map((t) => (
-                  <option key={t.id} value={t.subdomain} className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200">
+                {safeDropdownTenants.map((t) => (
+                  <option key={t.id || t.subdomain} value={t.subdomain} className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200">
                     {t.name}
                   </option>
                 ))}

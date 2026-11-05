@@ -2185,14 +2185,14 @@
       document.getElementById('modalFormView').style.display = 'block';
       document.getElementById('modalLoadingView').style.display = 'none';
       document.getElementById('modalSuccessView').style.display = 'none';
+      const typeSelect = document.getElementById('obType');
       if (preferredPlan) {
-        const typeSelect = document.getElementById('obType');
         if (preferredPlan.includes('Clinic')) typeSelect.value = 'Clinic / Hospital';
         else if (preferredPlan.includes('Pharmacy')) typeSelect.value = 'Pharmacy & Medical Store';
         else if (preferredPlan.includes('Restaurant')) typeSelect.value = 'Restaurants, Cafes & Food Outlets';
         else if (preferredPlan.includes('Retail')) typeSelect.value = 'Retail Mart / General Store';
       }
-      modal.dataset.selectedPlan = preferredPlan || 'Clinic & HMS Portal';
+      modal.dataset.selectedPlan = preferredPlan || '';
       modal.dataset.selectedBilling = billingCycle || 'MONTHLY';
       modal.classList.add('open');
     }
@@ -2512,7 +2512,31 @@
       const tenantUrl = `https://${slug}.digitalsnova.com`;
       const isYearly = document.getElementById('trialModal').dataset.selectedBilling === 'YEARLY';
       const rawSelectedPlan = document.getElementById('trialModal').dataset.selectedPlan || '';
-      const planName = rawSelectedPlan ? (rawSelectedPlan + (isYearly ? ' (Annual)' : ' (Monthly)')) : (isYearly ? '1-Year Annual Package' : '3-Day Enterprise Trial');
+
+      // Determine accurate sector code, vertical, default package, and live pricing
+      let sectorCode = 'CLINIC_HMS';
+      let defaultPlanTitle = 'Clinic & HMS Portal';
+      let sectorMonthlyFee = isYearly ? 76790 : 7999;
+
+      if (bType === 'Restaurants, Cafes & Food Outlets' || bType.includes('Restaurant') || /resturent|restaurant|cafe|food/i.test(business)) {
+        sectorCode = 'RESTAURANT';
+        defaultPlanTitle = 'Restaurant & Cafe POS';
+        sectorMonthlyFee = isYearly ? 67190 : 6999;
+      } else if (bType === 'Pharmacy & Medical Store' || bType.includes('Pharmacy') || /pharmacy|medical|pharma/i.test(business)) {
+        sectorCode = 'PHARMACY';
+        defaultPlanTitle = 'Pharmacy & Medical POS';
+        sectorMonthlyFee = isYearly ? 57590 : 5999;
+      } else if (bType === 'Retail Mart / General Store' || bType.includes('Retail') || /mart|retail|store|general/i.test(business)) {
+        sectorCode = 'RETAIL_MART';
+        defaultPlanTitle = 'Retail Mart POS';
+        sectorMonthlyFee = isYearly ? 47990 : 4999;
+      } else {
+        sectorCode = 'CLINIC_HMS';
+        defaultPlanTitle = 'Clinic & HMS Portal';
+        sectorMonthlyFee = isYearly ? 76790 : 7999;
+      }
+
+      const planName = rawSelectedPlan ? (rawSelectedPlan + (isYearly ? ' (Annual)' : ' (Monthly)')) : (defaultPlanTitle + (isYearly ? ' (Annual)' : ' (Monthly)'));
 
       const newTenantRecord = {
         id: 'tenant_' + slug,
@@ -2525,13 +2549,21 @@
         receiptHeader: business,
         receiptFooter: 'Thank you for your visit!',
         adminPin: '1234',
-        monthlyFee: isYearly ? 76790 : 7999,
+        monthlyFee: sectorMonthlyFee,
+        monthly_fee: sectorMonthlyFee,
         billingCycleDay: 1,
         manualBlocked: false,
+        businessType: bType,
+        business_type: bType,
+        vertical: sectorCode,
+        storeType: sectorCode,
+        sector: sectorCode,
         enabledModules: {
           pos: true,
           inventory: true,
-          patientsLedger: bType !== 'Pharmacy & Medical Store' && bType !== 'Retail Mart / General Store' && bType !== 'Restaurants, Cafes & Food Outlets'
+          patientsLedger: sectorCode === 'CLINIC_HMS',
+          tableManagement: sectorCode === 'RESTAURANT',
+          expiryBatch: sectorCode === 'PHARMACY'
         },
         createdAt: new Date().toISOString(),
         lastPaymentDate: new Date().toISOString(),
@@ -2544,20 +2576,21 @@
           state: 'ACTIVE',
           billingCycleDay: 1,
           graceDaysRemaining: 3,
-          totalDays: isYearly ? 365 : 3
+          totalDays: isYearly ? 365 : 3,
+          plan: isYearly ? 'YEARLY' : 'TRIAL_3_DAYS',
+          planName: planName,
+          monthlyFee: sectorMonthlyFee
         },
         adminUsername: 'admin.' + slug,
         adminPassword: password,
         email: email,
-        businessType: bType,
-        business_type: bType,
         adminUser: {
           username: 'admin.' + slug,
           password: password,
           name: name,
           email: email,
           phone: phone,
-          role: 'CLINIC_ADMIN'
+          role: sectorCode === 'CLINIC_HMS' ? 'CLINIC_ADMIN' : 'STORE_ADMIN'
         }
       };
 
@@ -2594,11 +2627,12 @@
           name: name,
           tenantName: business,
           clinicName: business,
-          role: 'CLINIC_ADMIN',
+          role: sectorCode === 'CLINIC_HMS' ? 'CLINIC_ADMIN' : 'STORE_ADMIN',
           tenantId: 'tenant_' + slug,
           licenseKey: licenseKey,
           businessType: bType,
-          business_type: bType
+          business_type: bType,
+          vertical: sectorCode
         }));
 
         let regTenants = JSON.parse(localStorage.getItem('digitalsnova_registered_tenants') || '[]');
@@ -2612,12 +2646,17 @@
           timestamp: new Date().toISOString(),
           type: 'NEW_REGISTRATION',
           title: '🎉 New Store Registered (Website)',
-          message: `Store/Clinic "${business}" (${slug}.digitalsnova.com) registered! Owner: ${name} • Phone: ${phone} • Email: ${email}`,
+          message: `Store "${business}" (${slug}.digitalsnova.com) registered on ${planName}! Owner: ${name} • Phone: ${phone} • Email: ${email}`,
           tenantName: business,
           subdomain: slug,
           phone: phone,
           email: email,
-          plan: isYearly ? 'YEARLY' : 'TRIAL_3_DAYS',
+          plan: planName,
+          planName: planName,
+          planType: isYearly ? 'YEARLY' : 'TRIAL_3_DAYS',
+          businessType: bType,
+          vertical: sectorCode,
+          monthlyFee: sectorMonthlyFee,
           adminUser: 'admin.' + slug,
           unread: true
         });

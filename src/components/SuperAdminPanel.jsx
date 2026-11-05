@@ -255,17 +255,83 @@ export default function SuperAdminPanel({
     };
   }, []);
 
-  // Safe Fallback Arrays - Combined from props and live server poll
+  // Safe Fallback Arrays - Combined from props, live server poll, local cache, and notifications
   const tenantMap = new Map();
-  (Array.isArray(allTenants) ? allTenants : []).forEach(t => { if (t && (t.id || t.subdomain)) tenantMap.set(t.id || t.subdomain, t); });
-  cloudTenants.forEach(t => { if (t && (t.id || t.subdomain)) tenantMap.set(t.id || t.subdomain, t); });
+  (Array.isArray(allTenants) ? allTenants : []).forEach(t => { if (t && (t.id || t.subdomain)) tenantMap.set((t.subdomain || t.id).toLowerCase(), t); });
+  cloudTenants.forEach(t => { if (t && (t.id || t.subdomain)) tenantMap.set((t.subdomain || t.id).toLowerCase(), t); });
   try {
     const localReg = JSON.parse(localStorage.getItem('digitalsnova_registered_tenants') || '[]');
     if (Array.isArray(localReg)) {
-      localReg.forEach(t => { if (t && (t.id || t.subdomain) && !tenantMap.has(t.id || t.subdomain)) tenantMap.set(t.id || t.subdomain, t); });
+      localReg.forEach(t => { if (t && (t.id || t.subdomain) && !tenantMap.has((t.subdomain || t.id).toLowerCase())) tenantMap.set((t.subdomain || t.id).toLowerCase(), t); });
     }
   } catch {}
-  const safeTenants = Array.from(tenantMap.values());
+  (Array.isArray(notifications) ? notifications : []).forEach(n => {
+    const sub = (n.subdomain || '').toLowerCase().trim();
+    const name = n.tenantName || n.name || '';
+    if (sub && name && !tenantMap.has(sub) && !['admin', 'superadmin', 'hq'].includes(sub)) {
+      const isRest = /resturent|restaurant|cafe|food/i.test(name) || /resturent|restaurant/i.test(sub);
+      const isPharm = /pharmacy|medical|pharma/i.test(name) || /pharmacy/i.test(sub);
+      const isClinic = /clinic|hospital/i.test(name) || sub === 'clinic';
+      const vert = isRest ? 'RESTAURANT' : (isPharm ? 'PHARMACY' : (isClinic ? 'CLINIC_HMS' : 'RETAIL_MART'));
+      const bType = isRest ? 'Restaurants, Cafes & Food Outlets' : (isPharm ? 'Pharmacy & Medical Store' : (isClinic ? 'Clinic / Hospital' : 'Retail Mart / General Store'));
+      const fee = isRest ? 6999 : (isPharm ? 5999 : (isClinic ? 7999 : 4999));
+      tenantMap.set(sub, {
+        id: 'tenant_' + sub,
+        name: name,
+        subdomain: sub,
+        domain: sub + '.digitalsnova.com',
+        portalUrl: 'https://digitalsnova.com/portal/?store=' + sub,
+        phone: n.phone || '',
+        email: n.email || '',
+        businessType: bType,
+        business_type: bType,
+        vertical: vert,
+        sector: vert,
+        storeType: vert,
+        planType: n.planType || 'MONTHLY',
+        planName: isRest ? 'Restaurant & Cafe POS (Monthly)' : (n.planName || n.plan || 'Standard Monthly Plan'),
+        monthlyFee: fee,
+        monthly_fee: fee,
+        billingCycleDay: 1,
+        adminPin: '1234',
+        createdAt: n.timestamp || new Date().toISOString(),
+        adminUser: {
+          username: n.adminUser || ('admin.' + sub),
+          password: '123',
+          name: n.ownerName || name,
+          phone: n.phone || ''
+        },
+        subscription: {
+          state: 'ACTIVE',
+          billingCycleDay: 1,
+          graceDaysRemaining: 3,
+          monthlyFee: fee
+        }
+      });
+    }
+  });
+
+  // Normalize and auto-heal all tenants
+  const safeTenants = Array.from(tenantMap.values()).map(t => {
+    const tName = t.name || '';
+    const tSub = (t.subdomain || '').toLowerCase();
+    const isRest = /resturent|restaurant|cafe|food/i.test(tName) || /resturent|restaurant/i.test(tSub) || (t.businessType && /restaurant/i.test(t.businessType));
+    const isPharm = /pharmacy|medical|pharma/i.test(tName) || /pharmacy/i.test(tSub) || (t.businessType && /pharmacy/i.test(t.businessType));
+    const isClinic = (tSub === 'clinic' || /clinic|hospital/i.test(tName) || (t.businessType && /clinic|hospital/i.test(t.businessType)));
+    const vert = isRest ? 'RESTAURANT' : (isPharm ? 'PHARMACY' : (isClinic ? 'CLINIC_HMS' : 'RETAIL_MART'));
+    const defaultFee = isRest ? 6999 : (isPharm ? 5999 : (isClinic ? 7999 : 4999));
+    const rawFee = Number(t.monthlyFee || t.monthly_fee || 0);
+    const fee = (!isNaN(rawFee) && rawFee > 0) ? rawFee : defaultFee;
+    return {
+      ...t,
+      vertical: t.vertical || vert,
+      sector: t.sector || vert,
+      storeType: t.storeType || vert,
+      monthlyFee: fee,
+      monthly_fee: fee,
+      planName: t.planName || (isRest ? 'Restaurant & Cafe POS' : (isPharm ? 'Pharmacy & Medical POS' : (isClinic ? 'Clinic & HMS Portal' : 'Retail Mart POS')))
+    };
+  });
   const safeCronLogs = Array.isArray(cronLogs) ? cronLogs : [];
   const safeLicenseKeys = Array.isArray(licenseKeys) ? licenseKeys : [];
   const safePasswordRequests = Array.isArray(passwordResetRequests) ? passwordResetRequests : [];
@@ -755,7 +821,7 @@ export default function SuperAdminPanel({
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {(selectedSaaSKpi === 'MRR'
-                  ? allTenants
+                  ? safeTenants
                   : selectedSaaSKpi === 'ACTIVE'
                   ? activeTenants
                   : selectedSaaSKpi === 'GRACE'
@@ -763,6 +829,9 @@ export default function SuperAdminPanel({
                   : lockedTenants
                 ).map((t) => {
                   const mods = t.enabledModules || { pos: true, inventory: true, patientsLedger: true };
+                  const isRest = t.vertical === 'RESTAURANT' || /resturent|restaurant|cafe|food/i.test(t.name) || /resturent|restaurant/i.test(t.subdomain);
+                  const isPharm = t.vertical === 'PHARMACY' || /pharmacy|medical|pharma/i.test(t.name);
+                  const isClinic = t.vertical === 'CLINIC_HMS' || t.subdomain === 'clinic' || /clinic|hospital/i.test(t.name);
                   return (
                     <tr key={t.id} className="hover:bg-ice/30 transition">
                       <td className="py-3.5 px-3.5">
@@ -793,13 +862,21 @@ export default function SuperAdminPanel({
                         <div className="text-[11px] text-slate-500">{t.address}</div>
                       </td>
                       <td className="py-3.5 px-3.5 whitespace-nowrap">
-                        {mods.patientsLedger === false ? (
-                          <span className="px-2.5 py-1 rounded-lg bg-amber-100 text-amber-900 font-bold text-[11px]">
-                            Store / Pharmacy Only
+                        {isRest ? (
+                          <span className="px-2.5 py-1 rounded-lg bg-amber-100 text-amber-900 border border-amber-300 font-bold text-[11px] inline-flex items-center gap-1">
+                            🍽️ Restaurant POS + KOT
+                          </span>
+                        ) : isPharm ? (
+                          <span className="px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-900 border border-emerald-300 font-bold text-[11px] inline-flex items-center gap-1">
+                            💊 Pharmacy & Expiry Batch
+                          </span>
+                        ) : isClinic ? (
+                          <span className="px-2.5 py-1 rounded-lg bg-cyan-100 text-cyan-900 border border-cyan-300 font-bold text-[11px] inline-flex items-center gap-1">
+                            🏥 Clinic & HMS Patient Ledger
                           </span>
                         ) : (
-                          <span className="px-2.5 py-1 rounded-lg bg-teal/15 text-teal font-bold text-[11px]">
-                            Full Clinic + Patients + Store
+                          <span className="px-2.5 py-1 rounded-lg bg-blue-100 text-blue-900 border border-blue-300 font-bold text-[11px] inline-flex items-center gap-1">
+                            🛒 Retail Mart & Barcodes
                           </span>
                         )}
                       </td>
@@ -817,7 +894,7 @@ export default function SuperAdminPanel({
                         </span>
                       </td>
                       <td className="py-3.5 px-3.5 font-extrabold text-navy text-sm whitespace-nowrap">
-                        Rs. {Number(t.monthlyFee).toLocaleString()}
+                        Rs. {Number(t.monthlyFee || t.monthly_fee || 0).toLocaleString()}
                       </td>
                       <td className="py-3.5 px-3.5 text-right whitespace-nowrap">
                         <div className="inline-flex items-center gap-1.5">
@@ -1151,7 +1228,7 @@ export default function SuperAdminPanel({
                 className="px-4 py-2.5 rounded-xl bg-navy hover:bg-navy-light text-gold-bright font-extrabold text-xs flex items-center gap-2 shadow transition"
               >
                 <Clock className="w-4 h-4" />
-                <span>Run Daily Midnight Cron Job (+1 Billing Day All Clinics)</span>
+                <span>Run Daily Midnight Cron Job (+1 Billing Day All Stores & Businesses)</span>
               </button>
             </div>
 
@@ -1201,7 +1278,7 @@ export default function SuperAdminPanel({
                               )}
                             </div>
                             <div className="text-[11px] text-teal font-semibold mt-0.5">
-                              {t.domain} • Rs. {Number(t.monthlyFee).toLocaleString()}/mo
+                              {t.domain} • Rs. {Number(t.monthlyFee || t.monthly_fee || 0).toLocaleString()}/mo
                             </div>
                             {/* Direct Admin Login Credentials Badge */}
                             <div className="mt-1.5 inline-flex flex-wrap items-center gap-2 px-2.5 py-1 rounded-lg bg-navy/5 border border-navy/15 text-[11px]">
@@ -1446,7 +1523,7 @@ export default function SuperAdminPanel({
 
                         <td className="py-3.5 px-3.5 whitespace-nowrap">
                           <div className="flex items-center gap-1.5">
-                            {/* 1-Click Key Generator for this Clinic */}
+                            {/* 1-Click Key Generator for this Store */}
                             <button
                               type="button"
                               onClick={() => {
@@ -1456,7 +1533,7 @@ export default function SuperAdminPanel({
                                 setKeyGenFee(t.monthlyFee !== undefined ? t.monthlyFee : 15000);
                               }}
                               className="px-2.5 py-1.5 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-900 border border-purple-300 font-extrabold text-[11px] flex items-center gap-1 transition cursor-pointer"
-                              title="Generate Activation License Key for this Clinic"
+                              title="Generate Activation License Key for this Store"
                             >
                               <KeyRound className="w-3.5 h-3.5 text-purple-700" />
                               <span>Gen Key</span>
@@ -1512,11 +1589,11 @@ export default function SuperAdminPanel({
                               onClick={async () => {
                                 if (
                                   window.confirm(
-                                    `⚠️ PERMANENT TENANT DELETION CONFIRMATION\n\nAre you sure you want to permanently delete "\${t.name}" (\${t.domain})?\n\nThis will remove all associated database records, cash registers, patient files, and staff logins. This action cannot be undone.`
+                                    `⚠️ PERMANENT TENANT DELETION CONFIRMATION\n\nAre you sure you want to permanently delete "${t.name}" (${t.domain})?\n\nThis will remove all associated database records, cash registers, patient files, and staff logins. This action cannot be undone.`
                                   )
                                 ) {
                                   await onDeleteTenant(t.id);
-                                  setFeedback(`✓ Successfully deleted clinic "\${t.name}" from SaaS platform.`);
+                                  setFeedback(`✓ Successfully deleted store "${t.name}" from SaaS platform.`);
                                 }
                               }}
                               className="px-2.5 py-1.5 rounded-xl bg-red-50 hover:bg-red-600 hover:text-white text-red-600 border border-red-200 font-extrabold text-[11px] flex items-center gap-1 transition cursor-pointer shadow-sm"
@@ -1570,7 +1647,7 @@ export default function SuperAdminPanel({
             {/* List of Generated License Keys */}
             {safeLicenseKeys.length === 0 ? (
               <div className="p-6 rounded-xl bg-ice/30 border border-slate-200 text-center text-xs text-slate-500">
-                No License Keys generated yet. Click <strong>"Gen Key"</strong> on any clinic row above or click <strong>"+ Generate New License Key"</strong>.
+                No License Keys generated yet. Click <strong>"Gen Key"</strong> on any store row above or click <strong>"+ Generate New License Key"</strong>.
               </div>
             ) : (
               <div className="overflow-x-auto">
@@ -1578,7 +1655,7 @@ export default function SuperAdminPanel({
                   <thead>
                     <tr className="border-b-2 border-slate-200 text-[10px] uppercase text-slate-500 bg-slate-50">
                       <th className="py-2.5 px-3">License Key Code</th>
-                      <th className="py-2.5 px-3">Clinic / Tenant</th>
+                      <th className="py-2.5 px-3">Store / Client</th>
                       <th className="py-2.5 px-3">Package & Duration</th>
                       <th className="py-2.5 px-3">Fee (Rs.)</th>
                       <th className="py-2.5 px-3">Key Status</th>
@@ -2638,7 +2715,7 @@ export default function SuperAdminPanel({
                 <div>
                   <h3 className="font-extrabold text-base">Generate License / Activation Key</h3>
                   <p className="text-xs text-purple-200">
-                    Clinic: <strong className="text-white">{keyGenTenant.name}</strong> ({keyGenTenant.subdomain})
+                    Store / Business: <strong className="text-white">{keyGenTenant.name}</strong> ({keyGenTenant.subdomain})
                   </p>
                 </div>
               </div>
@@ -2676,7 +2753,7 @@ export default function SuperAdminPanel({
               className="p-6 space-y-4 text-xs"
             >
               <div>
-                <label className="block font-bold text-navy mb-1">Target Clinic</label>
+                <label className="block font-bold text-navy mb-1">Target Store / Business</label>
                 <select
                   value={keyGenTenant.id}
                   onChange={(e) => {

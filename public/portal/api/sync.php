@@ -420,12 +420,37 @@ if ($action === 'register_tenant' || $action === 'register') {
     $ownerPhone = !empty($tenant['phone']) ? $tenant['phone'] : '';
     $ownerEmail = !empty($tenant['email']) ? $tenant['email'] : (!empty($tenant['adminUser']['email']) ? $tenant['adminUser']['email'] : '');
     $planType = !empty($tenant['planType']) ? $tenant['planType'] : 'TRIAL_3_DAYS';
-    $planName = !empty($tenant['planName']) ? $tenant['planName'] : ($planType === 'YEARLY' ? '1-Year Annual Package' : ($planType === 'MONTHLY' ? 'Standard Monthly Plan' : '3-Day Enterprise Trial'));
+    $businessType = !empty($tenant['businessType']) ? $tenant['businessType'] : (!empty($tenant['business_type']) ? $tenant['business_type'] : 'Retail Mart / General Store');
+    $vertical = !empty($tenant['vertical']) ? $tenant['vertical'] : (!empty($tenant['sector']) ? $tenant['sector'] : '');
+
+    if (empty($vertical)) {
+        if (stripos($businessType, 'Restaurant') !== false || stripos($businessType, 'Food') !== false || stripos($storeName, 'Resturent') !== false || stripos($storeName, 'Restaurant') !== false || stripos($subdomain, 'resturent') !== false || stripos($subdomain, 'restaurant') !== false) {
+            $vertical = 'RESTAURANT';
+            $businessType = 'Restaurants, Cafes & Food Outlets';
+        } else if (stripos($businessType, 'Pharmacy') !== false || stripos($storeName, 'Pharmacy') !== false || stripos($subdomain, 'pharmacy') !== false) {
+            $vertical = 'PHARMACY';
+            $businessType = 'Pharmacy & Medical Store';
+        } else if (stripos($businessType, 'Clinic') !== false || stripos($businessType, 'Hospital') !== false || stripos($storeName, 'Clinic') !== false || stripos($subdomain, 'clinic') !== false) {
+            $vertical = 'CLINIC_HMS';
+            $businessType = 'Clinic / Hospital';
+        } else {
+            $vertical = 'RETAIL_MART';
+            $businessType = 'Retail Mart / General Store';
+        }
+    }
+
+    $defaultPlan = ($vertical === 'RESTAURANT' ? 'Restaurant & Cafe POS' : ($vertical === 'PHARMACY' ? 'Pharmacy & Medical POS' : ($vertical === 'CLINIC_HMS' ? 'Clinic & HMS Portal' : 'Retail Mart POS')));
+    $defaultFee = ($vertical === 'RESTAURANT' ? 6999 : ($vertical === 'PHARMACY' ? 5999 : ($vertical === 'CLINIC_HMS' ? 7999 : 4999)));
+    if ($planType === 'YEARLY') {
+        $defaultFee = ($vertical === 'RESTAURANT' ? 67190 : ($vertical === 'PHARMACY' ? 57590 : ($vertical === 'CLINIC_HMS' ? 76790 : 47990)));
+    }
+
+    $planName = !empty($tenant['planName']) ? $tenant['planName'] : ($defaultPlan . ($planType === 'YEARLY' ? ' (Annual)' : ' (Monthly)'));
+    $monthlyFee = isset($tenant['monthlyFee']) && is_numeric($tenant['monthlyFee']) ? floatval($tenant['monthlyFee']) : (isset($tenant['monthly_fee']) && is_numeric($tenant['monthly_fee']) ? floatval($tenant['monthly_fee']) : $defaultFee);
     $adminUser = !empty($tenant['adminUsername']) ? $tenant['adminUsername'] : (!empty($tenant['adminUser']['username']) ? $tenant['adminUser']['username'] : 'admin.' . $subdomain);
     $adminPass = !empty($tenant['adminPassword']) ? $tenant['adminPassword'] : (!empty($tenant['adminUser']['password']) ? $tenant['adminUser']['password'] : '123456');
-    $businessType = !empty($tenant['businessType']) ? $tenant['businessType'] : 'Retail Mart / General Store';
 
-    $tenants = readJsonFile($tenantsFile);
+    $tenants = getUnifiedTenants($tenantsFile);
 
     // Filter out duplicate if same subdomain exists
     $newTenants = [];
@@ -446,8 +471,14 @@ if ($action === 'register_tenant' || $action === 'register') {
         'phone' => $ownerPhone,
         'email' => $ownerEmail,
         'businessType' => $businessType,
+        'business_type' => $businessType,
+        'vertical' => $vertical,
+        'sector' => $vertical,
+        'storeType' => $vertical,
         'planType' => $planType,
         'planName' => $planName,
+        'monthlyFee' => $monthlyFee,
+        'monthly_fee' => $monthlyFee,
         'createdAt' => $createdAt,
         'adminName' => $ownerName,
         'adminUsername' => $adminUser,
@@ -459,7 +490,8 @@ if ($action === 'register_tenant' || $action === 'register') {
             'plan' => $planType,
             'planName' => $planName,
             'billingCycleDay' => 1,
-            'graceDaysRemaining' => 3
+            'graceDaysRemaining' => 3,
+            'monthlyFee' => $monthlyFee
         ],
         'adminUser' => [
             'name' => $ownerName,
@@ -467,12 +499,13 @@ if ($action === 'register_tenant' || $action === 'register') {
             'password' => $adminPass,
             'email' => $ownerEmail,
             'phone' => $ownerPhone,
-            'role' => 'CLINIC_ADMIN'
+            'role' => $vertical === 'CLINIC_HMS' ? 'CLINIC_ADMIN' : 'STORE_ADMIN'
         ]
     ];
 
     $newTenants[] = $record;
     writeJsonFile($tenantsFile, $newTenants);
+    syncToSecondaryDataDirs('tenants.json', $newTenants);
 
     // Unmark newly registered store from deleted list
     $deletedList = readJsonFile($deletedTenantsFile);
@@ -509,6 +542,7 @@ if ($action === 'register_tenant' || $action === 'register') {
         $notifications = array_slice($notifications, 0, 100);
     }
     writeJsonFile($notifsFile, $notifications);
+    syncToSecondaryDataDirs('notifications.json', $notifications);
 
     // -------------------------------------------------------------------------
     // AUTOMATED EMAIL 1: WELCOME & ACCESS PASS TO CLIENT
@@ -601,10 +635,135 @@ if ($action === 'register_tenant' || $action === 'register') {
 // 2. ACTION: GET ALL (Super Admin Dashboard fetch from ANY computer)
 // ==============================================================================
 if ($action === 'get_all' || $action === 'tenants') {
-    $tenants = readJsonFile($tenantsFile);
-    $notifications = readJsonFile($notifsFile);
+    $tenants = getUnifiedTenants($tenantsFile);
+    $notifications = getUnifiedNotifications($notifsFile);
     $staff = readJsonFile($staffFile);
     $deletedTenants = readJsonFile($deletedTenantsFile);
+
+    // Auto-rescue any registered store present in notifications but missing from tenants
+    $tenantsDirty = false;
+    foreach ($notifications as $n) {
+        $nSub = strtolower(trim($n['subdomain'] ?? ''));
+        $nName = trim($n['tenantName'] ?? ($n['name'] ?? ''));
+        if (!empty($nSub) && !empty($nName) && !in_array($nSub, ['clinic', 'admin', 'superadmin', 'hq'])) {
+            $found = false;
+            foreach ($tenants as $t) {
+                if (strtolower($t['subdomain'] ?? '') === $nSub) {
+                    $found = true;
+                    break;
+                }
+            }
+            if (!$found) {
+                $isRest = (stripos($nName, 'Resturent') !== false || stripos($nName, 'Restaurant') !== false || stripos($nSub, 'resturent') !== false || stripos($nSub, 'restaurant') !== false);
+                $isPharm = (stripos($nName, 'Pharmacy') !== false || stripos($nSub, 'pharmacy') !== false);
+                $vert = $isRest ? 'RESTAURANT' : ($isPharm ? 'PHARMACY' : 'RETAIL_MART');
+                $bType = $isRest ? 'Restaurants, Cafes & Food Outlets' : ($isPharm ? 'Pharmacy & Medical Store' : 'Retail Mart / General Store');
+                $fee = $isRest ? 6999 : ($isPharm ? 5999 : 4999);
+                $tenants[] = [
+                    'id' => 'tenant_' . $nSub,
+                    'name' => $nName,
+                    'subdomain' => $nSub,
+                    'domain' => 'digitalsnova.com/portal/?store=' . $nSub,
+                    'portalUrl' => 'https://digitalsnova.com/portal/?store=' . $nSub,
+                    'phone' => $n['phone'] ?? '03012200230',
+                    'email' => $n['email'] ?? '',
+                    'businessType' => $bType,
+                    'business_type' => $bType,
+                    'vertical' => $vert,
+                    'sector' => $vert,
+                    'storeType' => $vert,
+                    'planType' => 'MONTHLY',
+                    'planName' => $isRest ? 'Restaurant & Cafe POS (Monthly)' : ($isPharm ? 'Pharmacy & Medical POS (Monthly)' : 'Retail Mart POS (Monthly)'),
+                    'monthlyFee' => $fee,
+                    'monthly_fee' => $fee,
+                    'createdAt' => $n['timestamp'] ?? date('c'),
+                    'adminName' => $n['ownerName'] ?? 'Store Owner',
+                    'adminUsername' => $n['adminUser'] ?? ('admin.' . $nSub),
+                    'adminPassword' => '123456',
+                    'adminPin' => '1234',
+                    'status' => 'ACTIVE',
+                    'subscription' => [
+                        'state' => 'ACTIVE',
+                        'plan' => 'MONTHLY',
+                        'planName' => $isRest ? 'Restaurant & Cafe POS (Monthly)' : 'Retail Mart POS (Monthly)',
+                        'billingCycleDay' => 1,
+                        'graceDaysRemaining' => 3,
+                        'monthlyFee' => $fee
+                    ],
+                    'adminUser' => [
+                        'name' => $n['ownerName'] ?? 'Store Owner',
+                        'username' => $n['adminUser'] ?? ('admin.' . $nSub),
+                        'password' => '123456',
+                        'role' => $vert === 'CLINIC_HMS' ? 'CLINIC_ADMIN' : 'STORE_ADMIN'
+                    ]
+                ];
+                $tenantsDirty = true;
+            }
+        }
+    }
+
+    // Auto-heal missing monthlyFee or NaN values across all tenants
+    foreach ($tenants as &$t) {
+        $tName = $t['name'] ?? '';
+        $tSub = strtolower($t['subdomain'] ?? '');
+        $isRest = (stripos($tName, 'Resturent') !== false || stripos($tName, 'Restaurant') !== false || stripos($tSub, 'resturent') !== false || stripos($tSub, 'restaurant') !== false || (isset($t['businessType']) && stripos($t['businessType'], 'Restaurant') !== false));
+        $isPharm = (stripos($tName, 'Pharmacy') !== false || stripos($tSub, 'pharmacy') !== false || (isset($t['businessType']) && stripos($t['businessType'], 'Pharmacy') !== false));
+        $isClinic = ($tSub === 'clinic' || stripos($tName, 'Clinic') !== false || stripos($tName, 'Hospital') !== false || (isset($t['businessType']) && stripos($t['businessType'], 'Clinic') !== false));
+
+        if ($isRest) {
+            $t['vertical'] = 'RESTAURANT';
+            $t['sector'] = 'RESTAURANT';
+            $t['storeType'] = 'RESTAURANT';
+            $t['businessType'] = 'Restaurants, Cafes & Food Outlets';
+            $t['planName'] = 'Restaurant & Cafe POS' . ((isset($t['planType']) && $t['planType'] === 'YEARLY') ? ' (Annual)' : ' (Monthly)');
+            if (empty($t['monthlyFee']) || !is_numeric($t['monthlyFee'])) {
+                $t['monthlyFee'] = (isset($t['planType']) && $t['planType'] === 'YEARLY') ? 67190 : 6999;
+                $tenantsDirty = true;
+            }
+        } else if ($isPharm) {
+            $t['vertical'] = 'PHARMACY';
+            $t['sector'] = 'PHARMACY';
+            $t['storeType'] = 'PHARMACY';
+            $t['businessType'] = 'Pharmacy & Medical Store';
+            $t['planName'] = 'Pharmacy & Medical POS' . ((isset($t['planType']) && $t['planType'] === 'YEARLY') ? ' (Annual)' : ' (Monthly)');
+            if (empty($t['monthlyFee']) || !is_numeric($t['monthlyFee'])) {
+                $t['monthlyFee'] = (isset($t['planType']) && $t['planType'] === 'YEARLY') ? 57590 : 5999;
+                $tenantsDirty = true;
+            }
+        } else if ($isClinic) {
+            $t['vertical'] = 'CLINIC_HMS';
+            $t['sector'] = 'CLINIC_HMS';
+            $t['storeType'] = 'CLINIC_HMS';
+            $t['businessType'] = 'Clinic / Hospital';
+            if (empty($t['monthlyFee']) || !is_numeric($t['monthlyFee'])) {
+                $t['monthlyFee'] = (isset($t['planType']) && $t['planType'] === 'YEARLY') ? 76790 : 7999;
+                $tenantsDirty = true;
+            }
+        } else {
+            $t['vertical'] = 'RETAIL_MART';
+            $t['sector'] = 'RETAIL_MART';
+            $t['storeType'] = 'RETAIL_MART';
+            $t['businessType'] = 'Retail Mart / General Store';
+            $t['planName'] = 'Retail Mart POS' . ((isset($t['planType']) && $t['planType'] === 'YEARLY') ? ' (Annual)' : ' (Monthly)');
+            if (empty($t['monthlyFee']) || !is_numeric($t['monthlyFee'])) {
+                $t['monthlyFee'] = (isset($t['planType']) && $t['planType'] === 'YEARLY') ? 47990 : 4999;
+                $tenantsDirty = true;
+            }
+        }
+        $t['monthly_fee'] = $t['monthlyFee'];
+        if (isset($t['subscription'])) {
+            $t['subscription']['monthlyFee'] = $t['monthlyFee'];
+            if (!empty($t['planName'])) {
+                $t['subscription']['planName'] = $t['planName'];
+            }
+        }
+    }
+    unset($t);
+
+    if ($tenantsDirty) {
+        writeJsonFile($tenantsFile, $tenants);
+        syncToSecondaryDataDirs('tenants.json', $tenants);
+    }
 
     echo json_encode([
         'success' => true,
