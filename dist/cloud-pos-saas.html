@@ -1566,8 +1566,12 @@
         Monthly Billing
       </button>
       <button type="button" class="billing-toggle-option" id="btnBillingYearly" onclick="setBillingCycle('YEARLY')">
-        Annual / Yearly Billing
-        <span class="billing-discount-badge">Save 20% &bull; 2 Months Free</span>
+        Annual / 1-Year
+        <span class="billing-discount-badge">Save 20% &bull; 2 Mo Free</span>
+      </button>
+      <button type="button" class="billing-toggle-option" id="btnBilling3Years" onclick="setBillingCycle('3_YEARS')">
+        3-Year Enterprise
+        <span class="billing-discount-badge" style="background: rgba(245,158,11,0.2); color: #fbbf24; border-color: rgba(245,158,11,0.4);">&#9733; Best Value</span>
       </button>
     </div>
 
@@ -2089,7 +2093,138 @@
 
     let currentBillingCycle = 'MONTHLY'; // 'MONTHLY' | 'YEARLY'
 
+    
+    // Dynamic Live Pricing Engine (Synchronized with SaaS Super Admin & Cloud Backend)
+    window.globalLivePricing = {
+      monthlyFee: 7999,
+      yearlyFee: 76790,
+      threeYearFee: 229000,
+      retailMonthly: 4999,
+      retailYearly: 49990,
+      retailThreeYear: 129000,
+      pharmacyMonthly: 5999,
+      pharmacyYearly: 59990,
+      pharmacyThreeYear: 159000,
+      restaurantMonthly: 6999,
+      restaurantYearly: 69990,
+      restaurantThreeYear: 189000,
+      clinicMonthly: 7999,
+      clinicYearly: 79990,
+      clinicThreeYear: 229000
+    };
+
+    async function syncLandingPagePricing() {
+      try {
+        const local = localStorage.getItem('digitalsnova_global_pricing');
+        if (local) {
+          window.globalLivePricing = { ...window.globalLivePricing, ...JSON.parse(local) };
+        }
+      } catch (e) {}
+
+      try {
+        const res = await fetch('/api/sync.php?action=get_pricing_plans');
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.plans) {
+            window.globalLivePricing = { ...window.globalLivePricing, ...data.plans };
+            localStorage.setItem('digitalsnova_global_pricing', JSON.stringify(window.globalLivePricing));
+          }
+        }
+      } catch (e) {}
+
+      setBillingCycle(currentBillingCycle || 'MONTHLY');
+    }
+
+    window.addEventListener('DOMContentLoaded', syncLandingPagePricing);
+    window.addEventListener('storage', function(e) {
+      if (e.key === 'digitalsnova_global_pricing') {
+        syncLandingPagePricing();
+      }
+    });
+
     function setBillingCycle(cycle) {
+      currentBillingCycle = cycle;
+      const btnMonthly = document.getElementById('btnBillingMonthly');
+      const btnYearly = document.getElementById('btnBillingYearly');
+      const btn3Years = document.getElementById('btnBilling3Years');
+
+      if (btnMonthly) btnMonthly.classList.toggle('active', cycle === 'MONTHLY');
+      if (btnYearly) btnYearly.classList.toggle('active', cycle === 'YEARLY');
+      if (btn3Years) btn3Years.classList.toggle('active', cycle === '3_YEARS');
+
+      const p = window.globalLivePricing;
+
+      // Plan 1: Retail Mart
+      const p1 = document.getElementById('priceVal1');
+      const pp1 = document.getElementById('pricePeriod1');
+      const ps1 = document.getElementById('priceSubtext1');
+
+      // Plan 2: Pharmacy
+      const p2 = document.getElementById('priceVal2');
+      const pp2 = document.getElementById('pricePeriod2');
+      const ps2 = document.getElementById('priceSubtext2');
+
+      // Plan 3: Restaurant
+      const p3 = document.getElementById('priceVal3');
+      const pp3 = document.getElementById('pricePeriod3');
+      const ps3 = document.getElementById('priceSubtext3');
+
+      // Plan 4: Clinic
+      const p4 = document.getElementById('priceVal4');
+      const pp4 = document.getElementById('pricePeriod4');
+      const ps4 = document.getElementById('priceSubtext4');
+
+      if (cycle === '3_YEARS') {
+        if (p1) p1.innerText = Number(p.retailThreeYear || 129000).toLocaleString();
+        if (pp1) pp1.innerText = '/ 3 years';
+        if (ps1) ps1.innerHTML = '🏆 3-Year Enterprise License &bull; <strong style="color: #38bdf8;">Locked Zero-Hike Rate</strong>';
+
+        if (p2) p2.innerText = Number(p.pharmacyThreeYear || 159000).toLocaleString();
+        if (pp2) pp2.innerText = '/ 3 years';
+        if (ps2) ps2.innerHTML = '🏆 3-Year Enterprise License &bull; <strong style="color: #10b981;">Complete Formulary Locked</strong>';
+
+        if (p3) p3.innerText = Number(p.restaurantThreeYear || 189000).toLocaleString();
+        if (pp3) pp3.innerText = '/ 3 years';
+        if (ps3) ps3.innerHTML = '🏆 3-Year Enterprise License &bull; <strong style="color: #f59e0b;">Full Table & KOT Suite</strong>';
+
+        if (p4) p4.innerText = Number(p.clinicThreeYear || 229000).toLocaleString();
+        if (pp4) pp4.innerText = '/ 3 years';
+        if (ps4) ps4.innerHTML = '🏆 3-Year Enterprise License &bull; <strong style="color: #00e5ff;">Full Hospital OPD Locked</strong>';
+      } else if (cycle === 'YEARLY') {
+        if (p1) p1.innerText = Number(p.retailYearly || 49990).toLocaleString();
+        if (pp1) pp1.innerText = '/ year';
+        if (ps1) ps1.innerHTML = '⚡ PKR ' + Number(p.retailYearly || 49990).toLocaleString() + ' / year &bull; <strong style="color: #10b981;">Save 20% (2 Months Free)</strong>';
+
+        if (p2) p2.innerText = Number(p.pharmacyYearly || 59990).toLocaleString();
+        if (pp2) pp2.innerText = '/ year';
+        if (ps2) ps2.innerHTML = '⚡ PKR ' + Number(p.pharmacyYearly || 59990).toLocaleString() + ' / year &bull; <strong style="color: #10b981;">Save 20% (2 Months Free)</strong>';
+
+        if (p3) p3.innerText = Number(p.restaurantYearly || 69990).toLocaleString();
+        if (pp3) pp3.innerText = '/ year';
+        if (ps3) ps3.innerHTML = '⚡ PKR ' + Number(p.restaurantYearly || 69990).toLocaleString() + ' / year &bull; <strong style="color: #10b981;">Save 20% (2 Months Free)</strong>';
+
+        if (p4) p4.innerText = Number(p.clinicYearly || 79990).toLocaleString();
+        if (pp4) pp4.innerText = '/ year';
+        if (ps4) ps4.innerHTML = '⚡ PKR ' + Number(p.clinicYearly || 79990).toLocaleString() + ' / year &bull; <strong style="color: #10b981;">Save 20% (2 Months Free)</strong>';
+      } else {
+        if (p1) p1.innerText = Number(p.retailMonthly || 4999).toLocaleString();
+        if (pp1) pp1.innerText = '/ month';
+        if (ps1) ps1.innerText = 'Standard Monthly Billing (PKR ' + Number(p.retailMonthly || 4999).toLocaleString() + ' / mo)';
+
+        if (p2) p2.innerText = Number(p.pharmacyMonthly || 5999).toLocaleString();
+        if (pp2) pp2.innerText = '/ month';
+        if (ps2) ps2.innerText = 'Standard Monthly Billing (PKR ' + Number(p.pharmacyMonthly || 5999).toLocaleString() + ' / mo)';
+
+        if (p3) p3.innerText = Number(p.restaurantMonthly || 6999).toLocaleString();
+        if (pp3) pp3.innerText = '/ month';
+        if (ps3) ps3.innerText = 'Standard Monthly Billing (PKR ' + Number(p.restaurantMonthly || 6999).toLocaleString() + ' / mo)';
+
+        if (p4) p4.innerText = Number(p.clinicMonthly || 7999).toLocaleString();
+        if (pp4) pp4.innerText = '/ month';
+        if (ps4) ps4.innerText = 'Standard Monthly Billing (PKR ' + Number(p.clinicMonthly || 7999).toLocaleString() + ' / mo)';
+      }
+    }
+    function _unusedOldSetBilling
       currentBillingCycle = cycle;
       const btnMonthly = document.getElementById('btnBillingMonthly');
       const btnYearly = document.getElementById('btnBillingYearly');

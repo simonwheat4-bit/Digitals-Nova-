@@ -496,10 +496,27 @@ if (empty($action) && isset($body['action'])) {
 if ($action === 'get_pricing_plans') {
     $pricingFile = $dataDir . '/pricing_plans.json';
     $defaultPlans = [
-        'retail' => ['title' => 'Retail Marts & General Stores', 'monthly' => 4999, 'yearly' => 47990],
-        'pharmacy' => ['title' => 'Pharmacies & Medical Stores', 'monthly' => 5999, 'yearly' => 57590],
-        'restaurant' => ['title' => 'Restaurants, Cafes & Food Outlets', 'monthly' => 6999, 'yearly' => 67190],
-        'clinic' => ['title' => 'Clinics & Hospitals (HMS)', 'monthly' => 7999, 'yearly' => 76790]
+        'monthlyFee' => 7999,
+        'yearlyFee' => 76790,
+        'threeYearFee' => 229000,
+        'trialDays' => 3,
+        'currency' => 'Rs.',
+        'retailMonthly' => 4999,
+        'retailYearly' => 49990,
+        'retailThreeYear' => 129000,
+        'pharmacyMonthly' => 5999,
+        'pharmacyYearly' => 59990,
+        'pharmacyThreeYear' => 159000,
+        'restaurantMonthly' => 6999,
+        'restaurantYearly' => 69990,
+        'restaurantThreeYear' => 189000,
+        'clinicMonthly' => 7999,
+        'clinicYearly' => 79990,
+        'clinicThreeYear' => 229000,
+        'retail' => ['title' => 'Retail Marts & General Stores', 'monthly' => 4999, 'yearly' => 49990, 'threeYear' => 129000],
+        'pharmacy' => ['title' => 'Pharmacies & Medical Stores', 'monthly' => 5999, 'yearly' => 59990, 'threeYear' => 159000],
+        'restaurant' => ['title' => 'Restaurants, Cafes & Food Outlets', 'monthly' => 6999, 'yearly' => 69990, 'threeYear' => 189000],
+        'clinic' => ['title' => 'Clinics & Hospitals (HMS)', 'monthly' => 7999, 'yearly' => 79990, 'threeYear' => 229000]
     ];
     $plans = readJsonFile($pricingFile, $defaultPlans);
     echo json_encode(['success' => true, 'plans' => $plans]);
@@ -1005,6 +1022,7 @@ if ($action === 'get_all' || $action === 'tenants') {
         'notifications' => $notifications,
         'staff' => $staff,
         'deleted_tenants' => $deletedTenants,
+        'pricing_plans' => readJsonFile($dataDir . '/pricing_plans.json'),
         'count' => count($tenants),
         'serverTime' => date('c')
     ]);

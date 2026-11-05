@@ -1447,10 +1447,25 @@ export default function ReceptionistPOSPanel({
                       }`}
                     >
                       <div>
+                        {item.imageUrl ? (
+                          <div className="w-full h-24 mb-2 rounded-lg overflow-hidden bg-slate-100 border border-slate-200 shrink-0">
+                            <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition" />
+                          </div>
+                        ) : isRestaurant ? (
+                          <div className="w-full h-16 mb-2 rounded-lg bg-amber-50/80 border border-amber-200/60 flex items-center justify-center text-2xl shrink-0">
+                            🍽️
+                          </div>
+                        ) : null}
                         <div className="flex items-center justify-between gap-2 mb-1">
-                          <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 font-semibold">
-                            {item.barcode}
-                          </span>
+                          {isRestaurant ? (
+                            <span className="font-bold text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-900">
+                              {item.category}
+                            </span>
+                          ) : (
+                            <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 font-semibold">
+                              {item.barcode}
+                            </span>
+                          )}
                           {/* Prominent Stock Available Badge */}
                           <span
                             className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full font-mono ${
@@ -1463,6 +1478,8 @@ export default function ReceptionistPOSPanel({
                           >
                             {isOutOfStock
                               ? 'OUT OF STOCK (0)'
+                              : isRestaurant
+                              ? `Ready (${item.quantity || 100})`
                               : `In Stock: ${item.quantity} ${inCartItem ? `(After Cart: ${remainingAfterCart})` : ''}`}
                           </span>
                         </div>
@@ -2381,7 +2398,198 @@ export default function ReceptionistPOSPanel({
               <form
                 onSubmit={async (e) => {
                   e.preventDefault();
-                  const res = await onAddStock(stockForm);
+                  const payload = isRestaurant ? {
+                    ...stockForm,
+                    barcode: stockForm.barcode || ('DISH-' + Math.floor(100 + Math.random() * 900)),
+                    supplier: stockForm.kitchenStation || stockForm.supplier || 'Main Kitchen',
+                    purchasePrice: stockForm.purchasePrice ? Number(stockForm.purchasePrice) : Math.round(Number(stockForm.sellingPrice) * 0.4),
+                    sellingPrice: Number(stockForm.sellingPrice),
+                    quantity: stockForm.quantity ? Number(stockForm.quantity) : 100,
+                    unit: stockForm.portion || 'Plate',
+                    expiryDate: '2029-12-31',
+                    imageUrl: stockForm.imageUrl || '',
+                    category: stockForm.category || 'Fast Food & Burgers'
+                  } : stockForm;
+
+                  const res = await onAddStock(payload);
+                  if (res?.item) {
+                    setStatusBanner({
+                      type: 'success',
+                      text: isRestaurant
+                        ? `Dish "${res.item.name}" added to Restaurant Menu successfully!`
+                        : `Stock updated for ${res.item.name} (Available Qty: ${res.item.quantity})`
+                    });
+                    setStockForm({
+                      barcode: '',
+                      name: '',
+                      category: isRestaurant ? 'Fast Food & Burgers' : isPharmacy ? 'Medicines' : isClinic ? 'Medicine' : 'Grocery',
+                      supplier: '',
+                      purchasePrice: '',
+                      sellingPrice: '',
+                      quantity: '',
+                      minStockAlert: 10,
+                      expiryDate: isRestaurant ? '' : '2027-12-31',
+                      imageUrl: '',
+                      portion: 'Full / Double (2-3 Persons)',
+                      kitchenStation: 'Main Kitchen',
+                      description: ''
+                    });
+                  }
+                }}
+                className="space-y-3 text-xs"
+              >
+                {isRestaurant ? (
+                  <>
+                    <div className="grid grid-cols-2 gap-2.5">
+                      <div>
+                        <label className="block font-bold text-slate-700 mb-1">Menu Category *</label>
+                        <select
+                          value={stockForm.category}
+                          onChange={(e) => setStockForm({ ...stockForm, category: e.target.value })}
+                          className="w-full px-3 py-2 rounded-xl border border-slate-300 font-bold bg-white text-navy"
+                        >
+                          <option value="Fast Food & Burgers">Fast Food & Burgers</option>
+                          <option value="Desi Karahi & Handi">Desi Karahi & Handi</option>
+                          <option value="Rice & Biryani">Rice & Biryani</option>
+                          <option value="BBQ & Grills">BBQ & Grills</option>
+                          <option value="Pizza & Italian">Pizza & Italian</option>
+                          <option value="Beverages & Drinks">Beverages & Cold Drinks</option>
+                          <option value="Hot Drinks & Chai">Hot Drinks & Chai</option>
+                          <option value="Desserts & Sweets">Desserts & Sweets</option>
+                          <option value="Appetizers & Sides">Appetizers & Starters</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block font-bold text-slate-700 mb-1">Portion / Serving Size</label>
+                        <select
+                          value={stockForm.portion || 'Full / Double (2-3 Persons)'}
+                          onChange={(e) => setStockForm({ ...stockForm, portion: e.target.value })}
+                          className="w-full px-3 py-2 rounded-xl border border-slate-300 font-semibold bg-white text-navy"
+                        >
+                          <option value="Full / Double (2-3 Persons)">Full / Double (2-3 Persons)</option>
+                          <option value="Half / Single (1 Person)">Half / Single (1 Person)</option>
+                          <option value="1 Plate">1 Plate</option>
+                          <option value="Family Platter">Family Platter</option>
+                          <option value="Regular">Regular</option>
+                          <option value="Large">Large</option>
+                          <option value="1 Glass / Cup">1 Glass / Cup</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">Dish / Food Item Name *</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g. Chicken Biryani Special / Zinger Crunch Burger / Mutton Karahi"
+                        value={stockForm.name}
+                        onChange={(e) => setStockForm({ ...stockForm, name: e.target.value })}
+                        className="w-full px-3 py-2 rounded-xl border border-slate-300 font-bold text-navy"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2.5">
+                      <div>
+                        <label className="block font-bold text-navy mb-1">Menu Selling Price (Rs.) *</label>
+                        <input
+                          type="number"
+                          required
+                          placeholder="e.g. 850"
+                          value={stockForm.sellingPrice}
+                          onChange={(e) => setStockForm({ ...stockForm, sellingPrice: e.target.value })}
+                          className="w-full px-3 py-2 rounded-xl border-2 border-amber-500 font-mono font-extrabold text-sm text-navy bg-amber-50/30"
+                        />
+                      </div>
+                      <div>
+                        <label className="block font-bold text-slate-700 mb-1">Kitchen Prep Station</label>
+                        <select
+                          value={stockForm.kitchenStation || 'Main Kitchen'}
+                          onChange={(e) => setStockForm({ ...stockForm, kitchenStation: e.target.value })}
+                          className="w-full px-3 py-2 rounded-xl border border-slate-300 font-semibold bg-white text-navy"
+                        >
+                          <option value="Main Kitchen">Main Kitchen</option>
+                          <option value="BBQ & Grill Counter">BBQ & Grill Counter</option>
+                          <option value="Fast Food & Fryer Station">Fast Food & Fryer Station</option>
+                          <option value="Beverage & Drinks Bar">Beverage & Drinks Bar</option>
+                          <option value="Tandoor & Roti Section">Tandoor & Roti Section</option>
+                          <option value="Dessert Corner">Dessert Corner</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2.5">
+                      <div>
+                        <label className="block font-bold text-slate-700 mb-1">Daily Portions Available (Optional)</label>
+                        <input
+                          type="number"
+                          placeholder="e.g. 50 (or leave empty for unlimited)"
+                          value={stockForm.quantity}
+                          onChange={(e) => setStockForm({ ...stockForm, quantity: e.target.value })}
+                          className="w-full px-3 py-2 rounded-xl border border-slate-300 font-mono"
+                        />
+                      </div>
+                      <div>
+                        <label className="block font-bold text-slate-700 mb-1">Recipe / Serving Note (Optional)</label>
+                        <input
+                          type="text"
+                          placeholder="e.g. Served with raita, salad, and spicy dip"
+                          value={stockForm.description || ''}
+                          onChange={(e) => setStockForm({ ...stockForm, description: e.target.value })}
+                          className="w-full px-3 py-2 rounded-xl border border-slate-300"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Dish Photo Upload with Real-time Thumbnail Preview */}
+                    <div className="p-3 bg-amber-50/50 rounded-xl border border-amber-200 space-y-2">
+                      <label className="block font-bold text-amber-950 text-xs">
+                        📷 Single Dish / Food Photo Upload
+                      </label>
+                      <div className="flex items-center gap-3">
+                        {stockForm.imageUrl ? (
+                          <div className="relative w-16 h-16 rounded-xl overflow-hidden border-2 border-amber-400 shadow-md shrink-0">
+                            <img src={stockForm.imageUrl} alt="Dish preview" className="w-full h-full object-cover" />
+                            <button
+                              type="button"
+                              onClick={() => setStockForm({ ...stockForm, imageUrl: '' })}
+                              className="absolute top-0 right-0 bg-rose-600 text-white text-[10px] w-5 h-5 flex items-center justify-center rounded-bl cursor-pointer font-bold shadow"
+                              title="Remove photo"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="w-16 h-16 rounded-xl border-2 border-dashed border-amber-300 bg-white flex flex-col items-center justify-center text-amber-700 shrink-0">
+                            <span className="text-xl">🍽️</span>
+                            <span className="text-[9px] font-bold">No Photo</span>
+                          </div>
+                        )}
+                        <div className="flex-1">
+                          <input
+                            type="file"
+                            accept="image/*"
+                            id="dishPhotoInput"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                const reader = new FileReader();
+                                reader.onload = (ev) => {
+                                  setStockForm((prev) => ({ ...prev, imageUrl: ev.target.result }));
+                                };
+                                reader.readAsDataURL(file);
+                              }
+                            }}
+                            className="text-xs file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-amber-600 file:text-white hover:file:bg-amber-700 cursor-pointer"
+                          />
+                          <p className="text-[10px] text-slate-500 mt-1">
+                            Upload high-res JPG/PNG of this dish. Image will be shown on Touch POS tiles & receipts.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                ) : (
                   if (res?.item) {
                     setStatusBanner({
                       type: 'success',
@@ -2622,6 +2830,9 @@ export default function ReceptionistPOSPanel({
                   </div>
                 </div>
 
+
+                </>)
+              }
                 <button
                   type="submit"
                   className="w-full py-3 rounded-xl bg-navy hover:bg-navy-light text-gold font-extrabold text-xs shadow transition cursor-pointer"
@@ -2652,17 +2863,66 @@ export default function ReceptionistPOSPanel({
               </h3>
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse text-xs">
-                  <thead>
-                    <tr className="border-b border-slate-200 text-slate-500 uppercase text-[10px]">
-                      <th className="py-2 px-2">Barcode</th>
-                      <th className="py-2 px-2">Item & Supplier</th>
-                      <th className="py-2 px-2">Cost / Sale</th>
-                      <th className="py-2 px-2">Live Stock Qty</th>
-                      <th className="py-2 px-2">Expiry Date</th>
-                    </tr>
-                  </thead>
+                  {isRestaurant ? (
+                    <thead>
+                      <tr className="border-b border-slate-200 text-slate-500 uppercase text-[10px]">
+                        <th className="py-2.5 px-3">Photo</th>
+                        <th className="py-2.5 px-3">Dish / Food Item</th>
+                        <th className="py-2.5 px-3">Category</th>
+                        <th className="py-2.5 px-3">Portion & Station</th>
+                        <th className="py-2.5 px-3">Menu Price</th>
+                        <th className="py-2.5 px-3">Status</th>
+                      </tr>
+                    </thead>
+                  ) : (
+                    <thead>
+                      <tr className="border-b border-slate-200 text-slate-500 uppercase text-[10px]">
+                        <th className="py-2 px-2">Barcode</th>
+                        <th className="py-2 px-2">Item & Supplier</th>
+                        <th className="py-2 px-2">Cost / Sale</th>
+                        <th className="py-2 px-2">Live Stock Qty</th>
+                        <th className="py-2 px-2">Expiry Date</th>
+                      </tr>
+                    </thead>
+                  )}
                   <tbody className="divide-y divide-slate-100">
                     {inventory.map((i) => {
+                      if (isRestaurant) {
+                        return (
+                          <tr key={i.id} className="hover:bg-amber-50/30">
+                            <td className="py-2.5 px-3">
+                              {i.imageUrl ? (
+                                <img src={i.imageUrl} alt={i.name} className="w-10 h-10 rounded-xl object-cover border border-slate-200 shadow-sm" />
+                              ) : (
+                                <div className="w-10 h-10 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-center text-lg">
+                                  🍽️
+                                </div>
+                              )}
+                            </td>
+                            <td className="py-2.5 px-3">
+                              <div className="font-extrabold text-navy text-xs">{i.name}</div>
+                              {i.description && <div className="text-[10px] text-slate-500 line-clamp-1">{i.description}</div>}
+                            </td>
+                            <td className="py-2.5 px-3">
+                              <span className="px-2.5 py-1 rounded-full bg-amber-100 text-amber-900 font-extrabold text-[10px]">
+                                {i.category}
+                              </span>
+                            </td>
+                            <td className="py-2.5 px-3 text-[11px] text-slate-600 font-semibold">
+                              {i.unit || 'Standard'} • {i.supplier || 'Main Kitchen'}
+                            </td>
+                            <td className="py-2.5 px-3 font-extrabold text-sm text-amber-800 font-mono">
+                              Rs. {Number(i.sellingPrice).toLocaleString()}
+                            </td>
+                            <td className="py-2.5 px-3">
+                              <span className="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-extrabold text-[10px] flex items-center gap-1 w-fit">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                                Ready to Serve ({i.quantity || 100})
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      }
                       const low = Number(i.quantity) <= Number(i.minStockAlert || 10);
                       return (
                         <tr key={i.id} className="hover:bg-ice/30">

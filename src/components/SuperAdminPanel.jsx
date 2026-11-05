@@ -113,12 +113,16 @@ export default function SuperAdminPanel({
       currency: 'Rs.',
       retailMonthly: 4999,
       retailYearly: 49990,
+      retailThreeYear: 129000,
       pharmacyMonthly: 5999,
       pharmacyYearly: 59990,
+      pharmacyThreeYear: 159000,
       restaurantMonthly: 6999,
       restaurantYearly: 69990,
+      restaurantThreeYear: 189000,
       clinicMonthly: 7999,
-      clinicYearly: 79990
+      clinicYearly: 79990,
+      clinicThreeYear: 229000
     };
   });
   const [pricingSavedNotice, setPricingSavedNotice] = useState(false);
@@ -1113,6 +1117,15 @@ export default function SuperAdminPanel({
                         className="w-full bg-slate-950 border border-slate-700 rounded px-2.5 py-1 text-cyan-300 font-mono font-bold text-xs"
                       />
                     </div>
+                    <div>
+                      <label className="block text-[9px] font-bold text-slate-400 uppercase">3-Year (Rs.)</label>
+                      <input
+                        type="number"
+                        value={globalPricing.retailThreeYear !== undefined ? globalPricing.retailThreeYear : 129000}
+                        onChange={(e) => setGlobalPricing({ ...globalPricing, retailThreeYear: Number(e.target.value) })}
+                        className="w-full bg-slate-950 border border-slate-700 rounded px-2.5 py-1 text-sky-400 font-mono font-bold text-xs"
+                      />
+                    </div>
                   </div>
                 </div>
 
@@ -1140,6 +1153,15 @@ export default function SuperAdminPanel({
                         value={globalPricing.pharmacyYearly !== undefined ? globalPricing.pharmacyYearly : 59990}
                         onChange={(e) => setGlobalPricing({ ...globalPricing, pharmacyYearly: Number(e.target.value) })}
                         className="w-full bg-slate-950 border border-slate-700 rounded px-2.5 py-1 text-emerald-300 font-mono font-bold text-xs"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[9px] font-bold text-slate-400 uppercase">3-Year (Rs.)</label>
+                      <input
+                        type="number"
+                        value={globalPricing.pharmacyThreeYear !== undefined ? globalPricing.pharmacyThreeYear : 159000}
+                        onChange={(e) => setGlobalPricing({ ...globalPricing, pharmacyThreeYear: Number(e.target.value) })}
+                        className="w-full bg-slate-950 border border-slate-700 rounded px-2.5 py-1 text-emerald-400 font-mono font-bold text-xs"
                       />
                     </div>
                   </div>
@@ -1171,6 +1193,15 @@ export default function SuperAdminPanel({
                         className="w-full bg-slate-950 border border-amber-500/50 rounded px-2.5 py-1 text-amber-300 font-mono font-bold text-xs"
                       />
                     </div>
+                    <div>
+                      <label className="block text-[9px] font-bold text-slate-400 uppercase">3-Year (Rs.)</label>
+                      <input
+                        type="number"
+                        value={globalPricing.restaurantThreeYear !== undefined ? globalPricing.restaurantThreeYear : 189000}
+                        onChange={(e) => setGlobalPricing({ ...globalPricing, restaurantThreeYear: Number(e.target.value) })}
+                        className="w-full bg-slate-950 border border-amber-500/50 rounded px-2.5 py-1 text-amber-400 font-mono font-bold text-xs"
+                      />
+                    </div>
                   </div>
                 </div>
 
@@ -1198,6 +1229,15 @@ export default function SuperAdminPanel({
                         value={globalPricing.clinicYearly !== undefined ? globalPricing.clinicYearly : 79990}
                         onChange={(e) => setGlobalPricing({ ...globalPricing, clinicYearly: Number(e.target.value) })}
                         className="w-full bg-slate-950 border border-slate-700 rounded px-2.5 py-1 text-cyan-300 font-mono font-bold text-xs"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[9px] font-bold text-slate-400 uppercase">3-Year (Rs.)</label>
+                      <input
+                        type="number"
+                        value={globalPricing.clinicThreeYear !== undefined ? globalPricing.clinicThreeYear : 229000}
+                        onChange={(e) => setGlobalPricing({ ...globalPricing, clinicThreeYear: Number(e.target.value) })}
+                        className="w-full bg-slate-950 border border-slate-700 rounded px-2.5 py-1 text-cyan-400 font-mono font-bold text-xs"
                       />
                     </div>
                   </div>
