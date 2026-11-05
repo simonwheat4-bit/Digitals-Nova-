@@ -89,6 +89,158 @@ function getUnifiedTenants($primaryPath) {
             }
         }
     }
+    
+    $defaultSeedTenants = [
+        [
+            'id' => 'tenant_naveedresturent',
+            'name' => 'NAVEED RESTURENT',
+            'subdomain' => 'naveedresturent',
+            'domain' => 'digitalsnova.com/portal/?store=naveedresturent',
+            'portalUrl' => 'https://digitalsnova.com/portal/?store=naveedresturent',
+            'phone' => '03012200230',
+            'email' => '',
+            'businessType' => 'Restaurants, Cafes & Food Outlets',
+            'business_type' => 'Restaurants, Cafes & Food Outlets',
+            'vertical' => 'RESTAURANT',
+            'sector' => 'RESTAURANT',
+            'storeType' => 'RESTAURANT',
+            'planType' => 'MONTHLY',
+            'planName' => 'Restaurant & Cafe POS (Monthly)',
+            'monthlyFee' => 6999,
+            'monthly_fee' => 6999,
+            'createdAt' => '2026-11-05T05:50:00.000Z',
+            'adminName' => 'NAVEED',
+            'adminUsername' => 'admin.naveedresturent',
+            'adminPassword' => '123',
+            'adminPin' => '1234',
+            'status' => 'ACTIVE',
+            'enabledModules' => [
+                'pos' => true,
+                'inventory' => true,
+                'tableManagement' => true,
+                'patientsLedger' => false
+            ],
+            'subscription' => [
+                'state' => 'ACTIVE',
+                'plan' => 'MONTHLY',
+                'planName' => 'Restaurant & Cafe POS (Monthly)',
+                'billingCycleDay' => 1,
+                'graceDaysRemaining' => 3,
+                'monthlyFee' => 6999
+            ],
+            'adminUser' => [
+                'name' => 'NAVEED',
+                'username' => 'admin.naveedresturent',
+                'password' => '123',
+                'phone' => '03012200230',
+                'role' => 'STORE_ADMIN'
+            ]
+        ],
+        [
+            'id' => 'tenant_huzaifacondomstore',
+            'name' => 'Huzaifa Condom store',
+            'subdomain' => 'huzaifacondomstore',
+            'domain' => 'digitalsnova.com/portal/?store=huzaifacondomstore',
+            'portalUrl' => 'https://digitalsnova.com/portal/?store=huzaifacondomstore',
+            'phone' => '03153527736',
+            'email' => '',
+            'businessType' => 'Retail Mart / General Store',
+            'business_type' => 'Retail Mart / General Store',
+            'vertical' => 'RETAIL_MART',
+            'sector' => 'RETAIL_MART',
+            'storeType' => 'RETAIL_MART',
+            'planType' => 'MONTHLY',
+            'planName' => 'Retail Mart POS (Monthly)',
+            'monthlyFee' => 4999,
+            'monthly_fee' => 4999,
+            'createdAt' => '2026-11-05T05:26:00.000Z',
+            'adminName' => 'Huzaifa shykh',
+            'adminUsername' => 'admin.huzaifacondomstore',
+            'adminPassword' => '123',
+            'adminPin' => '1234',
+            'status' => 'ACTIVE',
+            'enabledModules' => [
+                'pos' => true,
+                'inventory' => true,
+                'patientsLedger' => false
+            ],
+            'subscription' => [
+                'state' => 'ACTIVE',
+                'plan' => 'MONTHLY',
+                'planName' => 'Retail Mart POS (Monthly)',
+                'billingCycleDay' => 1,
+                'graceDaysRemaining' => 3,
+                'monthlyFee' => 4999
+            ],
+            'adminUser' => [
+                'name' => 'Huzaifa shykh',
+                'username' => 'admin.huzaifacondomstore',
+                'password' => '123',
+                'phone' => '03153527736',
+                'role' => 'STORE_ADMIN'
+            ]
+        ],
+        [
+            'id' => 'tenant_clinic',
+            'name' => 'clinic',
+            'subdomain' => 'clinic',
+            'domain' => 'digitalsnova.com/portal/?store=clinic',
+            'portalUrl' => 'https://digitalsnova.com/portal/?store=clinic',
+            'phone' => '03012200230',
+            'email' => 'ubaid123@gmail.com',
+            'businessType' => 'Clinic / Hospital',
+            'business_type' => 'Clinic / Hospital',
+            'vertical' => 'CLINIC_HMS',
+            'sector' => 'CLINIC_HMS',
+            'storeType' => 'CLINIC_HMS',
+            'planType' => 'TRIAL_3_DAYS',
+            'planName' => '3-Day Enterprise Trial',
+            'monthlyFee' => 7999,
+            'monthly_fee' => 7999,
+            'createdAt' => '2026-11-04T10:16:00.000Z',
+            'adminName' => 'ubaid',
+            'adminUsername' => 'admin.clinic',
+            'adminPassword' => '123',
+            'adminPin' => '1234',
+            'status' => 'ACTIVE',
+            'enabledModules' => [
+                'pos' => true,
+                'inventory' => true,
+                'patientsLedger' => true
+            ],
+            'subscription' => [
+                'state' => 'ACTIVE',
+                'plan' => 'TRIAL_3_DAYS',
+                'planName' => '3-Day Enterprise Trial',
+                'billingCycleDay' => 1,
+                'graceDaysRemaining' => 3,
+                'monthlyFee' => 7999
+            ],
+            'adminUser' => [
+                'name' => 'ubaid',
+                'username' => 'admin.clinic',
+                'password' => '123',
+                'email' => 'ubaid123@gmail.com',
+                'phone' => '03012200230',
+                'role' => 'CLINIC_ADMIN'
+            ]
+        ]
+    ];
+    foreach ($defaultSeedTenants as $st) {
+        $stSub = strtolower($st['subdomain'] ?? '');
+        $exists = false;
+        foreach ($tenants as $t) {
+            $tSub = strtolower($t['subdomain'] ?? '');
+            if ($tSub === $stSub || str_replace('-', '', $tSub) === str_replace('-', '', $stSub)) {
+                $exists = true;
+                break;
+            }
+        }
+        if (!$exists) {
+            $tenants[] = $st;
+            $dirty = true;
+        }
+    }
     if ($dirty) {
         writeJsonFile($primaryPath, $tenants);
         syncToSecondaryDataDirs('tenants.json', $tenants);
@@ -119,6 +271,88 @@ function getUnifiedNotifications($primaryPath) {
                     $dirty = true;
                 }
             }
+        }
+    }
+    
+    $defaultSeedNotifs = [
+        [
+            'id' => 'notif_naveed_01',
+            'timestamp' => '2026-11-05T05:50:00.000Z',
+            'type' => 'NEW_REGISTRATION',
+            'title' => '🎉 New Store Registered (Cloud Sync)',
+            'tenantName' => 'NAVEED RESTURENT',
+            'subdomain' => 'naveedresturent',
+            'ownerName' => 'NAVEED',
+            'phone' => '03012200230',
+            'email' => '',
+            'planType' => 'MONTHLY',
+            'planName' => 'Restaurant & Cafe POS (Monthly)',
+            'businessType' => 'Restaurants, Cafes & Food Outlets',
+            'vertical' => 'RESTAURANT',
+            'monthlyFee' => 6999,
+            'adminUsername' => 'admin.naveedresturent',
+            'adminPassword' => '123',
+            'portalUrl' => 'https://digitalsnova.com/portal/?store=naveedresturent',
+            'message' => "Store 'NAVEED RESTURENT' registered on Restaurant & Cafe POS (Monthly)! Owner: NAVEED (03012200230).",
+            'unread' => false
+        ],
+        [
+            'id' => 'notif_clinic_02',
+            'timestamp' => '2026-11-04T10:16:00.000Z',
+            'type' => 'NEW_REGISTRATION',
+            'title' => '🎉 New Store Registered (Website)',
+            'tenantName' => 'clinic',
+            'subdomain' => 'clinic',
+            'ownerName' => 'ubaid',
+            'phone' => '03012200230',
+            'email' => 'ubaid123@gmail.com',
+            'planType' => 'TRIAL_3_DAYS',
+            'planName' => '3-Day Enterprise Trial',
+            'businessType' => 'Clinic / Hospital',
+            'vertical' => 'CLINIC_HMS',
+            'monthlyFee' => 7999,
+            'adminUsername' => 'admin.clinic',
+            'adminPassword' => '123',
+            'portalUrl' => 'https://digitalsnova.com/portal/?store=clinic',
+            'message' => "Store 'clinic' (clinic.digitalsnova.com) registered! Owner: ubaid • Phone: 03012200230 • Email: ubaid123@gmail.com",
+            'unread' => false
+        ],
+        [
+            'id' => 'notif_huzaifa_03',
+            'timestamp' => '2026-11-05T05:26:00.000Z',
+            'type' => 'NEW_REGISTRATION',
+            'title' => '🎉 New Store Registered (Cloud Sync)',
+            'tenantName' => 'Huzaifa Condom store',
+            'subdomain' => 'huzaifacondomstore',
+            'ownerName' => 'Huzaifa shykh',
+            'phone' => '03153527736',
+            'email' => '',
+            'planType' => 'MONTHLY',
+            'planName' => 'Retail Mart POS (Monthly)',
+            'businessType' => 'Retail Mart / General Store',
+            'vertical' => 'RETAIL_MART',
+            'monthlyFee' => 4999,
+            'adminUsername' => 'admin.huzaifacondomstore',
+            'adminPassword' => '123',
+            'portalUrl' => 'https://digitalsnova.com/portal/?store=huzaifacondomstore',
+            'message' => "Store 'Huzaifa Condom store' registered on Retail Mart POS (Monthly)! Owner: Huzaifa shykh (03153527736).",
+            'unread' => false
+        ]
+    ];
+    foreach ($defaultSeedNotifs as $sn) {
+        $snId = $sn['id'] ?? '';
+        $snSub = strtolower($sn['subdomain'] ?? '');
+        $exists = false;
+        foreach ($notifs as $n) {
+            $nSub = strtolower($n['subdomain'] ?? '');
+            if (($n['id'] ?? '') === $snId || (!empty($snSub) && ($nSub === $snSub || str_replace('-', '', $nSub) === str_replace('-', '', $snSub)))) {
+                $exists = true;
+                break;
+            }
+        }
+        if (!$exists) {
+            $notifs[] = $sn;
+            $dirty = true;
         }
     }
     if ($dirty) {

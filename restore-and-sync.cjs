@@ -179,7 +179,7 @@ ErrorDocument 404 /404.html
 
 <IfModule mod_headers.c>
   # Disable caching on HTML so browser always displays latest live updates
-  <FilesMatch "\\.(html|htm)$">
+  <FilesMatch "\\.(html|htm|js|json)$">
     Header set Cache-Control "no-cache, no-store, must-revalidate, max-age=0, proxy-revalidate"
     Header set Pragma "no-cache"
     Header set Expires "-1"
@@ -198,7 +198,8 @@ ErrorDocument 404 /404.html
   ExpiresDefault "access plus 1 hour"
   ExpiresByType text/html "access plus 0 seconds"
   ExpiresByType text/css "access plus 1 month"
-  ExpiresByType application/javascript "access plus 1 month"
+  ExpiresByType application/javascript "access plus 0 seconds"
+  ExpiresByType application/json "access plus 0 seconds"
   ExpiresByType image/png "access plus 1 year"
   ExpiresByType image/jpg "access plus 1 year"
   ExpiresByType image/jpeg "access plus 1 year"

@@ -2466,15 +2466,26 @@ export default function ReceptionistPOSPanel({
                           <option value="Dairy">Dairy & Bakery</option>
                           <option value="Personal Care">Personal Care</option>
                           <option value="Household">Household & Cleaning</option>
+                          <option value="Snacks">Snacks & Confectionery</option>
+                          <option value="General">General Merchandise</option>
+                        </>
+                      ) : isClinic ? (
+                        <>
+                          <option value="Medicine">Medicine & Prescription</option>
+                          <option value="Dermatology">Dermatology / Cream</option>
+                          <option value="Antibiotic">Antibiotic</option>
+                          <option value="Analgesic">Analgesic / Painkiller</option>
+                          <option value="Oral Care">Oral & Dental Care</option>
+                          <option value="Clinical Service">Clinical Procedure / Service</option>
                         </>
                       ) : (
                         <>
-                          <option value="Medicine">Medicine</option>
-                          <option value="Dermatology">Dermatology / Cream</option>
-                          <option value="Antibiotic">Antibiotic</option>
-                          <option value="Analgesic">Analgesic</option>
-                          <option value="Oral Care">Oral Care</option>
-                          <option value="Clinical Service">Clinical Service</option>
+                          <option value="General Groceries">General Groceries</option>
+                          <option value="Beverages">Beverages & Cold Drinks</option>
+                          <option value="Snacks">Snacks & Fast Moving</option>
+                          <option value="Dairy">Dairy & Fresh Goods</option>
+                          <option value="Personal Care">Personal Care</option>
+                          <option value="General">General Products</option>
                         </>
                       )}
                     </select>

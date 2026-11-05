@@ -8,85 +8,21 @@ export const SECTOR_RESTAURANT = 'RESTAURANT';
 export const getBusinessSector = (tenant) => {
   if (!tenant) return SECTOR_RETAIL_MART;
 
-  const rawType = String(
-    tenant.businessType ||
-    tenant.business_type ||
+  // 1. Explicit sector/vertical fields set by backend or registration
+  const explicitSector = String(
+    tenant.sector ||
     tenant.vertical ||
-    tenant.industryVertical ||
     tenant.storeType ||
+    tenant.industryVertical ||
     ''
-  ).toLowerCase();
+  ).toUpperCase();
 
-  // 1. Restaurant / Food Outlets / Cafes
-  if (
-    rawType.includes('restaurant') ||
-    rawType.includes('resturent') ||
-    rawType.includes('resturant') ||
-    rawType.includes('cafe') ||
-    rawType.includes('kafe') ||
-    rawType.includes('food') ||
-    rawType.includes('dining') ||
-    rawType.includes('pizza') ||
-    rawType.includes('burger') ||
-    rawType.includes('coffee') ||
-    rawType.includes('chai') ||
-    rawType.includes('tea') ||
-    rawType.includes('dhaba') ||
-    rawType.includes('hotel') ||
-    rawType.includes('bbq') ||
-    rawType.includes('bistro') ||
-    rawType.includes('diner') ||
-    rawType.includes('biryani') ||
-    rawType.includes('karahi') ||
-    rawType.includes('kitchen') ||
-    rawType.includes('bakery') ||
-    rawType.includes('fast food') ||
-    rawType.includes('catering')
-  ) {
-    return SECTOR_RESTAURANT;
-  }
+  if (explicitSector === SECTOR_RESTAURANT) return SECTOR_RESTAURANT;
+  if (explicitSector === SECTOR_PHARMACY) return SECTOR_PHARMACY;
+  if (explicitSector === SECTOR_CLINIC_HMS) return SECTOR_CLINIC_HMS;
+  if (explicitSector === SECTOR_RETAIL_MART) return SECTOR_RETAIL_MART;
 
-  // 2. Pharmacy / Medical Stores
-  if (
-    rawType.includes('pharmacy') ||
-    rawType.includes('medical store') ||
-    rawType.includes('chemist') ||
-    rawType.includes('drug') ||
-    rawType.includes('pharma') ||
-    rawType.includes('dispensary')
-  ) {
-    return SECTOR_PHARMACY;
-  }
-
-  // 3. Clinic / Hospital / HMS Healthcare
-  if (
-    rawType.includes('clinic') ||
-    rawType.includes('hospital') ||
-    rawType.includes('hms') ||
-    rawType.includes('dental') ||
-    rawType.includes('doctor') ||
-    rawType.includes('health') ||
-    rawType.includes('derma') ||
-    rawType.includes('medical centre') ||
-    rawType.includes('opd')
-  ) {
-    return SECTOR_CLINIC_HMS;
-  }
-
-  // 4. Retail Mart / General Store
-  if (
-    rawType.includes('retail') ||
-    rawType.includes('mart') ||
-    rawType.includes('general store') ||
-    rawType.includes('store') ||
-    rawType.includes('shop') ||
-    rawType.includes('supermarket') ||
-    rawType.includes('grocery')
-  ) {
-    return SECTOR_RETAIL_MART;
-  }
-
-  // Name / Subdomain / Receipt Title Fallback Analysis
+  // 2. Name & Subdomain matching FIRST to prevent wrong fallback from legacy defaults
   const name = String(
     tenant.name ||
     tenant.clinicName ||
@@ -113,8 +49,11 @@ export const getBusinessSector = (tenant) => {
     name.includes('kitchen') ||
     name.includes('bakery') ||
     name.includes('chai') ||
+    name.includes('tea') ||
     name.includes('coffee') ||
-    name.includes('bistro')
+    name.includes('bistro') ||
+    name.includes('shawarma') ||
+    name.includes('sweets')
   ) {
     return SECTOR_RESTAURANT;
   }
@@ -123,23 +62,72 @@ export const getBusinessSector = (tenant) => {
     name.includes('pharmacy') ||
     name.includes('chemist') ||
     name.includes('medicos') ||
-    name.includes('pharma')
+    name.includes('pharma') ||
+    name.includes('drug') ||
+    name.includes('dispensary')
   ) {
     return SECTOR_PHARMACY;
   }
 
   if (
+    name === 'clinic' ||
     name.includes('clinic') ||
     name.includes('hospital') ||
-    name.includes('care') ||
-    name.includes('health') ||
     name.includes('dental') ||
-    name.includes('derma')
+    name.includes('derma') ||
+    name.includes('hms') ||
+    name.includes('healthcare')
   ) {
     return SECTOR_CLINIC_HMS;
   }
 
-  // Default to Retail Mart for modern point-of-sale commerce
+  // 3. rawType check as secondary indicator
+  const rawType = String(
+    tenant.businessType ||
+    tenant.business_type ||
+    ''
+  ).toLowerCase();
+
+  if (
+    rawType.includes('restaurant') ||
+    rawType.includes('resturent') ||
+    rawType.includes('cafe') ||
+    rawType.includes('food') ||
+    rawType.includes('dining') ||
+    rawType.includes('bbq') ||
+    rawType.includes('pizza') ||
+    rawType.includes('burger') ||
+    rawType.includes('fast food') ||
+    rawType.includes('catering')
+  ) {
+    return SECTOR_RESTAURANT;
+  }
+
+  if (
+    rawType.includes('pharmacy') ||
+    rawType.includes('medical store') ||
+    rawType.includes('chemist') ||
+    rawType.includes('drug') ||
+    rawType.includes('pharma')
+  ) {
+    return SECTOR_PHARMACY;
+  }
+
+  if (
+    rawType.includes('clinic') ||
+    rawType.includes('hospital') ||
+    rawType.includes('hms') ||
+    rawType.includes('dental') ||
+    rawType.includes('doctor') ||
+    rawType.includes('health') ||
+    rawType.includes('derma') ||
+    rawType.includes('medical centre') ||
+    rawType.includes('opd')
+  ) {
+    return SECTOR_CLINIC_HMS;
+  }
+
+  // 4. Default to Retail Mart for modern point-of-sale commerce
   return SECTOR_RETAIL_MART;
 };
 
