@@ -541,6 +541,37 @@ if ($action === 'save_pricing_plans') {
     exit();
 }
 
+// Action: Sync Offline Sales (PWA Auto-Reconnect Background Sync)
+if ($action === 'sync_offline_sales') {
+    $sales = isset($body['sales']) ? $body['sales'] : [];
+    if (!empty($sales) && is_array($sales)) {
+        $payments = readJsonFile($paymentsFile);
+        $synced = 0;
+        foreach ($sales as $sale) {
+            $saleId = isset($sale['id']) ? $sale['id'] : ('sale_offline_' . uniqid());
+            $payments[] = [
+                'id' => $saleId,
+                'tenantId' => isset($sale['tenantId']) ? $sale['tenantId'] : 'local',
+                'amount' => isset($sale['total']) ? floatval($sale['total']) : (isset($sale['amount']) ? floatval($sale['amount']) : 0),
+                'method' => isset($sale['paymentMethod']) ? $sale['paymentMethod'] : 'Cash',
+                'items' => isset($sale['items']) ? $sale['items'] : [],
+                'syncedFromOffline' => true,
+                'offlineTimestamp' => isset($sale['timestamp']) ? $sale['timestamp'] : date('c'),
+                'serverTimestamp' => date('c'),
+                'status' => 'COMPLETED'
+            ];
+            $synced++;
+        }
+        writeJsonFile($paymentsFile, $payments);
+        syncToSecondaryDataDirs('payments.json', $payments);
+        echo json_encode(['success' => true, 'synced_count' => $synced, 'message' => "Successfully synced {$synced} offline sales."]);
+        exit();
+    }
+    echo json_encode(['success' => true, 'synced_count' => 0, 'message' => 'No sales to sync.']);
+    exit();
+}
+
+
 // Action: Test Email
 if ($action === 'test_email' || $action === 'send_test_email') {
     $testTo = !empty($_GET['to']) ? $_GET['to'] : (!empty($body['to']) ? $body['to'] : 'digitalsnovaofficial@gmail.com');

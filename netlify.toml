@@ -28,6 +28,36 @@
   status = 200
 
 [[redirects]]
+  from = "/clinics"
+  to = "/clinics.html"
+  status = 200
+
+[[redirects]]
+  from = "/clinic"
+  to = "/clinics.html"
+  status = 200
+
+[[redirects]]
+  from = "/pharmacy"
+  to = "/pharmacy.html"
+  status = 200
+
+[[redirects]]
+  from = "/retail"
+  to = "/retail.html"
+  status = 200
+
+[[redirects]]
+  from = "/restaurants"
+  to = "/restaurants.html"
+  status = 200
+
+[[redirects]]
+  from = "/restaurant"
+  to = "/restaurants.html"
+  status = 200
+
+[[redirects]]
   from = "/portal/*"
   to = "/portal/index.html"
   status = 200

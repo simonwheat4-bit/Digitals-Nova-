@@ -1,15 +1,15 @@
 {
-  "name": "Digitalsnova Clinical POS & HMS",
-  "short_name": "DigitalsnovaPOS",
-  "description": "White-Label Multi-Tenant SaaS Clinic & Hospital Management System with Offline POS & Thermal Printing",
-  "start_url": "/",
+  "name": "DigitalsNova Cloud POS & ERP",
+  "short_name": "DigitalsNova POS",
+  "description": "White-Label Multi-Tenant SaaS Cloud POS & ERP (Retail Mart, Pharmacy, Restaurant, Clinic & Hospital Management)",
+  "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#DAE9F7",
-  "theme_color": "#03145E",
+  "background_color": "#030718",
+  "theme_color": "#00e5ff",
   "orientation": "any",
   "icons": [
     {
-      "src": "/icon.svg",
+      "src": "./icon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any maskable"

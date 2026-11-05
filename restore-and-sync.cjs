@@ -87,6 +87,12 @@ const redirectRules = `/admin              /portal/index.html?view=super-admin 2
 /portal/super-admin /portal/index.html?view=super-admin 200
 /portal/admin       /portal/index.html?view=super-admin 200
 /cloud-pos-saas     /cloud-pos-saas.html    200
+/clinics            /clinics.html           200
+/clinic             /clinics.html           200
+/pharmacy           /pharmacy.html          200
+/retail             /retail.html            200
+/restaurants        /restaurants.html       200
+/restaurant         /restaurants.html       200
 /api/subscription/card-checkout   /api/stripe-checkout.php 200
 /api/webhooks/subscription-payment /api/stripe-webhook.php 200
 /api/stripe-checkout              /api/stripe-checkout.php 200
@@ -127,6 +133,36 @@ const tomlContent = `[build]
 [[redirects]]
   from = "/cloud-pos-saas"
   to = "/cloud-pos-saas.html"
+  status = 200
+
+[[redirects]]
+  from = "/clinics"
+  to = "/clinics.html"
+  status = 200
+
+[[redirects]]
+  from = "/clinic"
+  to = "/clinics.html"
+  status = 200
+
+[[redirects]]
+  from = "/pharmacy"
+  to = "/pharmacy.html"
+  status = 200
+
+[[redirects]]
+  from = "/retail"
+  to = "/retail.html"
+  status = 200
+
+[[redirects]]
+  from = "/restaurants"
+  to = "/restaurants.html"
+  status = 200
+
+[[redirects]]
+  from = "/restaurant"
+  to = "/restaurants.html"
   status = 200
 
 [[redirects]]
