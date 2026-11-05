@@ -257,6 +257,39 @@ if (empty($action) && isset($body['action'])) {
 }
 
 // ==============================================================================
+// ==============================================================================
+// Action: Get & Save Sector Pricing Plans
+if ($action === 'get_pricing_plans') {
+    $pricingFile = $dataDir . '/pricing_plans.json';
+    $defaultPlans = [
+        'retail' => ['title' => 'Retail Marts & General Stores', 'monthly' => 4999, 'yearly' => 47990],
+        'pharmacy' => ['title' => 'Pharmacies & Medical Stores', 'monthly' => 5999, 'yearly' => 57590],
+        'restaurant' => ['title' => 'Restaurants, Cafes & Food Outlets', 'monthly' => 6999, 'yearly' => 67190],
+        'clinic' => ['title' => 'Clinics & Hospitals (HMS)', 'monthly' => 7999, 'yearly' => 76790]
+    ];
+    $plans = readJsonFile($pricingFile, $defaultPlans);
+    echo json_encode(['success' => true, 'plans' => $plans]);
+    exit();
+}
+
+if ($action === 'save_pricing_plans') {
+    $pricingFile = $dataDir . '/pricing_plans.json';
+    $plans = isset($body['plans']) ? $body['plans'] : $body;
+    if (!empty($plans)) {
+        writeJsonFile($pricingFile, $plans);
+        foreach ($candidates as $cDir) {
+            if (is_dir($cDir)) {
+                @writeJsonFile($cDir . '/pricing_plans.json', $plans);
+            }
+        }
+        echo json_encode(['success' => true, 'message' => 'Sector pricing plans updated and synced across SaaS.', 'plans' => $plans]);
+        exit();
+    }
+    http_response_code(400);
+    echo json_encode(['error' => 'Invalid pricing plans payload']);
+    exit();
+}
+
 // Action: Test Email
 if ($action === 'test_email' || $action === 'send_test_email') {
     $testTo = !empty($_GET['to']) ? $_GET['to'] : (!empty($body['to']) ? $body['to'] : 'digitalsnovaofficial@gmail.com');

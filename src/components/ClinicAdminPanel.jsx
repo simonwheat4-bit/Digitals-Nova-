@@ -3540,6 +3540,42 @@ export default function ClinicAdminPanel({
                 </div>
               </div>
 
+              {/* Product / Dish Image Upload */}
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">
+                  {isRestaurant ? 'Dish / Menu Item Photo' : 'Product Photo / Thumbnail (Optional)'}
+                </label>
+                <div className="flex items-center gap-3">
+                  {stockModalItem.imageUrl ? (
+                    <div className="relative w-12 h-12 rounded-xl overflow-hidden border border-slate-300 shrink-0">
+                      <img src={stockModalItem.imageUrl} alt="preview" className="w-full h-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => setStockModalItem({ ...stockModalItem, imageUrl: '' })}
+                        className="absolute top-0 right-0 bg-rose-600 text-white text-[9px] w-4 h-4 flex items-center justify-center rounded-bl cursor-pointer"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ) : null}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        const reader = new FileReader();
+                        reader.onload = (ev) => {
+                          setStockModalItem((prev) => ({ ...prev, imageUrl: ev.target.result }));
+                        };
+                        reader.readAsDataURL(file);
+                      }
+                    }}
+                    className="text-xs file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-teal file:text-white hover:file:bg-teal-dark cursor-pointer"
+                  />
+                </div>
+              </div>
+
               <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
                 <button
                   type="button"

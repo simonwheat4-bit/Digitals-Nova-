@@ -202,20 +202,32 @@ export default function HostingerHeader({
             </button>
           )}
 
-          {/* Subscription Status Chip (for Clinic Admin / Staff) */}
-          {activeRole !== 'SUPER_ADMIN' && (
-            <span
-              className={`hidden lg:inline-flex px-2.5 py-1 rounded-full text-[10px] font-mono font-extrabold border ${
-                subState === 'ACTIVE'
-                  ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800'
-                  : subState === 'GRACE_PERIOD'
-                  ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border-amber-300 dark:border-amber-800 animate-pulse'
-                  : 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400 border-rose-300 dark:border-rose-800'
-              }`}
-            >
-              Day {cycleDay}/30 • {subState}
-            </span>
-          )}
+          {/* Subscription & Plan Status Badge for Admin & Staff */}
+          {activeRole !== 'SUPER_ADMIN' && (() => {
+            const planTitle = currentTenant?.planName || (currentTenant?.planType === 'THREE_YEAR' ? '3-Year Enterprise' : currentTenant?.planType === 'ONE_YEAR' ? '1-Year Annual Pro' : 'Monthly Starter Plan');
+            const expTs = currentTenant?.subscriptionExpiry ? new Date(currentTenant.subscriptionExpiry).getTime() : (Date.now() + 29 * 24 * 60 * 60 * 1000);
+            const daysLeft = Math.max(0, Math.ceil((expTs - Date.now()) / (1000 * 60 * 60 * 24)));
+            const expStr = new Date(expTs).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+            return (
+              <div
+                onClick={onOpenBilling}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-blue-500/10 border border-emerald-500/40 hover:border-emerald-500 text-slate-800 dark:text-slate-100 shadow-sm cursor-pointer transition select-none group"
+                title="Active Subscription: Click to view details / renew plan"
+              >
+                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+                <Crown className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                <span className="font-extrabold text-[11px] truncate max-w-[140px] sm:max-w-none text-emerald-800 dark:text-emerald-300">
+                  {planTitle}
+                </span>
+                <span className="inline-flex items-center text-[10px] font-mono font-black bg-emerald-600 text-white px-2 py-0.5 rounded-md shadow-xs shrink-0">
+                  {daysLeft} Days Left
+                </span>
+                <span className="hidden xl:inline text-[10px] font-mono text-slate-500 dark:text-slate-400">
+                  • Valid: {expStr}
+                </span>
+              </div>
+            );
+          })()}
 
           {/* Quick Role Badges (Desktop) */}
           <div className="hidden xl:flex items-center p-1 bg-slate-100 dark:bg-slate-800/80 rounded-xl border border-slate-200/80 dark:border-slate-700/80">

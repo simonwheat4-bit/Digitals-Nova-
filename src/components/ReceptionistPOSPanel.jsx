@@ -81,6 +81,7 @@ export default function ReceptionistPOSPanel({
   // Restaurant Dine-In Table & KOT State
   const [selectedTable, setSelectedTable] = useState('T1');
   const [showKotModal, setShowKotModal] = useState(false);
+  const [selectedWaiter, setSelectedWaiter] = useState('Waiter Ali');
   const [kotKitchenNote, setKotKitchenNote] = useState('');
   const [kotSuccessAlert, setKotSuccessAlert] = useState('');
   const showPosModule = tenant?.enabledModules?.pos !== false;
@@ -178,13 +179,14 @@ export default function ReceptionistPOSPanel({
   const [stockForm, setStockForm] = useState({
     barcode: '',
     name: '',
-    category: 'Medicine',
+    category: isRestaurant ? 'Fast Food & Burgers' : isPharmacy ? 'Tablets & Capsules' : isClinic ? 'Medical Consultation' : 'General Groceries',
     supplier: '',
     purchasePrice: '',
     sellingPrice: '',
     quantity: '',
     minStockAlert: 10,
-    expiryDate: '2027-12-31'
+    expiryDate: isRestaurant ? '' : '2027-12-31',
+    imageUrl: ''
   });
 
   const [statusBanner, setStatusBanner] = useState(null);
@@ -593,7 +595,10 @@ export default function ReceptionistPOSPanel({
         discountRequestId: approvedDiscountRecord?.id || null,
         amountPaidToday: Number(amountPaidInput !== '' ? amountPaidInput : netTotal),
         paymentMethod,
-        treatmentId: linkedTreatmentId || null
+        treatmentId: linkedTreatmentId || null,
+        tableNumber: isRestaurant ? selectedTable : undefined,
+        waiterName: isRestaurant ? selectedWaiter : undefined,
+        orderType: isRestaurant ? (selectedTable.includes('Takeaway') ? 'TAKEAWAY' : selectedTable.includes('Delivery') ? 'DELIVERY' : 'DINE_IN') : 'RETAIL'
       });
 
       clearCart();
@@ -1334,7 +1339,7 @@ export default function ReceptionistPOSPanel({
                     </button>
                   </div>
                   <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-thin">
-                    {['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', 'T9', 'T10', 'Takeaway / Parcel', 'Delivery'].map((tbl) => {
+                    {['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', 'T9', 'T10', 'T11', 'T12', 'Takeaway / Parcel', 'Delivery'].map((tbl) => {
                       const isSelected = selectedTable === tbl;
                       const isTakeaway = tbl.includes('Takeaway') || tbl.includes('Delivery');
                       return (
@@ -1355,6 +1360,30 @@ export default function ReceptionistPOSPanel({
                         </button>
                       );
                     })}
+                  </div>
+
+                  {/* Waiter Management & Assignment */}
+                  <div className="flex items-center justify-between gap-3 pt-2.5 mt-2.5 border-t border-amber-200/60 flex-wrap">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-black text-amber-950 flex items-center gap-1">
+                        <span>🧑‍🍳</span> Assigned Waiter / Server:
+                      </span>
+                      <select
+                        value={selectedWaiter}
+                        onChange={(e) => setSelectedWaiter(e.target.value)}
+                        className="bg-white border border-amber-300 text-amber-950 font-bold text-xs rounded-xl px-3 py-1.5 shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-500 cursor-pointer"
+                      >
+                        <option value="Waiter Ali">Waiter Ali</option>
+                        <option value="Waiter Ahmed">Waiter Ahmed</option>
+                        <option value="Waiter Hamza">Waiter Hamza</option>
+                        <option value="Waiter Usman">Waiter Usman</option>
+                        <option value="Captain Farhan">Captain Farhan</option>
+                        <option value="Self Service">Self Service (Takeaway)</option>
+                      </select>
+                    </div>
+                    <div className="text-[11px] font-bold text-amber-900 bg-amber-100/90 px-2.5 py-1 rounded-lg">
+                      Order Handled by: <span className="font-black text-amber-950 underline">{selectedWaiter}</span>
+                    </div>
                   </div>
                 </div>
               )}
@@ -2361,13 +2390,14 @@ export default function ReceptionistPOSPanel({
                     setStockForm({
                       barcode: '',
                       name: '',
-                      category: 'Medicine',
+                      category: isRestaurant ? 'Fast Food & Burgers' : isPharmacy ? 'Medicines' : isClinic ? 'Medicine' : 'Grocery',
                       supplier: '',
                       purchasePrice: '',
                       sellingPrice: '',
                       quantity: '',
                       minStockAlert: 10,
-                      expiryDate: '2027-12-31'
+                      expiryDate: isRestaurant ? '' : '2027-12-31',
+                      imageUrl: ''
                     });
                   }
                 }}
@@ -2532,13 +2562,51 @@ export default function ReceptionistPOSPanel({
                     />
                   </div>
                   <div>
-                    <label className="block font-bold text-slate-700 mb-1">Expiry Date</label>
+                    <label className="block font-bold text-slate-700 mb-1">
+                      {isRestaurant ? 'Best Before (Optional)' : 'Expiry Date'}
+                    </label>
                     <input
                       type="date"
-                      required
+                      required={!isRestaurant}
                       value={stockForm.expiryDate}
                       onChange={(e) => setStockForm({ ...stockForm, expiryDate: e.target.value })}
                       className="w-full px-3 py-2 rounded-xl border border-slate-300"
+                    />
+                  </div>
+                </div>
+
+                {/* Dish / Product Image Upload */}
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">
+                    {isRestaurant ? 'Dish / Menu Item Photo' : 'Product Photo / Thumbnail (Optional)'}
+                  </label>
+                  <div className="flex items-center gap-3">
+                    {stockForm.imageUrl ? (
+                      <div className="relative w-12 h-12 rounded-xl overflow-hidden border border-slate-300 shrink-0">
+                        <img src={stockForm.imageUrl} alt="preview" className="w-full h-full object-cover" />
+                        <button
+                          type="button"
+                          onClick={() => setStockForm({ ...stockForm, imageUrl: '' })}
+                          className="absolute top-0 right-0 bg-rose-600 text-white text-[9px] w-4 h-4 flex items-center justify-center rounded-bl cursor-pointer"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ) : null}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onload = (ev) => {
+                            setStockForm((prev) => ({ ...prev, imageUrl: ev.target.result }));
+                          };
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                      className="text-xs file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-teal file:text-white hover:file:bg-teal-dark cursor-pointer"
                     />
                   </div>
                 </div>
@@ -2548,13 +2616,12 @@ export default function ReceptionistPOSPanel({
                   className="w-full py-3 rounded-xl bg-navy hover:bg-navy-light text-gold font-extrabold text-xs shadow transition cursor-pointer"
                 >
                   {isRestaurant
-                    ? '+ Add Dish to Food Menu'
+                    ? '+ Add Dish to Food Menu / Kitchen Stock'
                     : isPharmacy
                     ? '+ Add Medicine to Formulary'
                     : isClinic
                     ? '+ Add Stock to Clinic Inventory'
                     : '+ Add Product to Store Inventory'}
-                </button>
                 </button>
               </form>
             </div>

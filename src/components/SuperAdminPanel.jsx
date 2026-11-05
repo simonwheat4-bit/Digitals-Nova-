@@ -110,17 +110,46 @@ export default function SuperAdminPanel({
       yearlyFee: 76790,
       threeYearFee: 229000,
       trialDays: 3,
-      currency: 'Rs.'
+      currency: 'Rs.',
+      retailMonthly: 4999,
+      retailYearly: 49990,
+      pharmacyMonthly: 5999,
+      pharmacyYearly: 59990,
+      restaurantMonthly: 6999,
+      restaurantYearly: 69990,
+      clinicMonthly: 7999,
+      clinicYearly: 79990
     };
   });
   const [pricingSavedNotice, setPricingSavedNotice] = useState(false);
 
-  const handleSaveGlobalPricing = (e) => {
+  // Sync pricing plans from server on mount
+  useEffect(() => {
+    fetch('/api/sync.php?action=get_pricing_plans')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && data.plans) {
+          setGlobalPricing((prev) => ({ ...prev, ...data.plans }));
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleSaveGlobalPricing = async (e) => {
     if (e) e.preventDefault();
     try {
       localStorage.setItem('digitalsnova_global_pricing', JSON.stringify(globalPricing));
+      try {
+        await fetch('/api/sync.php?action=save_pricing_plans', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(globalPricing)
+        });
+      } catch (errSync) {
+        console.warn('Backend sync warning:', errSync);
+      }
       setPricingSavedNotice(true);
-      setFeedback('Global SaaS Subscription Pricing tiers updated and synced successfully!');
+      setFeedback('Global SaaS 4-Sector & Subscription Pricing tiers updated and synced successfully!');
       setTimeout(() => setPricingSavedNotice(false), 3500);
     } catch (err) {
       setFeedback('Error saving pricing: ' + err.message);
@@ -965,6 +994,135 @@ export default function SuperAdminPanel({
                       className="w-full bg-slate-950 border border-slate-700 focus:border-cyan-400 rounded-lg px-3 py-2 text-white font-extrabold text-sm outline-none font-mono"
                     />
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-500 font-bold">/ 3 Yrs</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 4-SECTOR INDUSTRY PACKAGES (Retail, Pharmacy, Restaurant, Clinic) */}
+            <div className="mt-6 pt-5 border-t border-slate-800">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-xs font-black uppercase tracking-wider text-cyan-400">
+                  🏢 4-Sector Industry Landing Page Pricing Manager
+                </span>
+                <span className="text-[10px] text-slate-400">
+                  (Changes sync live to cloud-pos-saas.html and customer registration)
+                </span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+                {/* 1. Retail Mart */}
+                <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-3.5 hover:border-cyan-500/40 transition">
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <span className="text-base">🛒</span>
+                    <span className="font-extrabold text-xs text-white">Retail Marts & Grocery</span>
+                  </div>
+                  <p className="text-[10px] text-slate-400 mb-2.5">Superstores & general stores</p>
+                  <div className="space-y-2">
+                    <div>
+                      <label className="block text-[9px] font-bold text-slate-400 uppercase">Monthly (Rs.)</label>
+                      <input
+                        type="number"
+                        value={globalPricing.retailMonthly !== undefined ? globalPricing.retailMonthly : 4999}
+                        onChange={(e) => setGlobalPricing({ ...globalPricing, retailMonthly: Number(e.target.value) })}
+                        className="w-full bg-slate-950 border border-slate-700 rounded px-2.5 py-1 text-white font-mono font-bold text-xs"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[9px] font-bold text-slate-400 uppercase">Yearly (Rs.)</label>
+                      <input
+                        type="number"
+                        value={globalPricing.retailYearly !== undefined ? globalPricing.retailYearly : 49990}
+                        onChange={(e) => setGlobalPricing({ ...globalPricing, retailYearly: Number(e.target.value) })}
+                        className="w-full bg-slate-950 border border-slate-700 rounded px-2.5 py-1 text-cyan-300 font-mono font-bold text-xs"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* 2. Pharmacy */}
+                <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-3.5 hover:border-emerald-500/40 transition">
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <span className="text-base">💊</span>
+                    <span className="font-extrabold text-xs text-white">Pharmacies & Medicos</span>
+                  </div>
+                  <p className="text-[10px] text-slate-400 mb-2.5">Dispensaries & medical stores</p>
+                  <div className="space-y-2">
+                    <div>
+                      <label className="block text-[9px] font-bold text-slate-400 uppercase">Monthly (Rs.)</label>
+                      <input
+                        type="number"
+                        value={globalPricing.pharmacyMonthly !== undefined ? globalPricing.pharmacyMonthly : 5999}
+                        onChange={(e) => setGlobalPricing({ ...globalPricing, pharmacyMonthly: Number(e.target.value) })}
+                        className="w-full bg-slate-950 border border-slate-700 rounded px-2.5 py-1 text-white font-mono font-bold text-xs"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[9px] font-bold text-slate-400 uppercase">Yearly (Rs.)</label>
+                      <input
+                        type="number"
+                        value={globalPricing.pharmacyYearly !== undefined ? globalPricing.pharmacyYearly : 59990}
+                        onChange={(e) => setGlobalPricing({ ...globalPricing, pharmacyYearly: Number(e.target.value) })}
+                        className="w-full bg-slate-950 border border-slate-700 rounded px-2.5 py-1 text-emerald-300 font-mono font-bold text-xs"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* 3. Restaurant */}
+                <div className="bg-slate-900/90 border border-amber-500/40 rounded-xl p-3.5 hover:border-amber-400 transition">
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <span className="text-base">🍽️</span>
+                    <span className="font-extrabold text-xs text-white">Restaurants & Cafes</span>
+                  </div>
+                  <p className="text-[10px] text-slate-400 mb-2.5">Dine-in, KOT & food outlets</p>
+                  <div className="space-y-2">
+                    <div>
+                      <label className="block text-[9px] font-bold text-slate-400 uppercase">Monthly (Rs.)</label>
+                      <input
+                        type="number"
+                        value={globalPricing.restaurantMonthly !== undefined ? globalPricing.restaurantMonthly : 6999}
+                        onChange={(e) => setGlobalPricing({ ...globalPricing, restaurantMonthly: Number(e.target.value) })}
+                        className="w-full bg-slate-950 border border-amber-500/50 rounded px-2.5 py-1 text-white font-mono font-bold text-xs"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[9px] font-bold text-slate-400 uppercase">Yearly (Rs.)</label>
+                      <input
+                        type="number"
+                        value={globalPricing.restaurantYearly !== undefined ? globalPricing.restaurantYearly : 69990}
+                        onChange={(e) => setGlobalPricing({ ...globalPricing, restaurantYearly: Number(e.target.value) })}
+                        className="w-full bg-slate-950 border border-amber-500/50 rounded px-2.5 py-1 text-amber-300 font-mono font-bold text-xs"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* 4. Clinic / HMS */}
+                <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-3.5 hover:border-cyan-500/40 transition">
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <span className="text-base">🏥</span>
+                    <span className="font-extrabold text-xs text-white">Clinics & HMS OPD</span>
+                  </div>
+                  <p className="text-[10px] text-slate-400 mb-2.5">Dental, aesthetic & OPD clinics</p>
+                  <div className="space-y-2">
+                    <div>
+                      <label className="block text-[9px] font-bold text-slate-400 uppercase">Monthly (Rs.)</label>
+                      <input
+                        type="number"
+                        value={globalPricing.clinicMonthly !== undefined ? globalPricing.clinicMonthly : 7999}
+                        onChange={(e) => setGlobalPricing({ ...globalPricing, clinicMonthly: Number(e.target.value) })}
+                        className="w-full bg-slate-950 border border-slate-700 rounded px-2.5 py-1 text-white font-mono font-bold text-xs"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[9px] font-bold text-slate-400 uppercase">Yearly (Rs.)</label>
+                      <input
+                        type="number"
+                        value={globalPricing.clinicYearly !== undefined ? globalPricing.clinicYearly : 79990}
+                        onChange={(e) => setGlobalPricing({ ...globalPricing, clinicYearly: Number(e.target.value) })}
+                        className="w-full bg-slate-950 border border-slate-700 rounded px-2.5 py-1 text-cyan-300 font-mono font-bold text-xs"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
