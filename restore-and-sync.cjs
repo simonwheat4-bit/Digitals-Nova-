@@ -1,6 +1,14 @@
 const fs = require('fs');
 const path = require('path');
 
+// Ensure download packages and sector pages are freshly generated
+if (fs.existsSync(path.join(__dirname, 'generate_download_packages.cjs'))) {
+  try { require('./generate_download_packages.cjs'); } catch(e) { console.warn(e); }
+}
+if (fs.existsSync(path.join(__dirname, 'build_all_sector_pages.cjs'))) {
+  try { require('./build_all_sector_pages.cjs'); } catch(e) { console.warn(e); }
+}
+
 function copyFolderRecursiveSync(source, target) {
   if (!fs.existsSync(target)) {
     fs.mkdirSync(target, { recursive: true });
@@ -66,8 +74,8 @@ targetDirectories.forEach(destDir => {
     }
   });
 
-  // Copy folders: css, js, assets, portal
-  ['css', 'js', 'assets', 'portal', 'api'].forEach(folder => {
+  // Copy folders: css, js, assets, portal, api, downloads
+  ['css', 'js', 'assets', 'portal', 'api', 'downloads'].forEach(folder => {
     if (fs.existsSync(folder)) {
       copyFolderRecursiveSync(folder, path.join(destDir, folder));
     }
@@ -250,6 +258,8 @@ ErrorDocument 404 /404.html
 </IfModule>
 
 AddDefaultCharset UTF-8
+AddType application/vnd.android.package-archive .apk
+AddType application/x-msdos-program .bat
 `;
 
 fs.writeFileSync('.htaccess', htaccessRules, 'utf8');

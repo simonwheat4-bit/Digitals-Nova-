@@ -67,3 +67,5 @@ ErrorDocument 404 /404.html
 </IfModule>
 
 AddDefaultCharset UTF-8
+AddType application/vnd.android.package-archive .apk
+AddType application/x-msdos-program .bat
