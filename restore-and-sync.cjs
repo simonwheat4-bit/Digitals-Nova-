@@ -51,6 +51,12 @@ targetDirectories.forEach(destDir => {
   if (fs.existsSync('style.css')) {
     fs.copyFileSync('style.css', path.join(destDir, 'style.css'));
   }
+  if (fs.existsSync('sw.js')) {
+    fs.copyFileSync('sw.js', path.join(destDir, 'sw.js'));
+  }
+  if (fs.existsSync('manifest.json')) {
+    fs.copyFileSync('manifest.json', path.join(destDir, 'manifest.json'));
+  }
 
   // Copy all other subpage HTML files
   const rootFiles = fs.readdirSync('.');

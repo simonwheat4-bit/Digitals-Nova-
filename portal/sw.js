@@ -1,8 +1,9 @@
 // DigitalsNova Enterprise POS Offline Service Worker & PWA Cache
-const CACHE_NAME = 'digitalsnova-pos-v15-offline';
+const CACHE_NAME = 'digitalsnova-pos-v16-offline';
 const PRECACHE_ASSETS = [
   './index.html',
   './manifest.json',
+  './assets/index-DNv15Live.js',
   './assets/index-DNv14Live.js',
   './assets/index-Db2yxC1M.css',
   'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap'
@@ -11,7 +12,7 @@ const PRECACHE_ASSETS = [
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log('[SW] Pre-caching offline POS shell');
+      console.log('[SW] Pre-caching offline POS shell v16');
       return cache.addAll(PRECACHE_ASSETS).catch(err => {
         console.warn('[SW] Pre-cache warning:', err);
       });
@@ -25,7 +26,7 @@ self.addEventListener('activate', (event) => {
       return Promise.all(
         keys.map((key) => {
           if (key !== CACHE_NAME) {
-            console.log('[SW] Removing obsolete cache:', key);
+            console.log('[SW] Purging obsolete cache:', key);
             return caches.delete(key);
           }
         })
