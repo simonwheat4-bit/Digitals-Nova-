@@ -49,6 +49,7 @@ function syncToSecondaryDataDirs($filename, $data) {
     $secondaries = [
         dirname(__DIR__) . '/portal/api/data/' . $filename,
         dirname(__DIR__) . '/api/data/' . $filename,
+        dirname(dirname(__DIR__)) . '/api/data/' . $filename,
         __DIR__ . '/data/' . $filename
     ];
     foreach ($secondaries as $sec) {
@@ -490,35 +491,79 @@ if (empty($action) && isset($body['action'])) {
     $action = $body['action'];
 }
 
-// ==============================================================================
-// ==============================================================================
-// Action: Get & Save Sector Pricing Plans
-if ($action === 'get_pricing_plans') {
-    $pricingFile = $dataDir . '/pricing_plans.json';
-    $defaultPlans = [
+// Helper: Canonical Live Sector Pricing Resolver
+function getCanonicalPricingDefaults() {
+    return [
         'monthlyFee' => 7999,
-        'yearlyFee' => 76790,
+        'yearlyFee' => 79990,
         'threeYearFee' => 229000,
         'trialDays' => 3,
         'currency' => 'Rs.',
         'retailMonthly' => 4999,
         'retailYearly' => 49990,
-        'retailThreeYear' => 129000,
+        'retailThreeYear' => 139000,
         'pharmacyMonthly' => 5999,
         'pharmacyYearly' => 59990,
-        'pharmacyThreeYear' => 159000,
+        'pharmacyThreeYear' => 169000,
         'restaurantMonthly' => 6999,
         'restaurantYearly' => 69990,
-        'restaurantThreeYear' => 189000,
+        'restaurantThreeYear' => 199000,
         'clinicMonthly' => 7999,
         'clinicYearly' => 79990,
         'clinicThreeYear' => 229000,
-        'retail' => ['title' => 'Retail Marts & General Stores', 'monthly' => 4999, 'yearly' => 49990, 'threeYear' => 129000],
-        'pharmacy' => ['title' => 'Pharmacies & Medical Stores', 'monthly' => 5999, 'yearly' => 59990, 'threeYear' => 159000],
-        'restaurant' => ['title' => 'Restaurants, Cafes & Food Outlets', 'monthly' => 6999, 'yearly' => 69990, 'threeYear' => 189000],
+        'retail' => ['title' => 'Retail Marts & General Stores', 'monthly' => 4999, 'yearly' => 49990, 'threeYear' => 139000],
+        'pharmacy' => ['title' => 'Pharmacies & Medical Stores', 'monthly' => 5999, 'yearly' => 59990, 'threeYear' => 169000],
+        'restaurant' => ['title' => 'Restaurants, Cafes & Food Outlets', 'monthly' => 6999, 'yearly' => 69990, 'threeYear' => 199000],
         'clinic' => ['title' => 'Clinics & Hospitals (HMS)', 'monthly' => 7999, 'yearly' => 79990, 'threeYear' => 229000]
     ];
-    $plans = readJsonFile($pricingFile, $defaultPlans);
+}
+
+function getEffectivePricingPlans($dataDir) {
+    $pricingFile = $dataDir . '/pricing_plans.json';
+    $defaultPlans = getCanonicalPricingDefaults();
+    $stored = readJsonFile($pricingFile, []);
+    if (empty($stored) || !is_array($stored)) {
+        return $defaultPlans;
+    }
+    if (empty($stored['pricingVersion'])) {
+        if (isset($stored['yearlyFee']) && intval($stored['yearlyFee']) === 76790) $stored['yearlyFee'] = 79990;
+        if (isset($stored['retailThreeYear']) && intval($stored['retailThreeYear']) === 129000) $stored['retailThreeYear'] = 139000;
+        if (isset($stored['pharmacyThreeYear']) && intval($stored['pharmacyThreeYear']) === 159000) $stored['pharmacyThreeYear'] = 169000;
+        if (isset($stored['restaurantThreeYear']) && intval($stored['restaurantThreeYear']) === 189000) $stored['restaurantThreeYear'] = 199000;
+    }
+    $merged = array_merge($defaultPlans, $stored);
+    $merged['retail'] = ['title' => 'Retail Marts & General Stores', 'monthly' => intval($merged['retailMonthly']), 'yearly' => intval($merged['retailYearly']), 'threeYear' => intval($merged['retailThreeYear'])];
+    $merged['pharmacy'] = ['title' => 'Pharmacies & Medical Stores', 'monthly' => intval($merged['pharmacyMonthly']), 'yearly' => intval($merged['pharmacyYearly']), 'threeYear' => intval($merged['pharmacyThreeYear'])];
+    $merged['restaurant'] = ['title' => 'Restaurants, Cafes & Food Outlets', 'monthly' => intval($merged['restaurantMonthly']), 'yearly' => intval($merged['restaurantYearly']), 'threeYear' => intval($merged['restaurantThreeYear'])];
+    $merged['clinic'] = ['title' => 'Clinics & Hospitals (HMS)', 'monthly' => intval($merged['clinicMonthly']), 'yearly' => intval($merged['clinicYearly']), 'threeYear' => intval($merged['clinicThreeYear'])];
+    return $merged;
+}
+
+function resolveSectorPlanPricing($vertical, $planType, $plans) {
+    $pUpper = strtoupper(trim($planType ?: 'TRIAL_3_DAYS'));
+    $secKey = ($vertical === 'RESTAURANT') ? 'restaurant' : (($vertical === 'PHARMACY') ? 'pharmacy' : (($vertical === 'CLINIC_HMS') ? 'clinic' : 'retail'));
+    $secLabel = ($vertical === 'RESTAURANT') ? 'Restaurant & Cafe POS' : (($vertical === 'PHARMACY') ? 'Pharmacy & Medical POS' : (($vertical === 'CLINIC_HMS') ? 'Clinic & HMS Portal' : 'Retail Mart POS'));
+
+    $monthly = intval($plans[$secKey . 'Monthly'] ?? 4999);
+    $yearly = intval($plans[$secKey . 'Yearly'] ?? ($monthly * 10));
+    $threeYear = intval($plans[$secKey . 'ThreeYear'] ?? 139000);
+
+    if ($pUpper === 'TRIAL_3_DAYS' || $pUpper === 'TRIAL') {
+        return ['planType' => 'TRIAL_3_DAYS', 'fee' => 0, 'days' => 3, 'planName' => $secLabel . ' (3-Day Trial)'];
+    }
+    if ($pUpper === 'YEARLY' || $pUpper === '1_YEAR' || $pUpper === 'ANNUAL') {
+        return ['planType' => 'YEARLY', 'fee' => $yearly, 'days' => 365, 'planName' => $secLabel . ' (Annual)'];
+    }
+    if ($pUpper === '3_YEARS' || $pUpper === '3_YEAR') {
+        return ['planType' => '3_YEARS', 'fee' => $threeYear, 'days' => 1095, 'planName' => $secLabel . ' (3-Year Enterprise)'];
+    }
+    return ['planType' => 'MONTHLY', 'fee' => $monthly, 'days' => 30, 'planName' => $secLabel . ' (Monthly)'];
+}
+
+// ==============================================================================
+// Action: Get & Save Sector Pricing Plans
+if ($action === 'get_pricing_plans') {
+    $plans = getEffectivePricingPlans($dataDir);
     echo json_encode(['success' => true, 'plans' => $plans]);
     exit();
 }
@@ -526,13 +571,11 @@ if ($action === 'get_pricing_plans') {
 if ($action === 'save_pricing_plans') {
     $pricingFile = $dataDir . '/pricing_plans.json';
     $plans = isset($body['plans']) ? $body['plans'] : $body;
-    if (!empty($plans)) {
+    if (!empty($plans) && is_array($plans)) {
+        $plans['pricingVersion'] = 2;
+        $plans = array_merge(getCanonicalPricingDefaults(), $plans);
         writeJsonFile($pricingFile, $plans);
-        foreach ($candidates as $cDir) {
-            if (is_dir($cDir)) {
-                @writeJsonFile($cDir . '/pricing_plans.json', $plans);
-            }
-        }
+        syncToSecondaryDataDirs('pricing_plans.json', $plans);
         echo json_encode(['success' => true, 'message' => 'Sector pricing plans updated and synced across SaaS.', 'plans' => $plans]);
         exit();
     }
@@ -541,22 +584,49 @@ if ($action === 'save_pricing_plans') {
     exit();
 }
 
-// Action: Sync Offline Sales (PWA Auto-Reconnect Background Sync)
+// Action: Sync Offline Sales (PWA / IndexedDB Auto-Reconnect Background Sync)
 if ($action === 'sync_offline_sales') {
     $sales = isset($body['sales']) ? $body['sales'] : [];
     if (!empty($sales) && is_array($sales)) {
         $payments = readJsonFile($paymentsFile);
+        $existingIds = [];
+        foreach ($payments as $p) {
+            if (!empty($p['id'])) $existingIds[$p['id']] = true;
+        }
         $synced = 0;
         foreach ($sales as $sale) {
-            $saleId = isset($sale['id']) ? $sale['id'] : ('sale_offline_' . uniqid());
+            if (!is_array($sale)) continue;
+            $saleId = !empty($sale['id']) ? $sale['id'] : ('sale_offline_' . uniqid());
+            if (isset($existingIds[$saleId])) {
+                continue;
+            }
+            $existingIds[$saleId] = true;
+            $amt = isset($sale['amountPaidToday']) ? floatval($sale['amountPaidToday'])
+                : (isset($sale['netTotal']) ? floatval($sale['netTotal'])
+                : (isset($sale['total']) ? floatval($sale['total'])
+                : (isset($sale['amount']) ? floatval($sale['amount']) : 0)));
             $payments[] = [
                 'id' => $saleId,
-                'tenantId' => isset($sale['tenantId']) ? $sale['tenantId'] : 'local',
-                'amount' => isset($sale['total']) ? floatval($sale['total']) : (isset($sale['amount']) ? floatval($sale['amount']) : 0),
-                'method' => isset($sale['paymentMethod']) ? $sale['paymentMethod'] : 'Cash',
-                'items' => isset($sale['items']) ? $sale['items'] : [],
+                'tenantId' => $sale['tenantId'] ?? ($sale['subdomain'] ?? 'local'),
+                'subdomain' => $sale['subdomain'] ?? '',
+                'invoiceNumber' => $sale['invoiceNumber'] ?? ('OFF-' . substr($saleId, -6)),
+                'patientName' => $sale['patientName'] ?? ($sale['customerName'] ?? 'Walk-in'),
+                'patientPhone' => $sale['patientPhone'] ?? '',
+                'tableNumber' => $sale['tableNumber'] ?? '',
+                'waiterName' => $sale['waiterName'] ?? '',
+                'orderType' => $sale['orderType'] ?? '',
+                'subtotal' => isset($sale['subtotal']) ? floatval($sale['subtotal']) : $amt,
+                'discountAmount' => isset($sale['discountAmount']) ? floatval($sale['discountAmount']) : 0,
+                'netTotal' => isset($sale['netTotal']) ? floatval($sale['netTotal']) : $amt,
+                'amountPaidToday' => $amt,
+                'remainingLedgerBalance' => isset($sale['remainingLedgerBalance']) ? floatval($sale['remainingLedgerBalance']) : 0,
+                'amount' => $amt,
+                'method' => $sale['paymentMethod'] ?? 'CASH',
+                'items' => isset($sale['items']) && is_array($sale['items']) ? $sale['items'] : [],
+                'cashierName' => $sale['cashierName'] ?? 'Offline Cashier',
+                'createdAt' => $sale['createdAt'] ?? ($sale['timestamp'] ?? date('c')),
                 'syncedFromOffline' => true,
-                'offlineTimestamp' => isset($sale['timestamp']) ? $sale['timestamp'] : date('c'),
+                'offlineTimestamp' => $sale['timestamp'] ?? ($sale['createdAt'] ?? date('c')),
                 'serverTimestamp' => date('c'),
                 'status' => 'COMPLETED'
             ];
@@ -568,6 +638,41 @@ if ($action === 'sync_offline_sales') {
         exit();
     }
     echo json_encode(['success' => true, 'synced_count' => 0, 'message' => 'No sales to sync.']);
+    exit();
+}
+
+// Action: Sync Offline Inventory Queue (PWA / IndexedDB Auto-Reconnect Background Sync)
+if ($action === 'sync_offline_inventory') {
+    $ops = isset($body['operations']) ? $body['operations'] : (isset($body['items']) ? $body['items'] : []);
+    if (!empty($ops) && is_array($ops)) {
+        $invSyncFile = $dataDir . '/inventory_sync.json';
+        $existingOps = readJsonFile($invSyncFile);
+        $seen = [];
+        foreach ($existingOps as $eo) {
+            if (!empty($eo['opId'])) $seen[$eo['opId']] = true;
+        }
+        $synced = 0;
+        foreach ($ops as $op) {
+            if (!is_array($op)) continue;
+            $opId = !empty($op['opId']) ? $op['opId'] : (!empty($op['id']) ? $op['id'] : ('inv_offline_' . uniqid()));
+            if (isset($seen[$opId])) continue;
+            $seen[$opId] = true;
+            $existingOps[] = [
+                'opId' => $opId,
+                'type' => $op['type'] ?? 'UPSERT',
+                'subdomain' => $op['subdomain'] ?? '',
+                'payload' => $op['payload'] ?? $op,
+                'offlineTimestamp' => $op['timestamp'] ?? date('c'),
+                'serverTimestamp' => date('c')
+            ];
+            $synced++;
+        }
+        writeJsonFile($invSyncFile, $existingOps);
+        syncToSecondaryDataDirs('inventory_sync.json', $existingOps);
+        echo json_encode(['success' => true, 'synced_count' => $synced, 'message' => "Successfully synced {$synced} offline inventory changes."]);
+        exit();
+    }
+    echo json_encode(['success' => true, 'synced_count' => 0, 'message' => 'No inventory operations to sync.']);
     exit();
 }
 
@@ -596,6 +701,7 @@ if ($action === 'test_email' || $action === 'send_test_email') {
 // ==============================================================================
 if ($action === 'clear_notifications' || $action === 'clear_feed') {
     writeJsonFile($notifsFile, []);
+    syncToSecondaryDataDirs('notifications.json', []);
     echo json_encode([
         'success' => true,
         'message' => 'All feed notifications have been permanently cleared from cloud storage.'
@@ -635,6 +741,7 @@ if ($action === 'delete_tenant' || $action === 'delete') {
         }
     }
     writeJsonFile($tenantsFile, $remainingTenants);
+    syncToSecondaryDataDirs('tenants.json', $remainingTenants);
 
     // Clean associated staff accounts from staff.json
     $delSub = $subdomain ?: strtolower($deletedTenant['subdomain'] ?? '');
@@ -650,6 +757,7 @@ if ($action === 'delete_tenant' || $action === 'delete') {
         }
     }
     writeJsonFile($staffFile, $remainingStaff);
+    syncToSecondaryDataDirs('staff.json', $remainingStaff);
 
     // Clean notifications for this tenant from notifications.json
     $allNotifs = readJsonFile($notifsFile);
@@ -662,6 +770,7 @@ if ($action === 'delete_tenant' || $action === 'delete') {
         }
     }
     writeJsonFile($notifsFile, $remainingNotifs);
+    syncToSecondaryDataDirs('notifications.json', $remainingNotifs);
 
     // Record in deleted_tenants.json
     $deletedList = readJsonFile($deletedTenantsFile);
@@ -676,6 +785,7 @@ if ($action === 'delete_tenant' || $action === 'delete') {
         'deletedAt' => date('c')
     ];
     writeJsonFile($deletedTenantsFile, array_values($deletedList));
+    syncToSecondaryDataDirs('deleted_tenants.json', array_values($deletedList));
 
     echo json_encode([
         'success' => true,
@@ -721,13 +831,13 @@ if ($action === 'register_tenant' || $action === 'register') {
         }
     }
 
-    $defaultPlan = ($vertical === 'RESTAURANT' ? 'Restaurant & Cafe POS' : ($vertical === 'PHARMACY' ? 'Pharmacy & Medical POS' : ($vertical === 'CLINIC_HMS' ? 'Clinic & HMS Portal' : 'Retail Mart POS')));
-    $defaultFee = ($vertical === 'RESTAURANT' ? 6999 : ($vertical === 'PHARMACY' ? 5999 : ($vertical === 'CLINIC_HMS' ? 7999 : 4999)));
-    if ($planType === 'YEARLY') {
-        $defaultFee = ($vertical === 'RESTAURANT' ? 67190 : ($vertical === 'PHARMACY' ? 57590 : ($vertical === 'CLINIC_HMS' ? 76790 : 47990)));
-    }
+    $plans = getEffectivePricingPlans($dataDir);
+    $resolvedPlan = resolveSectorPlanPricing($vertical, $planType, $plans);
+    $planType = $resolvedPlan['planType'];
+    $cycleDays = isset($tenant['cycleDays']) && is_numeric($tenant['cycleDays']) && intval($tenant['cycleDays']) > 0 ? intval($tenant['cycleDays']) : $resolvedPlan['days'];
+    $defaultFee = $resolvedPlan['fee'];
 
-    $planName = !empty($tenant['planName']) ? $tenant['planName'] : ($defaultPlan . ($planType === 'YEARLY' ? ' (Annual)' : ' (Monthly)'));
+    $planName = !empty($tenant['planName']) ? $tenant['planName'] : $resolvedPlan['planName'];
     $monthlyFee = isset($tenant['monthlyFee']) && is_numeric($tenant['monthlyFee']) ? floatval($tenant['monthlyFee']) : (isset($tenant['monthly_fee']) && is_numeric($tenant['monthly_fee']) ? floatval($tenant['monthly_fee']) : $defaultFee);
     $adminUser = !empty($tenant['adminUsername']) ? $tenant['adminUsername'] : (!empty($tenant['adminUser']['username']) ? $tenant['adminUser']['username'] : 'admin.' . $subdomain);
     $adminPass = !empty($tenant['adminPassword']) ? $tenant['adminPassword'] : (!empty($tenant['adminUser']['password']) ? $tenant['adminUser']['password'] : '123456');
@@ -743,6 +853,9 @@ if ($action === 'register_tenant' || $action === 'register') {
     }
 
     $createdAt = !empty($tenant['createdAt']) ? $tenant['createdAt'] : date('c');
+    $expiryTs = strtotime("+{$cycleDays} days");
+    $subscriptionExpiry = !empty($tenant['subscriptionExpiry']) ? $tenant['subscriptionExpiry'] : date('c', $expiryTs);
+    $expiryFormatted = date('d M Y, h:i A', $expiryTs);
 
     $record = [
         'id' => !empty($tenant['id']) ? $tenant['id'] : 'tenant_' . $subdomain . '_' . time(),
@@ -759,21 +872,34 @@ if ($action === 'register_tenant' || $action === 'register') {
         'storeType' => $vertical,
         'planType' => $planType,
         'planName' => $planName,
+        'cycleDays' => $cycleDays,
+        'subscriptionExpiry' => $subscriptionExpiry,
         'monthlyFee' => $monthlyFee,
         'monthly_fee' => $monthlyFee,
         'createdAt' => $createdAt,
+        'lastPaymentDate' => $createdAt,
         'adminName' => $ownerName,
         'adminUsername' => $adminUser,
         'adminPassword' => $adminPass,
         'adminPin' => '1234',
         'status' => 'ACTIVE',
+        'enabledModules' => [
+            'pos' => true,
+            'inventory' => true,
+            'patientsLedger' => ($vertical === 'CLINIC_HMS'),
+            'tableManagement' => ($vertical === 'RESTAURANT'),
+            'expiryBatch' => ($vertical === 'PHARMACY')
+        ],
         'subscription' => [
             'state' => 'ACTIVE',
             'plan' => $planType,
             'planName' => $planName,
             'billingCycleDay' => 1,
+            'totalDays' => $cycleDays,
             'graceDaysRemaining' => 3,
-            'monthlyFee' => $monthlyFee
+            'monthlyFee' => $monthlyFee,
+            'validUntil' => $subscriptionExpiry,
+            'validUntilFormatted' => $expiryFormatted
         ],
         'adminUser' => [
             'name' => $ownerName,
@@ -799,6 +925,7 @@ if ($action === 'register_tenant' || $action === 'register') {
         return $dSub !== $subdomain && ($dPhone !== $cleanP || empty($cleanP)) && ($dEmail !== strtolower($ownerEmail) || empty($ownerEmail));
     });
     writeJsonFile($deletedTenantsFile, array_values($deletedList));
+    syncToSecondaryDataDirs('deleted_tenants.json', array_values($deletedList));
 
     // Save Real-Time Super Admin Notification
     $notifications = readJsonFile($notifsFile);
@@ -812,8 +939,11 @@ if ($action === 'register_tenant' || $action === 'register') {
         'ownerName' => $ownerName,
         'phone' => $ownerPhone,
         'email' => $ownerEmail,
+        'businessType' => $businessType,
+        'vertical' => $vertical,
         'planType' => $planType,
         'planName' => $planName,
+        'monthlyFee' => $monthlyFee,
         'adminUsername' => $adminUser,
         'adminPassword' => $adminPass,
         'portalUrl' => 'https://digitalsnova.com/portal/?store=' . $subdomain,
@@ -922,6 +1052,8 @@ if ($action === 'get_all' || $action === 'tenants') {
     $staff = readJsonFile($staffFile);
     $deletedTenants = readJsonFile($deletedTenantsFile);
 
+    $effectivePlans = getEffectivePricingPlans($dataDir);
+
     // Auto-rescue any registered store present in notifications but missing from tenants
     $tenantsDirty = false;
     foreach ($notifications as $n) {
@@ -936,11 +1068,16 @@ if ($action === 'get_all' || $action === 'tenants') {
                 }
             }
             if (!$found) {
-                $isRest = (stripos($nName, 'Resturent') !== false || stripos($nName, 'Restaurant') !== false || stripos($nSub, 'resturent') !== false || stripos($nSub, 'restaurant') !== false);
-                $isPharm = (stripos($nName, 'Pharmacy') !== false || stripos($nSub, 'pharmacy') !== false);
-                $vert = $isRest ? 'RESTAURANT' : ($isPharm ? 'PHARMACY' : 'RETAIL_MART');
-                $bType = $isRest ? 'Restaurants, Cafes & Food Outlets' : ($isPharm ? 'Pharmacy & Medical Store' : 'Retail Mart / General Store');
-                $fee = $isRest ? 6999 : ($isPharm ? 5999 : 4999);
+                $nVert = strtoupper($n['vertical'] ?? '');
+                $isRest = ($nVert === 'RESTAURANT') || (stripos($nName, 'Resturent') !== false || stripos($nName, 'Restaurant') !== false || stripos($nSub, 'resturent') !== false || stripos($nSub, 'restaurant') !== false);
+                $isPharm = ($nVert === 'PHARMACY') || (stripos($nName, 'Pharmacy') !== false || stripos($nSub, 'pharmacy') !== false);
+                $isClin = ($nVert === 'CLINIC_HMS') || (stripos($nName, 'Clinic') !== false || stripos($nName, 'Hospital') !== false);
+                $vert = $isRest ? 'RESTAURANT' : ($isPharm ? 'PHARMACY' : ($isClin ? 'CLINIC_HMS' : 'RETAIL_MART'));
+                $bType = $isRest ? 'Restaurants, Cafes & Food Outlets' : ($isPharm ? 'Pharmacy & Medical Store' : ($isClin ? 'Clinic / Hospital' : 'Retail Mart / General Store'));
+                $nPlanType = $n['planType'] ?? 'MONTHLY';
+                $resolved = resolveSectorPlanPricing($vert, $nPlanType, $effectivePlans);
+                $fee = (isset($n['monthlyFee']) && is_numeric($n['monthlyFee'])) ? floatval($n['monthlyFee']) : $resolved['fee'];
+                $pName = !empty($n['planName']) ? $n['planName'] : $resolved['planName'];
                 $tenants[] = [
                     'id' => 'tenant_' . $nSub,
                     'name' => $nName,
@@ -954,28 +1091,37 @@ if ($action === 'get_all' || $action === 'tenants') {
                     'vertical' => $vert,
                     'sector' => $vert,
                     'storeType' => $vert,
-                    'planType' => 'MONTHLY',
-                    'planName' => $isRest ? 'Restaurant & Cafe POS (Monthly)' : ($isPharm ? 'Pharmacy & Medical POS (Monthly)' : 'Retail Mart POS (Monthly)'),
+                    'planType' => $resolved['planType'],
+                    'planName' => $pName,
+                    'cycleDays' => $resolved['days'],
                     'monthlyFee' => $fee,
                     'monthly_fee' => $fee,
                     'createdAt' => $n['timestamp'] ?? date('c'),
                     'adminName' => $n['ownerName'] ?? 'Store Owner',
-                    'adminUsername' => $n['adminUser'] ?? ('admin.' . $nSub),
-                    'adminPassword' => '123456',
+                    'adminUsername' => $n['adminUsername'] ?? ($n['adminUser'] ?? ('admin.' . $nSub)),
+                    'adminPassword' => $n['adminPassword'] ?? '123456',
                     'adminPin' => '1234',
                     'status' => 'ACTIVE',
+                    'enabledModules' => [
+                        'pos' => true,
+                        'inventory' => true,
+                        'patientsLedger' => ($vert === 'CLINIC_HMS'),
+                        'tableManagement' => ($vert === 'RESTAURANT'),
+                        'expiryBatch' => ($vert === 'PHARMACY')
+                    ],
                     'subscription' => [
                         'state' => 'ACTIVE',
-                        'plan' => 'MONTHLY',
-                        'planName' => $isRest ? 'Restaurant & Cafe POS (Monthly)' : 'Retail Mart POS (Monthly)',
+                        'plan' => $resolved['planType'],
+                        'planName' => $pName,
                         'billingCycleDay' => 1,
+                        'totalDays' => $resolved['days'],
                         'graceDaysRemaining' => 3,
                         'monthlyFee' => $fee
                     ],
                     'adminUser' => [
                         'name' => $n['ownerName'] ?? 'Store Owner',
-                        'username' => $n['adminUser'] ?? ('admin.' . $nSub),
-                        'password' => '123456',
+                        'username' => $n['adminUsername'] ?? ($n['adminUser'] ?? ('admin.' . $nSub)),
+                        'password' => $n['adminPassword'] ?? '123456',
                         'role' => $vert === 'CLINIC_HMS' ? 'CLINIC_ADMIN' : 'STORE_ADMIN'
                     ]
                 ];
@@ -984,60 +1130,74 @@ if ($action === 'get_all' || $action === 'tenants') {
         }
     }
 
-    // Auto-heal missing monthlyFee or NaN values across all tenants
+    // Auto-heal missing monthlyFee, sector isolation, or subscription expiry metadata across all tenants
     foreach ($tenants as &$t) {
         $tName = $t['name'] ?? '';
         $tSub = strtolower($t['subdomain'] ?? '');
-        $isRest = (stripos($tName, 'Resturent') !== false || stripos($tName, 'Restaurant') !== false || stripos($tSub, 'resturent') !== false || stripos($tSub, 'restaurant') !== false || (isset($t['businessType']) && stripos($t['businessType'], 'Restaurant') !== false));
-        $isPharm = (stripos($tName, 'Pharmacy') !== false || stripos($tSub, 'pharmacy') !== false || (isset($t['businessType']) && stripos($t['businessType'], 'Pharmacy') !== false));
-        $isClinic = ($tSub === 'clinic' || stripos($tName, 'Clinic') !== false || stripos($tName, 'Hospital') !== false || (isset($t['businessType']) && stripos($t['businessType'], 'Clinic') !== false));
+        $explicitVert = strtoupper($t['vertical'] ?? ($t['sector'] ?? ($t['storeType'] ?? '')));
+        $isRest = ($explicitVert === 'RESTAURANT') || (stripos($tName, 'Resturent') !== false || stripos($tName, 'Restaurant') !== false || stripos($tSub, 'resturent') !== false || stripos($tSub, 'restaurant') !== false || (isset($t['businessType']) && stripos($t['businessType'], 'Restaurant') !== false));
+        $isPharm = ($explicitVert === 'PHARMACY') || (stripos($tName, 'Pharmacy') !== false || stripos($tSub, 'pharmacy') !== false || (isset($t['businessType']) && stripos($t['businessType'], 'Pharmacy') !== false));
+        $isClinic = ($explicitVert === 'CLINIC_HMS') || ($tSub === 'clinic' || stripos($tName, 'Clinic') !== false || stripos($tName, 'Hospital') !== false || (isset($t['businessType']) && stripos($t['businessType'], 'Clinic') !== false));
 
         if ($isRest) {
-            $t['vertical'] = 'RESTAURANT';
-            $t['sector'] = 'RESTAURANT';
-            $t['storeType'] = 'RESTAURANT';
+            $vert = 'RESTAURANT';
             $t['businessType'] = 'Restaurants, Cafes & Food Outlets';
-            $t['planName'] = 'Restaurant & Cafe POS' . ((isset($t['planType']) && $t['planType'] === 'YEARLY') ? ' (Annual)' : ' (Monthly)');
-            if (empty($t['monthlyFee']) || !is_numeric($t['monthlyFee'])) {
-                $t['monthlyFee'] = (isset($t['planType']) && $t['planType'] === 'YEARLY') ? 67190 : 6999;
-                $tenantsDirty = true;
-            }
         } else if ($isPharm) {
-            $t['vertical'] = 'PHARMACY';
-            $t['sector'] = 'PHARMACY';
-            $t['storeType'] = 'PHARMACY';
+            $vert = 'PHARMACY';
             $t['businessType'] = 'Pharmacy & Medical Store';
-            $t['planName'] = 'Pharmacy & Medical POS' . ((isset($t['planType']) && $t['planType'] === 'YEARLY') ? ' (Annual)' : ' (Monthly)');
-            if (empty($t['monthlyFee']) || !is_numeric($t['monthlyFee'])) {
-                $t['monthlyFee'] = (isset($t['planType']) && $t['planType'] === 'YEARLY') ? 57590 : 5999;
-                $tenantsDirty = true;
-            }
         } else if ($isClinic) {
-            $t['vertical'] = 'CLINIC_HMS';
-            $t['sector'] = 'CLINIC_HMS';
-            $t['storeType'] = 'CLINIC_HMS';
+            $vert = 'CLINIC_HMS';
             $t['businessType'] = 'Clinic / Hospital';
-            if (empty($t['monthlyFee']) || !is_numeric($t['monthlyFee'])) {
-                $t['monthlyFee'] = (isset($t['planType']) && $t['planType'] === 'YEARLY') ? 76790 : 7999;
-                $tenantsDirty = true;
-            }
         } else {
-            $t['vertical'] = 'RETAIL_MART';
-            $t['sector'] = 'RETAIL_MART';
-            $t['storeType'] = 'RETAIL_MART';
+            $vert = 'RETAIL_MART';
             $t['businessType'] = 'Retail Mart / General Store';
-            $t['planName'] = 'Retail Mart POS' . ((isset($t['planType']) && $t['planType'] === 'YEARLY') ? ' (Annual)' : ' (Monthly)');
-            if (empty($t['monthlyFee']) || !is_numeric($t['monthlyFee'])) {
-                $t['monthlyFee'] = (isset($t['planType']) && $t['planType'] === 'YEARLY') ? 47990 : 4999;
-                $tenantsDirty = true;
-            }
+        }
+        $t['vertical'] = $vert;
+        $t['sector'] = $vert;
+        $t['storeType'] = $vert;
+        $t['business_type'] = $t['businessType'];
+
+        $curPlanType = strtoupper($t['planType'] ?? ($t['subscription']['plan'] ?? 'MONTHLY'));
+        $resolved = resolveSectorPlanPricing($vert, $curPlanType, $effectivePlans);
+        if (empty($t['planName']) || stripos($t['planName'], 'undefined') !== false) {
+            $t['planName'] = $resolved['planName'];
+            $tenantsDirty = true;
+        }
+        if (!isset($t['cycleDays']) || !is_numeric($t['cycleDays']) || intval($t['cycleDays']) <= 0) {
+            $t['cycleDays'] = $resolved['days'];
+            $tenantsDirty = true;
+        }
+        if ($curPlanType !== 'TRIAL_3_DAYS' && (!isset($t['monthlyFee']) || !is_numeric($t['monthlyFee']) || floatval($t['monthlyFee']) <= 0)) {
+            $t['monthlyFee'] = $resolved['fee'];
+            $tenantsDirty = true;
+        } elseif (!isset($t['monthlyFee']) || !is_numeric($t['monthlyFee'])) {
+            $t['monthlyFee'] = $resolved['fee'];
+            $tenantsDirty = true;
         }
         $t['monthly_fee'] = $t['monthlyFee'];
+        if (!isset($t['enabledModules']) || !is_array($t['enabledModules'])) {
+            $t['enabledModules'] = [
+                'pos' => true,
+                'inventory' => true,
+                'patientsLedger' => ($vert === 'CLINIC_HMS'),
+                'tableManagement' => ($vert === 'RESTAURANT'),
+                'expiryBatch' => ($vert === 'PHARMACY')
+            ];
+            $tenantsDirty = true;
+        }
         if (isset($t['subscription'])) {
             $t['subscription']['monthlyFee'] = $t['monthlyFee'];
+            $t['subscription']['totalDays'] = intval($t['cycleDays']);
             if (!empty($t['planName'])) {
                 $t['subscription']['planName'] = $t['planName'];
             }
+            if (empty($t['subscription']['validUntil']) && !empty($t['subscriptionExpiry'])) {
+                $t['subscription']['validUntil'] = $t['subscriptionExpiry'];
+            }
+        }
+        if (!empty($t['adminUser']) && is_array($t['adminUser']) && empty($t['adminUser']['role'])) {
+            $t['adminUser']['role'] = ($vert === 'CLINIC_HMS') ? 'CLINIC_ADMIN' : 'STORE_ADMIN';
+            $tenantsDirty = true;
         }
     }
     unset($t);
@@ -1053,7 +1213,7 @@ if ($action === 'get_all' || $action === 'tenants') {
         'notifications' => $notifications,
         'staff' => $staff,
         'deleted_tenants' => $deletedTenants,
-        'pricing_plans' => readJsonFile($dataDir . '/pricing_plans.json'),
+        'pricing_plans' => $effectivePlans,
         'count' => count($tenants),
         'serverTime' => date('c')
     ]);
@@ -1111,7 +1271,7 @@ if ($action === 'login') {
             exit();
         }
     }
-    $tenants = readJsonFile($tenantsFile);
+    $tenants = getUnifiedTenants($tenantsFile);
     $matchedTenant = null;
 
     foreach ($tenants as $t) {
@@ -1137,6 +1297,7 @@ if ($action === 'login') {
             exit();
         }
 
+        $resolvedRole = $matchedTenant['adminUser']['role'] ?? (($matchedTenant['vertical'] ?? '') === 'CLINIC_HMS' ? 'CLINIC_ADMIN' : 'STORE_ADMIN');
         echo json_encode([
             'success' => true,
             'user' => [
@@ -1146,7 +1307,9 @@ if ($action === 'login') {
                 'username' => $matchedTenant['adminUsername'] ?? ($matchedTenant['adminUser']['username'] ?? 'admin'),
                 'email' => $matchedTenant['email'] ?? '',
                 'phone' => $matchedTenant['phone'] ?? '',
-                'role' => 'CLINIC_ADMIN',
+                'role' => $resolvedRole,
+                'subdomain' => $matchedTenant['subdomain'] ?? '',
+                'vertical' => $matchedTenant['vertical'] ?? 'RETAIL_MART',
                 'active' => true
             ],
             'tenant' => $matchedTenant
@@ -1154,16 +1317,25 @@ if ($action === 'login') {
         exit();
     }
 
-    // Check Staff Accounts
+    // Check Staff Accounts (Attach full tenant so staff stay strictly isolated to their business sector)
     $allStaff = readJsonFile($staffFile);
     foreach ($allStaff as $s) {
         $sUser = strtolower($s['username'] ?? '');
         if ($identifier === $sUser && ($s['password'] ?? '123') === $password) {
+            $staffTenant = null;
+            $sSub = strtolower($s['subdomain'] ?? '');
+            $sTid = $s['tenantId'] ?? '';
+            foreach ($tenants as $t) {
+                if ((!empty($sTid) && ($t['id'] ?? '') === $sTid) || (!empty($sSub) && strtolower($t['subdomain'] ?? '') === $sSub)) {
+                    $staffTenant = $t;
+                    break;
+                }
+            }
             echo json_encode([
                 'success' => true,
                 'user' => $s,
-                'tenant' => [
-                    'id' => $s['tenantId'] ?? '',
+                'tenant' => $staffTenant ?: [
+                    'id' => $sTid,
                     'subdomain' => $s['subdomain'] ?? ''
                 ]
             ]);
@@ -1211,6 +1383,7 @@ if ($action === 'save_staff') {
 
     $filteredStaff[] = $newStaff;
     writeJsonFile($staffFile, $filteredStaff);
+    syncToSecondaryDataDirs('staff.json', $filteredStaff);
 
     echo json_encode(['success' => true, 'staff' => $newStaff]);
     exit();
@@ -1259,21 +1432,6 @@ if ($action === 'newsletter' || $action === 'send_broadcast') {
 // 1.8 ACTION: CARD / STRIPE SUBSCRIPTION CHECKOUT & AUTO-RENEWAL
 // ==============================================================================
 if ($action === 'card_checkout' || $action === 'stripe_checkout' || $action === 'subscription_payment') {
-    $planConfig = [
-        'TRIAL_3_DAYS' => ['name' => '3-Day Enterprise Trial', 'fee' => 0, 'days' => 3],
-        'MONTHLY' => ['name' => 'Standard Monthly Plan', 'fee' => 7999, 'days' => 30],
-        'YEARLY' => ['name' => '1-Year Annual Package', 'fee' => 76790, 'days' => 365],
-        '3_YEARS' => ['name' => '3-Year Multi-Year Package', 'fee' => 229000, 'days' => 1095]
-    ];
-
-    $planType = strtoupper(trim($body['planType'] ?? ($body['plan'] ?? 'MONTHLY')));
-    if (!isset($planConfig[$planType])) $planType = 'MONTHLY';
-
-    $planInfo = $planConfig[$planType];
-    $amount = $planInfo['fee'];
-    $planDays = $planInfo['days'];
-    $planName = $planInfo['name'];
-
     $tenantId = trim($body['tenantId'] ?? ($body['id'] ?? ''));
     $subdomain = strtolower(trim($body['subdomain'] ?? ''));
 
@@ -1300,9 +1458,20 @@ if ($action === 'card_checkout' || $action === 'stripe_checkout' || $action === 
             'subdomain' => $sub,
             'email' => $body['email'] ?? 'client@digitalsnova.com',
             'phone' => $body['phone'] ?? '+92-300-0000000',
+            'vertical' => strtoupper($body['vertical'] ?? ($body['sector'] ?? 'RETAIL_MART')),
             'status' => 'ACTIVE'
         ];
     }
+
+    $refVertical = strtoupper($tenantRef['vertical'] ?? ($tenantRef['sector'] ?? ($tenantRef['storeType'] ?? ($body['vertical'] ?? 'CLINIC_HMS'))));
+    $rawPlan = strtoupper(trim($body['planType'] ?? ($body['plan'] ?? 'MONTHLY')));
+    $effectivePlans = getEffectivePricingPlans($dataDir);
+    $resolved = resolveSectorPlanPricing($refVertical, $rawPlan, $effectivePlans);
+
+    $planType = $resolved['planType'];
+    $amount = $resolved['fee'];
+    $planDays = $resolved['days'];
+    $planName = $resolved['planName'];
 
     $validUntilTimestamp = strtotime("+{$planDays} days");
     $validUntilDate = date('d M Y, h:i A', $validUntilTimestamp);
@@ -1313,7 +1482,9 @@ if ($action === 'card_checkout' || $action === 'stripe_checkout' || $action === 
     $tenantRef['planType'] = $planType;
     $tenantRef['planName'] = $planName;
     $tenantRef['monthlyFee'] = $amount;
+    $tenantRef['monthly_fee'] = $amount;
     $tenantRef['cycleDays'] = $planDays;
+    $tenantRef['subscriptionExpiry'] = date('c', $validUntilTimestamp);
     $tenantRef['lastPaymentDate'] = date('c');
     $tenantRef['manualBlocked'] = false;
     $tenantRef['subscription'] = [
@@ -1321,7 +1492,9 @@ if ($action === 'card_checkout' || $action === 'stripe_checkout' || $action === 
         'plan' => $planType,
         'planName' => $planName,
         'billingCycleDay' => 1,
+        'totalDays' => $planDays,
         'graceDaysRemaining' => 3,
+        'monthlyFee' => $amount,
         'lastPaymentDate' => date('c'),
         'validUntil' => date('c', $validUntilTimestamp),
         'validUntilFormatted' => $validUntilDate,
@@ -1334,6 +1507,7 @@ if ($action === 'card_checkout' || $action === 'stripe_checkout' || $action === 
         $tenants[] = $tenantRef;
     }
     writeJsonFile($tenantsFile, $tenants);
+    syncToSecondaryDataDirs('tenants.json', $tenants);
 
     // Save payment log
     $payments = readJsonFile($paymentsFile);
@@ -1350,10 +1524,11 @@ if ($action === 'card_checkout' || $action === 'stripe_checkout' || $action === 
         'createdAt' => date('c')
     ];
     writeJsonFile($paymentsFile, $payments);
+    syncToSecondaryDataDirs('payments.json', $payments);
 
     // Real-Time Notification
     $notifications = readJsonFile($notifsFile);
-    $notifications[] = [
+    array_unshift($notifications, [
         'id' => 'notif_pay_' . time(),
         'timestamp' => date('c'),
         'type' => 'PAYMENT_RECEIVED',
@@ -1366,8 +1541,9 @@ if ($action === 'card_checkout' || $action === 'stripe_checkout' || $action === 
         'txnId' => $txnId,
         'portalUrl' => 'https://digitalsnova.com/portal/?store=' . $tenantRef['subdomain'],
         'message' => "Payment of Rs. " . number_format($amount) . " confirmed for {$tenantRef['name']}. Active until {$validUntilDate}."
-    ];
+    ]);
     writeJsonFile($notifsFile, $notifications);
+    syncToSecondaryDataDirs('notifications.json', $notifications);
 
     // Send Gmail SMTP Email Receipt
     $clientEmail = $tenantRef['email'] ?? ($tenantRef['adminUser']['email'] ?? '');

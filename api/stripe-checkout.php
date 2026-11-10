@@ -55,6 +55,122 @@ function writeJsonFile($path, $data) {
     @file_put_contents($path, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE), LOCK_EX);
 }
 
+function syncToSecondaryDataDirs($filename, $data) {
+    $secondaries = [
+        dirname(__DIR__) . '/portal/api/data/' . $filename,
+        dirname(__DIR__) . '/api/data/' . $filename,
+        dirname(dirname(__DIR__)) . '/api/data/' . $filename,
+        __DIR__ . '/data/' . $filename
+    ];
+    foreach ($secondaries as $sec) {
+        $secDir = dirname($sec);
+        if (is_dir($secDir) && is_writable($secDir)) {
+            @file_put_contents($sec, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE), LOCK_EX);
+        }
+    }
+}
+
+function getUnifiedTenants($primaryPath) {
+    $tenants = readJsonFile($primaryPath);
+    $otherPaths = [
+        dirname(__DIR__) . '/api/data/tenants.json',
+        dirname(__DIR__) . '/portal/api/data/tenants.json',
+        dirname(dirname(__DIR__)) . '/api/data/tenants.json',
+        __DIR__ . '/data/tenants.json',
+        __DIR__ . '/../portal/api/data/tenants.json'
+    ];
+    foreach ($otherPaths as $op) {
+        if ($op !== $primaryPath && file_exists($op)) {
+            $other = readJsonFile($op);
+            foreach ($other as $ot) {
+                $oSub = strtolower($ot['subdomain'] ?? '');
+                $oId = $ot['id'] ?? '';
+                $exists = false;
+                foreach ($tenants as $t) {
+                    if ((!empty($oSub) && strtolower($t['subdomain'] ?? '') === $oSub) || (!empty($oId) && ($t['id'] ?? '') === $oId)) {
+                        $exists = true;
+                        break;
+                    }
+                }
+                if (!$exists) {
+                    $tenants[] = $ot;
+                }
+            }
+        }
+    }
+    return $tenants;
+}
+
+function getCanonicalPricingDefaults() {
+    return [
+        'pricingVersion' => 2,
+        'monthlyFee' => 7999,
+        'yearlyFee' => 79990,
+        'threeYearFee' => 229000,
+        'trialDays' => 3,
+        'currency' => 'Rs.',
+        'retailMonthly' => 4999,
+        'retailYearly' => 49990,
+        'retailThreeYear' => 139000,
+        'pharmacyMonthly' => 5999,
+        'pharmacyYearly' => 59990,
+        'pharmacyThreeYear' => 169000,
+        'restaurantMonthly' => 6999,
+        'restaurantYearly' => 69990,
+        'restaurantThreeYear' => 199000,
+        'clinicMonthly' => 7999,
+        'clinicYearly' => 79990,
+        'clinicThreeYear' => 229000
+    ];
+}
+
+function getEffectivePricingPlans($dataDir) {
+    $pricingFile = $dataDir . '/pricing_plans.json';
+    $defaultPlans = getCanonicalPricingDefaults();
+    $stored = readJsonFile($pricingFile, []);
+    if (empty($stored) || !is_array($stored)) {
+        return $defaultPlans;
+    }
+    if (empty($stored['pricingVersion'])) {
+        if (isset($stored['yearlyFee']) && intval($stored['yearlyFee']) === 76790) $stored['yearlyFee'] = 79990;
+        if (isset($stored['retailThreeYear']) && intval($stored['retailThreeYear']) === 129000) $stored['retailThreeYear'] = 139000;
+        if (isset($stored['pharmacyThreeYear']) && intval($stored['pharmacyThreeYear']) === 159000) $stored['pharmacyThreeYear'] = 169000;
+        if (isset($stored['restaurantThreeYear']) && intval($stored['restaurantThreeYear']) === 189000) $stored['restaurantThreeYear'] = 199000;
+    }
+    return array_merge($defaultPlans, $stored);
+}
+
+function normalizeSectorCode($raw) {
+    $s = strtoupper(trim((string)$raw));
+    if (strpos($s, 'REST') !== false || strpos($s, 'FOOD') !== false || strpos($s, 'CAFE') !== false) return 'RESTAURANT';
+    if (strpos($s, 'PHARM') !== false || strpos($s, 'MED') !== false) return 'PHARMACY';
+    if (strpos($s, 'CLIN') !== false || strpos($s, 'HOSP') !== false || strpos($s, 'DENT') !== false) return 'CLINIC_HMS';
+    if (strpos($s, 'RETAIL') !== false || strpos($s, 'MART') !== false || strpos($s, 'STORE') !== false) return 'RETAIL_MART';
+    return 'RETAIL_MART';
+}
+
+function resolveSectorPlanPricing($vertical, $planType, $plans) {
+    $v = normalizeSectorCode($vertical);
+    $pUpper = strtoupper(trim($planType ?: 'MONTHLY'));
+    $secKey = ($v === 'RESTAURANT') ? 'restaurant' : (($v === 'PHARMACY') ? 'pharmacy' : (($v === 'CLINIC_HMS') ? 'clinic' : 'retail'));
+    $secLabel = ($v === 'RESTAURANT') ? 'Restaurant & Cafe POS' : (($v === 'PHARMACY') ? 'Pharmacy & Medical POS' : (($v === 'CLINIC_HMS') ? 'Clinic & HMS Portal' : 'Retail Mart POS'));
+
+    $monthly = intval($plans[$secKey . 'Monthly'] ?? 4999);
+    $yearly = intval($plans[$secKey . 'Yearly'] ?? ($monthly * 10));
+    $threeYear = intval($plans[$secKey . 'ThreeYear'] ?? 139000);
+
+    if ($pUpper === 'TRIAL_3_DAYS' || $pUpper === 'TRIAL') {
+        return ['planType' => 'TRIAL_3_DAYS', 'fee' => 0, 'days' => 3, 'planName' => $secLabel . ' (3-Day Trial)'];
+    }
+    if ($pUpper === 'YEARLY' || $pUpper === '1_YEAR' || $pUpper === 'ONE_YEAR' || $pUpper === 'ANNUAL') {
+        return ['planType' => 'YEARLY', 'fee' => $yearly, 'days' => 365, 'planName' => $secLabel . ' (Annual)'];
+    }
+    if ($pUpper === '3_YEARS' || $pUpper === '3_YEAR' || $pUpper === 'THREE_YEAR' || $pUpper === 'THREE_YEARS') {
+        return ['planType' => '3_YEARS', 'fee' => $threeYear, 'days' => 1095, 'planName' => $secLabel . ' (3-Year Enterprise)'];
+    }
+    return ['planType' => 'MONTHLY', 'fee' => $monthly, 'days' => 30, 'planName' => $secLabel . ' (Monthly)'];
+}
+
 // ------------------------------------------------------------------------------
 // GMAIL SMTP AUTHENTICATED MAILER ENGINE (smtp.gmail.com:465 SSL)
 // ------------------------------------------------------------------------------
@@ -142,51 +258,18 @@ function sendGmailSmtp($toEmail, $subject, $htmlBody) {
 }
 
 // ------------------------------------------------------------------------------
-// REQUEST PARSING
+// REQUEST PARSING & CANONICAL SECTOR PRICING RESOLUTION
 // ------------------------------------------------------------------------------
 $rawBody = @file_get_contents('php://input');
 $body = json_decode($rawBody, true) ?: [];
 $action = $_GET['action'] ?? ($body['action'] ?? 'card_checkout');
 
-// Pricing Matrix
-$planConfig = [
-    'TRIAL_3_DAYS' => [
-        'name' => '3-Day Enterprise Trial',
-        'fee' => 0,
-        'days' => 3
-    ],
-    'MONTHLY' => [
-        'name' => 'Standard Monthly Plan',
-        'fee' => 7999,
-        'days' => 30
-    ],
-    'YEARLY' => [
-        'name' => '1-Year Annual Package',
-        'fee' => 76790,
-        'days' => 365
-    ],
-    '3_YEARS' => [
-        'name' => '3-Year Multi-Year Package',
-        'fee' => 229000,
-        'days' => 1095
-    ]
-];
-
-// Determine Tenant & Plan
 $tenantId = trim($body['tenantId'] ?? ($body['id'] ?? ($_GET['tenantId'] ?? '')));
 $subdomain = strtolower(trim($body['subdomain'] ?? ($_GET['subdomain'] ?? '')));
-$planType = strtoupper(trim($body['planType'] ?? ($body['plan'] ?? 'MONTHLY')));
-if (!isset($planConfig[$planType])) {
-    $planType = 'MONTHLY';
-}
+$rawPlan = strtoupper(trim($body['planType'] ?? ($body['plan'] ?? 'MONTHLY')));
 
-$planInfo = $planConfig[$planType];
-$amount = $planInfo['fee'];
-$planDays = $planInfo['days'];
-$planName = $planInfo['name'];
-
-// Locate Tenant in tenants.json
-$tenants = readJsonFile($tenantsFile);
+// Locate Tenant in unified tenants.json
+$tenants = getUnifiedTenants($tenantsFile);
 $matchedTenantIndex = -1;
 
 foreach ($tenants as $idx => $t) {
@@ -198,21 +281,39 @@ foreach ($tenants as $idx => $t) {
     }
 }
 
-// If tenant not found, construct default tenant reference
+$storeName = $body['cardName'] ?? ($body['storeName'] ?? ($subdomain ?: 'DigitalsNova Client'));
+$sub = $subdomain ?: strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $storeName));
+
 if ($matchedTenantIndex !== -1) {
     $tenantRef = &$tenants[$matchedTenantIndex];
 } else {
-    $storeName = $body['cardName'] ?? ($body['storeName'] ?? ($subdomain ?: 'DigitalsNova Client'));
-    $sub = $subdomain ?: strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $storeName));
+    $rawSec = $body['vertical'] ?? ($body['sector'] ?? ($body['storeType'] ?? ($body['businessType'] ?? 'RETAIL_MART')));
+    $normSec = normalizeSectorCode($rawSec);
     $tenantRef = [
         'id' => $tenantId ?: 'tenant_' . $sub . '_' . time(),
         'name' => $storeName,
         'subdomain' => $sub,
         'email' => $body['email'] ?? 'client@digitalsnova.com',
         'phone' => $body['phone'] ?? '+92-300-0000000',
+        'vertical' => $normSec,
+        'sector' => $normSec,
+        'storeType' => $normSec,
         'status' => 'ACTIVE'
     ];
 }
+
+$rawTenantSec = $tenantRef['vertical']
+    ?? ($tenantRef['sector']
+    ?? ($tenantRef['storeType']
+    ?? ($tenantRef['businessType']
+    ?? ($body['vertical'] ?? ($body['sector'] ?? 'RETAIL_MART')))));
+$effectivePlans = getEffectivePricingPlans($dataDir);
+$resolved = resolveSectorPlanPricing($rawTenantSec, $rawPlan, $effectivePlans);
+
+$planType = $resolved['planType'];
+$amount = $resolved['fee'];
+$planDays = $resolved['days'];
+$planName = $resolved['planName'];
 
 $tenantName = $tenantRef['name'] ?? 'Your Business';
 $tenantSubdomain = $tenantRef['subdomain'] ?? 'store';
@@ -225,6 +326,7 @@ $keyCode = 'DNOVA-' . strtoupper(substr(preg_replace('/[^A-Z0-9]/', '', $planTyp
 
 $validUntilTimestamp = strtotime("+{$planDays} days");
 $validUntilDate = date('d M Y, h:i A', $validUntilTimestamp);
+$validUntilIso = date('c', $validUntilTimestamp);
 
 // ==============================================================================
 // 1. UPDATE TENANT SUBSCRIPTION STATUS (Immediate Activation)
@@ -233,7 +335,9 @@ $tenantRef['status'] = 'ACTIVE';
 $tenantRef['planType'] = $planType;
 $tenantRef['planName'] = $planName;
 $tenantRef['monthlyFee'] = $amount;
+$tenantRef['monthly_fee'] = $amount;
 $tenantRef['cycleDays'] = $planDays;
+$tenantRef['subscriptionExpiry'] = $validUntilIso;
 $tenantRef['lastPaymentDate'] = date('c');
 $tenantRef['manualBlocked'] = false;
 $tenantRef['subscription'] = [
@@ -241,9 +345,11 @@ $tenantRef['subscription'] = [
     'plan' => $planType,
     'planName' => $planName,
     'billingCycleDay' => 1,
+    'totalDays' => $planDays,
     'graceDaysRemaining' => 3,
+    'monthlyFee' => $amount,
     'lastPaymentDate' => date('c'),
-    'validUntil' => date('c', $validUntilTimestamp),
+    'validUntil' => $validUntilIso,
     'validUntilFormatted' => $validUntilDate,
     'txnId' => $txnId
 ];
@@ -254,12 +360,7 @@ if ($matchedTenantIndex !== -1) {
     $tenants[] = $tenantRef;
 }
 writeJsonFile($tenantsFile, $tenants);
-
-// Sync to secondary portal/api path if present
-$secondaryPath = dirname(__DIR__) . '/portal/api/data/tenants.json';
-if (file_exists(dirname($secondaryPath))) {
-    writeJsonFile($secondaryPath, $tenants);
-}
+syncToSecondaryDataDirs('tenants.json', $tenants);
 
 // ==============================================================================
 // 2. RECORD TRANSACTION IN PAYMENTS LOG
@@ -281,13 +382,14 @@ $paymentRecord = [
     'customerName' => $body['cardName'] ?? ($tenantRef['adminName'] ?? $tenantName),
     'customerEmail' => $clientEmail,
     'createdAt' => date('c'),
-    'validUntil' => date('c', $validUntilTimestamp)
+    'validUntil' => $validUntilIso
 ];
 array_unshift($payments, $paymentRecord);
 if (count($payments) > 500) {
     $payments = array_slice($payments, 0, 500);
 }
 writeJsonFile($paymentsFile, $payments);
+syncToSecondaryDataDirs('payments.json', $payments);
 
 // ==============================================================================
 // 3. STORE ACTIVATION LICENSE KEY
@@ -307,10 +409,11 @@ $keyRecord = [
     'createdAt' => date('c'),
     'active' => true,
     'redeemed' => true,
-    'validUntil' => date('c', $validUntilTimestamp)
+    'validUntil' => $validUntilIso
 ];
 array_unshift($keys, $keyRecord);
 writeJsonFile($licenseKeysFile, $keys);
+syncToSecondaryDataDirs('license_keys.json', $keys);
 
 // ==============================================================================
 // 4. REAL-TIME SUPER ADMIN NOTIFICATION
@@ -335,6 +438,7 @@ if (count($notifications) > 100) {
     $notifications = array_slice($notifications, 0, 100);
 }
 writeJsonFile($notifsFile, $notifications);
+syncToSecondaryDataDirs('notifications.json', $notifications);
 
 // ==============================================================================
 // 5. SEND AUTOMATED HTML PAYMENT RECEIPT EMAIL VIA GMAIL SMTP
@@ -427,7 +531,7 @@ echo json_encode([
     'amount' => $amount,
     'planType' => $planType,
     'planName' => $planName,
-    'validUntil' => date('c', $validUntilTimestamp),
+    'validUntil' => $validUntilIso,
     'validUntilFormatted' => $validUntilDate,
     'key' => [
         'id' => $keyRecord['id'],

@@ -1,5 +1,5 @@
 // DigitalsNova Enterprise POS Offline Service Worker & PWA Cache
-const CACHE_NAME = 'digitalsnova-pos-v16-offline';
+const CACHE_NAME = 'digitalsnova-pos-v17-offline';
 const PRECACHE_ASSETS = [
   './index.html',
   './manifest.json',
@@ -12,10 +12,14 @@ const PRECACHE_ASSETS = [
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log('[SW] Pre-caching offline POS shell v16');
-      return cache.addAll(PRECACHE_ASSETS).catch(err => {
-        console.warn('[SW] Pre-cache warning:', err);
-      });
+      console.log('[SW] Pre-caching offline POS shell v17');
+      return Promise.all(
+        PRECACHE_ASSETS.map((url) =>
+          cache.add(url).catch((err) => {
+            console.warn('[SW] Pre-cache skipped for:', url, err);
+          })
+        )
+      );
     }).then(() => self.skipWaiting())
   );
 });
@@ -35,6 +39,24 @@ self.addEventListener('activate', (event) => {
   );
 });
 
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});
+
+self.addEventListener('sync', (event) => {
+  if (event.tag === 'digitalsnova-sync-offline') {
+    event.waitUntil(
+      self.clients.matchAll({ includeUncontrolled: true, type: 'window' }).then((clients) => {
+        clients.forEach((client) => {
+          client.postMessage({ type: 'SYNC_OFFLINE_QUEUES' });
+        });
+      })
+    );
+  }
+});
+
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
@@ -43,10 +65,10 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       fetch(event.request).catch(() => {
         return new Response(
-          JSON.stringify({ 
-            offline: true, 
+          JSON.stringify({
+            offline: true,
             status: 'offline_buffered',
-            message: 'Device is offline. Transaction safely queued in local memory.' 
+            message: 'Device is offline. Transaction safely queued in IndexedDB & local storage.'
           }),
           { status: 200, headers: { 'Content-Type': 'application/json' } }
         );

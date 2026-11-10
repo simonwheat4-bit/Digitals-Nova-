@@ -45,6 +45,122 @@ function writeJsonFile($path, $data) {
     @file_put_contents($path, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE), LOCK_EX);
 }
 
+function syncToSecondaryDataDirs($filename, $data) {
+    $secondaries = [
+        dirname(__DIR__) . '/portal/api/data/' . $filename,
+        dirname(__DIR__) . '/api/data/' . $filename,
+        dirname(dirname(__DIR__)) . '/api/data/' . $filename,
+        __DIR__ . '/data/' . $filename
+    ];
+    foreach ($secondaries as $sec) {
+        $secDir = dirname($sec);
+        if (is_dir($secDir) && is_writable($secDir)) {
+            @file_put_contents($sec, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE), LOCK_EX);
+        }
+    }
+}
+
+function getUnifiedTenants($primaryPath) {
+    $tenants = readJsonFile($primaryPath);
+    $otherPaths = [
+        dirname(__DIR__) . '/api/data/tenants.json',
+        dirname(__DIR__) . '/portal/api/data/tenants.json',
+        dirname(dirname(__DIR__)) . '/api/data/tenants.json',
+        __DIR__ . '/data/tenants.json',
+        __DIR__ . '/../portal/api/data/tenants.json'
+    ];
+    foreach ($otherPaths as $op) {
+        if ($op !== $primaryPath && file_exists($op)) {
+            $other = readJsonFile($op);
+            foreach ($other as $ot) {
+                $oSub = strtolower($ot['subdomain'] ?? '');
+                $oId = $ot['id'] ?? '';
+                $exists = false;
+                foreach ($tenants as $t) {
+                    if ((!empty($oSub) && strtolower($t['subdomain'] ?? '') === $oSub) || (!empty($oId) && ($t['id'] ?? '') === $oId)) {
+                        $exists = true;
+                        break;
+                    }
+                }
+                if (!$exists) {
+                    $tenants[] = $ot;
+                }
+            }
+        }
+    }
+    return $tenants;
+}
+
+function getCanonicalPricingDefaults() {
+    return [
+        'pricingVersion' => 2,
+        'monthlyFee' => 7999,
+        'yearlyFee' => 79990,
+        'threeYearFee' => 229000,
+        'trialDays' => 3,
+        'currency' => 'Rs.',
+        'retailMonthly' => 4999,
+        'retailYearly' => 49990,
+        'retailThreeYear' => 139000,
+        'pharmacyMonthly' => 5999,
+        'pharmacyYearly' => 59990,
+        'pharmacyThreeYear' => 169000,
+        'restaurantMonthly' => 6999,
+        'restaurantYearly' => 69990,
+        'restaurantThreeYear' => 199000,
+        'clinicMonthly' => 7999,
+        'clinicYearly' => 79990,
+        'clinicThreeYear' => 229000
+    ];
+}
+
+function getEffectivePricingPlans($dataDir) {
+    $pricingFile = $dataDir . '/pricing_plans.json';
+    $defaultPlans = getCanonicalPricingDefaults();
+    $stored = readJsonFile($pricingFile, []);
+    if (empty($stored) || !is_array($stored)) {
+        return $defaultPlans;
+    }
+    if (empty($stored['pricingVersion'])) {
+        if (isset($stored['yearlyFee']) && intval($stored['yearlyFee']) === 76790) $stored['yearlyFee'] = 79990;
+        if (isset($stored['retailThreeYear']) && intval($stored['retailThreeYear']) === 129000) $stored['retailThreeYear'] = 139000;
+        if (isset($stored['pharmacyThreeYear']) && intval($stored['pharmacyThreeYear']) === 159000) $stored['pharmacyThreeYear'] = 169000;
+        if (isset($stored['restaurantThreeYear']) && intval($stored['restaurantThreeYear']) === 189000) $stored['restaurantThreeYear'] = 199000;
+    }
+    return array_merge($defaultPlans, $stored);
+}
+
+function normalizeSectorCode($raw) {
+    $s = strtoupper(trim((string)$raw));
+    if (strpos($s, 'REST') !== false || strpos($s, 'FOOD') !== false || strpos($s, 'CAFE') !== false) return 'RESTAURANT';
+    if (strpos($s, 'PHARM') !== false || strpos($s, 'MED') !== false) return 'PHARMACY';
+    if (strpos($s, 'CLIN') !== false || strpos($s, 'HOSP') !== false || strpos($s, 'DENT') !== false) return 'CLINIC_HMS';
+    if (strpos($s, 'RETAIL') !== false || strpos($s, 'MART') !== false || strpos($s, 'STORE') !== false) return 'RETAIL_MART';
+    return 'RETAIL_MART';
+}
+
+function resolveSectorPlanPricing($vertical, $planType, $plans) {
+    $v = normalizeSectorCode($vertical);
+    $pUpper = strtoupper(trim($planType ?: 'MONTHLY'));
+    $secKey = ($v === 'RESTAURANT') ? 'restaurant' : (($v === 'PHARMACY') ? 'pharmacy' : (($v === 'CLINIC_HMS') ? 'clinic' : 'retail'));
+    $secLabel = ($v === 'RESTAURANT') ? 'Restaurant & Cafe POS' : (($v === 'PHARMACY') ? 'Pharmacy & Medical POS' : (($v === 'CLINIC_HMS') ? 'Clinic & HMS Portal' : 'Retail Mart POS'));
+
+    $monthly = intval($plans[$secKey . 'Monthly'] ?? 4999);
+    $yearly = intval($plans[$secKey . 'Yearly'] ?? ($monthly * 10));
+    $threeYear = intval($plans[$secKey . 'ThreeYear'] ?? 139000);
+
+    if ($pUpper === 'TRIAL_3_DAYS' || $pUpper === 'TRIAL') {
+        return ['planType' => 'TRIAL_3_DAYS', 'fee' => 0, 'days' => 3, 'planName' => $secLabel . ' (3-Day Trial)'];
+    }
+    if ($pUpper === 'YEARLY' || $pUpper === '1_YEAR' || $pUpper === 'ONE_YEAR' || $pUpper === 'ANNUAL') {
+        return ['planType' => 'YEARLY', 'fee' => $yearly, 'days' => 365, 'planName' => $secLabel . ' (Annual)'];
+    }
+    if ($pUpper === '3_YEARS' || $pUpper === '3_YEAR' || $pUpper === 'THREE_YEAR' || $pUpper === 'THREE_YEARS') {
+        return ['planType' => '3_YEARS', 'fee' => $threeYear, 'days' => 1095, 'planName' => $secLabel . ' (3-Year Enterprise)'];
+    }
+    return ['planType' => 'MONTHLY', 'fee' => $monthly, 'days' => 30, 'planName' => $secLabel . ' (Monthly)'];
+}
+
 // Authenticated Gmail SMTP Mailer Engine
 function sendGmailSmtp($toEmail, $subject, $htmlBody) {
     $smtpHost = 'ssl://smtp.gmail.com';
@@ -175,22 +291,9 @@ if ($eventType === 'checkout.session.completed' || $eventType === 'payment_inten
     $metadata = $eventData['metadata'] ?? [];
     $subdomain = strtolower(trim($metadata['subdomain'] ?? ($metadata['store'] ?? '')));
     $tenantId = trim($metadata['tenantId'] ?? ($metadata['id'] ?? ''));
-    $planType = strtoupper(trim($metadata['planType'] ?? 'MONTHLY'));
+    $rawPlanType = strtoupper(trim($metadata['planType'] ?? ($metadata['plan'] ?? 'MONTHLY')));
 
-    $planConfig = [
-        'TRIAL_3_DAYS' => ['days' => 3, 'fee' => 0, 'name' => '3-Day Enterprise Trial'],
-        'MONTHLY' => ['days' => 30, 'fee' => 7999, 'name' => 'Standard Monthly Plan'],
-        'YEARLY' => ['days' => 365, 'fee' => 76790, 'name' => '1-Year Annual Package'],
-        '3_YEARS' => ['days' => 1095, 'fee' => 229000, 'name' => '3-Year Multi-Year Package']
-    ];
-
-    $planInfo = $planConfig[$planType] ?? $planConfig['MONTHLY'];
-    $amount = intval($eventData['amount_total'] ?? ($eventData['amount'] ?? ($planInfo['fee'] * 100))) / 100;
-    if ($amount <= 0) $amount = $planInfo['fee'];
-    $planDays = $planInfo['days'];
-    $planName = $planInfo['name'];
-
-    $tenants = readJsonFile($tenantsFile);
+    $tenants = getUnifiedTenants($tenantsFile);
     $matchedIndex = -1;
 
     foreach ($tenants as $idx => $t) {
@@ -202,16 +305,34 @@ if ($eventType === 'checkout.session.completed' || $eventType === 'payment_inten
         }
     }
 
-    $validUntilTimestamp = strtotime("+{$planDays} days");
-    $validUntilDate = date('d M Y, h:i A', $validUntilTimestamp);
-    $txnId = 'STRIPE_' . ($event['id'] ?? ('wh_' . time()));
-
     if ($matchedIndex !== -1) {
         $tenant = &$tenants[$matchedIndex];
+        $rawSec = $tenant['vertical']
+            ?? ($tenant['sector']
+            ?? ($tenant['storeType']
+            ?? ($tenant['businessType']
+            ?? ($metadata['vertical'] ?? ($metadata['sector'] ?? 'RETAIL_MART')))));
+        $effectivePlans = getEffectivePricingPlans($dataDir);
+        $planInfo = resolveSectorPlanPricing($rawSec, $rawPlanType, $effectivePlans);
+
+        $planType = $planInfo['planType'];
+        $planDays = $planInfo['days'];
+        $planName = $planInfo['planName'];
+        $amount = intval($eventData['amount_total'] ?? ($eventData['amount'] ?? ($planInfo['fee'] * 100))) / 100;
+        if ($amount <= 0) $amount = $planInfo['fee'];
+
+        $validUntilTimestamp = strtotime("+{$planDays} days");
+        $validUntilDate = date('d M Y, h:i A', $validUntilTimestamp);
+        $validUntilIso = date('c', $validUntilTimestamp);
+        $txnId = 'STRIPE_' . ($event['id'] ?? ('wh_' . time()));
+
         $tenant['status'] = 'ACTIVE';
         $tenant['planType'] = $planType;
         $tenant['planName'] = $planName;
         $tenant['monthlyFee'] = $amount;
+        $tenant['monthly_fee'] = $amount;
+        $tenant['cycleDays'] = $planDays;
+        $tenant['subscriptionExpiry'] = $validUntilIso;
         $tenant['lastPaymentDate'] = date('c');
         $tenant['manualBlocked'] = false;
         $tenant['subscription'] = [
@@ -219,16 +340,20 @@ if ($eventType === 'checkout.session.completed' || $eventType === 'payment_inten
             'plan' => $planType,
             'planName' => $planName,
             'billingCycleDay' => 1,
+            'totalDays' => $planDays,
             'graceDaysRemaining' => 3,
+            'monthlyFee' => $amount,
             'lastPaymentDate' => date('c'),
-            'validUntil' => date('c', $validUntilTimestamp),
+            'validUntil' => $validUntilIso,
             'validUntilFormatted' => $validUntilDate,
             'txnId' => $txnId
         ];
         writeJsonFile($tenantsFile, $tenants);
+        syncToSecondaryDataDirs('tenants.json', $tenants);
 
         $clientEmail = $tenant['email'] ?? ($tenant['adminUser']['email'] ?? ($eventData['customer_details']['email'] ?? ''));
         $storeName = $tenant['name'] ?? $subdomain;
+        $resolvedSub = $tenant['subdomain'] ?? $subdomain;
 
         // Record in payments.json
         $payments = readJsonFile($paymentsFile);
@@ -236,7 +361,7 @@ if ($eventType === 'checkout.session.completed' || $eventType === 'payment_inten
             'id' => $txnId,
             'tenantId' => $tenant['id'],
             'tenantName' => $storeName,
-            'subdomain' => $subdomain,
+            'subdomain' => $resolvedSub,
             'planType' => $planType,
             'planName' => $planName,
             'amount' => $amount,
@@ -244,27 +369,29 @@ if ($eventType === 'checkout.session.completed' || $eventType === 'payment_inten
             'status' => 'SUCCEEDED',
             'gateway' => 'STRIPE_WEBHOOK',
             'createdAt' => date('c'),
-            'validUntil' => date('c', $validUntilTimestamp)
+            'validUntil' => $validUntilIso
         ];
         writeJsonFile($paymentsFile, $payments);
+        syncToSecondaryDataDirs('payments.json', $payments);
 
         // Add Real-Time Super Admin Notification
         $notifications = readJsonFile($notifsFile);
-        $notifications[] = [
+        array_unshift($notifications, [
             'id' => 'notif_' . time(),
             'timestamp' => date('c'),
             'type' => 'PAYMENT_RECEIVED',
             'title' => '💳 Stripe Webhook: Subscription Active (Rs. ' . number_format($amount) . ')',
             'tenantName' => $storeName,
-            'subdomain' => $subdomain,
+            'subdomain' => $resolvedSub,
             'planType' => $planType,
             'planName' => $planName,
             'amount' => $amount,
             'txnId' => $txnId,
-            'portalUrl' => 'https://digitalsnova.com/portal/?store=' . $subdomain,
-            'message' => "Stripe confirmed payment of Rs. " . number_format($amount) . " for {$storeName}. Unlocked until {$validUntilDate}."
-        ];
+            'portalUrl' => 'https://digitalsnova.com/portal/?store=' . $resolvedSub,
+            'message' => "Stripe confirmed payment of Rs. " . number_format($amount) . " for {$storeName} ({$planName}). Unlocked until {$validUntilDate}."
+        ]);
         writeJsonFile($notifsFile, $notifications);
+        syncToSecondaryDataDirs('notifications.json', $notifications);
 
         // Send confirmation receipt email
         $receiptBody = '
@@ -275,7 +402,7 @@ if ($eventType === 'checkout.session.completed' || $eventType === 'payment_inten
             <strong>Amount:</strong> Rs. ' . number_format($amount) . '<br>
             <strong>Valid Until:</strong> ' . $validUntilDate . '<br>
             <strong>Transaction Reference:</strong> ' . htmlspecialchars($txnId) . '</p>
-            <p><a href="https://digitalsnova.com/portal/?store=' . urlencode($subdomain) . '" style="background: #00e5ff; color: #020617; padding: 10px 20px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Launch Cloud Portal</a></p>
+            <p><a href="https://digitalsnova.com/portal/?store=' . urlencode($resolvedSub) . '" style="background: #00e5ff; color: #020617; padding: 10px 20px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Launch Cloud Portal</a></p>
         </div>';
 
         if (!empty($clientEmail) && filter_var($clientEmail, FILTER_VALIDATE_EMAIL)) {

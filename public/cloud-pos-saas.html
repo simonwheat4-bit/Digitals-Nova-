@@ -35,7 +35,7 @@
       "@type": "AggregateOffer",
       "priceCurrency": "PKR",
       "lowPrice": "4999",
-      "highPrice": "12999"
+      "highPrice": "7999"
     },
     "description": "Enterprise cloud-native Point of Sale, Clinic & Hospital Management (HMS), and Pharmacy ERP platform with sub-second barcode checkout, automated Z-report audits, multi-session treatment ledgers, and zero-fraud PIN lockouts."
   }
@@ -1160,7 +1160,7 @@
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
           Login
         </button>
-        <button class="btn-saas-primary" onclick="openTrialModal()" style="padding: 10px 20px; font-size: 13px;">
+        <button class="btn-saas-primary" onclick="openTrialModal('', 'TRIAL_3_DAYS')" style="padding: 10px 20px; font-size: 13px;">
           Start Free Trial &rarr;
         </button>
         <button class="mobile-toggle" aria-label="Toggle navigation menu">&#9776;</button>
@@ -1195,7 +1195,7 @@
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
         Login to My Portal
       </button>
-      <button class="btn-saas-primary" onclick="openTrialModal(); document.querySelector('.mobile-overlay').classList.remove('open'); document.querySelector('.mobile-nav-drawer').classList.remove('open');" style="width: 100%; justify-content: center;">
+      <button class="btn-saas-primary" onclick="openTrialModal('', 'TRIAL_3_DAYS'); document.querySelector('.mobile-overlay').classList.remove('open'); document.querySelector('.mobile-nav-drawer').classList.remove('open');" style="width: 100%; justify-content: center;">
         Start 3-Day Free Trial &rarr;
       </button>
     </div>
@@ -1220,7 +1220,7 @@
         </p>
 
         <div class="saas-hero-ctas">
-          <button class="btn-saas-primary" onclick="openTrialModal()">
+          <button class="btn-saas-primary" onclick="openTrialModal('', 'TRIAL_3_DAYS')">
             Start 3-Day Free Trial &rarr;
           </button>
           <button class="btn-saas-secondary" onclick="openDemoModal()">
@@ -1505,7 +1505,7 @@
             <li><span class="check-icon-green">&#10003;</span> <strong>Doctor Fee Commission Splits:</strong> Effortlessly calculate 70/30 or variable clinician payout splits integrated directly into daily financial Z-Reports.</li>
           </ul>
           <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
-            <button class="btn-saas-primary" onclick="openTrialModal('Clinic')">Get Clinic Portal Trial &rarr;</button>
+            <button class="btn-saas-primary" onclick="openTrialModal('Clinic', 'TRIAL_3_DAYS')">Get Clinic Portal Trial &rarr;</button>
             <a href="clinics.html" class="btn-saas-secondary" style="font-size: 13px; padding: 11px 18px; text-decoration: none;">Explore Clinic HMS Suite &rarr;</a>
           </div>
         </div>
@@ -1550,7 +1550,7 @@
             <li><span class="check-icon-green">&#10003;</span> <strong>Distributor Invoicing &amp; Credit Ledger:</strong> Manage vendor purchase orders, distributor returns, and payable credit balances seamlessly.</li>
           </ul>
           <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
-            <button class="btn-saas-primary" onclick="openTrialModal('Pharmacy')">Get Pharmacy POS Trial &rarr;</button>
+            <button class="btn-saas-primary" onclick="openTrialModal('Pharmacy', 'TRIAL_3_DAYS')">Get Pharmacy POS Trial &rarr;</button>
             <a href="pharmacy.html" class="btn-saas-secondary" style="font-size: 13px; padding: 11px 18px; text-decoration: none;">Explore Pharmacy ERP Suite &rarr;</a>
           </div>
         </div>
@@ -1585,7 +1585,7 @@
             <li><span class="check-icon-green">&#10003;</span> <strong>Multi-Cashier Shift Handover:</strong> Segregated cashier credentials with isolated drawer passwords and automated shift closure reports.</li>
           </ul>
           <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
-            <button class="btn-saas-primary" onclick="openTrialModal('Retail')">Get Retail POS Trial &rarr;</button>
+            <button class="btn-saas-primary" onclick="openTrialModal('Retail', 'TRIAL_3_DAYS')">Get Retail POS Trial &rarr;</button>
             <a href="retail.html" class="btn-saas-secondary" style="font-size: 13px; padding: 11px 18px; text-decoration: none;">Explore Retail POS Suite &rarr;</a>
           </div>
         </div>
@@ -1622,7 +1622,7 @@
             <li><span class="check-icon-green">&#10003;</span> <strong>Takeaway, Dine-In &amp; Food Delivery Aggregation:</strong> Track dine-in guests, counter takeaways, and third-party delivery dispatch from a unified counter.</li>
           </ul>
           <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
-            <button class="btn-saas-primary" onclick="openTrialModal('Restaurant')">Get Restaurant POS Trial &rarr;</button>
+            <button class="btn-saas-primary" onclick="openTrialModal('Restaurant', 'TRIAL_3_DAYS')">Get Restaurant POS Trial &rarr;</button>
             <a href="restaurants.html" class="btn-saas-secondary" style="font-size: 13px; padding: 11px 18px; text-decoration: none;">Explore Restaurant ERP Suite &rarr;</a>
           </div>
         </div>
@@ -1669,7 +1669,7 @@
       </button>
       <button type="button" class="billing-toggle-option" id="btnBillingYearly" onclick="setBillingCycle('YEARLY')">
         Annual / 1-Year
-        <span class="billing-discount-badge">Save 20% &bull; 2 Mo Free</span>
+        <span class="billing-discount-badge">2 Months Free</span>
       </button>
       <button type="button" class="billing-toggle-option" id="btnBilling3Years" onclick="setBillingCycle('3_YEARS')">
         3-Year Enterprise
@@ -1869,7 +1869,7 @@
         Start your 3-day full-access enterprise trial in under 60 seconds. Our technical deployment team provides complimentary item catalog importing, clinician fee configuration, and staff training.
       </p>
       <div style="display: flex; justify-content: center; gap: 16px; flex-wrap: wrap;">
-        <button class="btn-saas-primary" onclick="openTrialModal()">
+        <button class="btn-saas-primary" onclick="openTrialModal('', 'TRIAL_3_DAYS')">
           Activate Free 3-Day Trial &rarr;
         </button>
         <a href="https://wa.me/923019643900?text=Hello%20DigitalsNova%20Team%2C%20I%20would%20like%20to%20schedule%20a%20guided%20demonstration%20of%20the%20Cloud%20POS%20%26%20HMS%20Portal." target="_blank" class="btn-saas-secondary" style="border-color: rgba(37,211,102,0.5); color: #25d366;">
@@ -1960,7 +1960,7 @@
 
         <div class="saas-form-group">
           <label>Username / Staff ID *</label>
-          <input type="text" id="loginUsername" class="saas-input" oninput="clearLoginError(); autoDetectSlugFromUsername(this.value)" placeholder="e.g. admin.yourstore, cashier1, or phone" required oninput="autoDetectSlugFromUsername(this.value)">
+          <input type="text" id="loginUsername" class="saas-input" oninput="clearLoginError(); autoDetectSlugFromUsername(this.value)" placeholder="e.g. admin.yourstore, cashier1, or phone" required>
         </div>
 
         <div class="saas-form-group">
@@ -1998,11 +1998,11 @@
       <div style="margin-top: 18px; text-align: center; border-top: 1px solid #1a2c58; padding-top: 14px; font-size: 13px; color: #94a3b8; display: flex; flex-direction: column; gap: 8px; align-items: center;">
         <div>
           Don't have an active facility account?
-          <button type="button" onclick="closeLoginModal(); openTrialModal();" style="background: none; border: none; color: #00e5ff; font-weight: 800; cursor: pointer; margin-left: 4px; text-decoration: underline; font-size: 13px;">
+          <button type="button" onclick="closeLoginModal(); openTrialModal('', 'TRIAL_3_DAYS');" style="background: none; border: none; color: #00e5ff; font-weight: 800; cursor: pointer; margin-left: 4px; text-decoration: underline; font-size: 13px;">
             Register New Account
           </button>
         </div>
-        <button type="button" onclick="closeLoginModal(); openTrialModal();" style="background: rgba(0,229,255,0.08); border: 1px dashed rgba(0,229,255,0.4); color: #00e5ff; font-size: 12px; font-weight: 700; padding: 6px 14px; border-radius: 999px; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 5px;" onmouseover="this.style.background='rgba(0,229,255,0.18)'" onmouseout="this.style.background='rgba(0,229,255,0.08)'">
+        <button type="button" onclick="closeLoginModal(); openTrialModal('', 'TRIAL_3_DAYS');" style="background: rgba(0,229,255,0.08); border: 1px dashed rgba(0,229,255,0.4); color: #00e5ff; font-size: 12px; font-weight: 700; padding: 6px 14px; border-radius: 999px; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 5px;" onmouseover="this.style.background='rgba(0,229,255,0.18)'" onmouseout="this.style.background='rgba(0,229,255,0.08)'">
           <span>✨</span> Start 3-Day Free Trial &rarr;
         </button>
       </div>
@@ -2016,9 +2016,9 @@
 
       <!-- Step 1: Form View -->
       <div id="modalFormView">
-        <span class="saas-badge-pill" style="margin-bottom: 12px;"><span class="pulse-green-dot"></span> 3-DAY ENTERPRISE TRIAL ACTIVATION</span>
+        <span class="saas-badge-pill" id="trialModalBadge" style="margin-bottom: 12px;"><span class="pulse-green-dot"></span> 3-DAY ENTERPRISE TRIAL ACTIVATION</span>
         <h3 style="font-size: 22px; font-weight: 900; color: #fff; margin: 0 0 8px;">Launch Your DigitalsNova Cloud Portal</h3>
-        <p style="font-size: 13px; color: #94a3b8; margin-bottom: 20px;">
+        <p id="trialModalSubtitle" style="font-size: 13px; color: #94a3b8; margin-bottom: 20px;">
           Instantly provision your isolated cloud tenant and 16-character license key. No credit card required.
         </p>
 
@@ -2029,8 +2029,8 @@
           </div>
 
           <div class="saas-form-group">
-            <label>Clinic / Pharmacy / Store Name *</label>
-            <input type="text" id="obBusiness" class="saas-input" placeholder="e.g. Apex Dental &amp; Specialty Care" required>
+            <label>Clinic / Pharmacy / Restaurant / Store Name *</label>
+            <input type="text" id="obBusiness" class="saas-input" placeholder="e.g. Apex Dental / Fresh Mart / Spice Kitchen" required>
           </div>
 
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
@@ -2040,7 +2040,7 @@
             </div>
             <div class="saas-form-group">
               <label>Industry Vertical *</label>
-              <select id="obType" class="saas-select">
+              <select id="obType" class="saas-select" onchange="updateTrialModalSummary()">
                 <option value="Clinic / Hospital">Clinic &amp; Hospital (HMS)</option>
                 <option value="Pharmacy & Medical Store">Pharmacy &amp; Medical Store</option>
                 <option value="Retail Mart / General Store">Retail Mart &amp; General Store</option>
@@ -2049,9 +2049,20 @@
             </div>
           </div>
 
-          <div class="saas-form-group">
-            <label>Work Email Address *</label>
-            <input type="email" id="obEmail" class="saas-input" placeholder="admin@apexclinic.com" required>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div class="saas-form-group">
+              <label>Work Email Address *</label>
+              <input type="email" id="obEmail" class="saas-input" placeholder="admin@yourstore.com" required>
+            </div>
+            <div class="saas-form-group">
+              <label>Plan &amp; Billing Cycle *</label>
+              <select id="obBillingCycle" class="saas-select" onchange="updateTrialModalSummary()">
+                <option value="TRIAL_3_DAYS">3-Day Free Enterprise Trial (PKR 0)</option>
+                <option value="MONTHLY">Monthly Plan</option>
+                <option value="YEARLY">Annual / 1-Year (2 Months Free)</option>
+                <option value="3_YEARS">3-Year Enterprise Lock</option>
+              </select>
+            </div>
           </div>
 
           <div class="saas-form-group">
@@ -2093,7 +2104,7 @@
           &#10003;
         </div>
         <h3 style="font-size: 24px; font-weight: 900; color: #fff; margin-bottom: 6px;">Portal Successfully Provisioned!</h3>
-        <p style="color: #94a3b8; font-size: 13px; margin-bottom: 16px;">
+        <p id="modalSuccessSubtitle" style="color: #94a3b8; font-size: 13px; margin-bottom: 16px;">
           Your 3-day enterprise trial is fully active and ready for immediate deployment.
         </p>
 
@@ -2104,7 +2115,7 @@
             <strong>Tenant URL:</strong> <span style="color: #00e5ff;" id="displayTenantUrl">https://clinic.digitalsnova.com</span>
             <span style="background: rgba(16,185,129,0.15); color: #10b981; font-size: 10px; padding: 2px 6px; border-radius: 4px; margin-left: 6px;">Cloud Allocated</span>
           </div>
-          <div style="font-size: 11px; color: #10b981; margin-top: 6px; font-weight: 700;">
+          <div id="modalSuccessStatus" style="font-size: 11px; color: #10b981; margin-top: 6px; font-weight: 700;">
             ● Status: Active (3 Days Remaining &bull; Zero Card Required)
           </div>
           <div style="font-size: 11px; color: #94a3b8; margin-top: 8px; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 8px;">
@@ -2138,7 +2149,7 @@
         <p style="font-size: 13px; color: #94a3b8; max-width: 480px; margin: 0 auto 20px;">
           Watch how modern healthcare providers complete 1.8-second checkouts, track multi-session clinical treatment installments, and lock out unauthorized staff discounts.
         </p>
-        <button class="btn-saas-primary" onclick="closeDemoModal(); openTrialModal();">
+        <button class="btn-saas-primary" onclick="closeDemoModal(); openTrialModal('', 'TRIAL_3_DAYS');">
           Experience Live in Your Facility — Start Free Trial &rarr;
         </button>
       </div>
@@ -2174,7 +2185,7 @@
     }
     window.addEventListener('DOMContentLoaded', () => {
       handleHashRoute();
-      loadDynamicSectorPricing();
+      syncLandingPagePricing();
       setBillingCycle('MONTHLY');
       try {
         const demoSubs = ['alshifa', 'citymed', 'lifecare', 'altahirclinics'];
@@ -2202,28 +2213,43 @@
     
     // Dynamic Live Pricing Engine (Synchronized with SaaS Super Admin & Cloud Backend)
     window.globalLivePricing = {
+      pricingVersion: 2,
       monthlyFee: 7999,
-      yearlyFee: 76790,
+      yearlyFee: 79990,
       threeYearFee: 229000,
       retailMonthly: 4999,
       retailYearly: 49990,
-      retailThreeYear: 129000,
+      retailThreeYear: 139000,
       pharmacyMonthly: 5999,
       pharmacyYearly: 59990,
-      pharmacyThreeYear: 159000,
+      pharmacyThreeYear: 169000,
       restaurantMonthly: 6999,
       restaurantYearly: 69990,
-      restaurantThreeYear: 189000,
+      restaurantThreeYear: 199000,
       clinicMonthly: 7999,
       clinicYearly: 79990,
       clinicThreeYear: 229000
     };
 
+    function normalizePricingDefaults(raw) {
+      if (!raw || typeof raw !== 'object') return { ...window.globalLivePricing };
+      const p = { ...window.globalLivePricing, ...raw };
+      if (Number(p.pricingVersion) !== 2) {
+        if (Number(p.yearlyFee) === 76790) p.yearlyFee = 79990;
+        if (Number(p.clinicYearly) === 76790) p.clinicYearly = 79990;
+        if (Number(p.retailThreeYear) === 129000) p.retailThreeYear = 139000;
+        if (Number(p.pharmacyThreeYear) === 159000) p.pharmacyThreeYear = 169000;
+        if (Number(p.restaurantThreeYear) === 189000) p.restaurantThreeYear = 199000;
+      }
+      p.pricingVersion = 2;
+      return p;
+    }
+
     async function syncLandingPagePricing() {
       try {
         const local = localStorage.getItem('digitalsnova_global_pricing');
         if (local) {
-          window.globalLivePricing = { ...window.globalLivePricing, ...JSON.parse(local) };
+          window.globalLivePricing = normalizePricingDefaults(JSON.parse(local));
         }
       } catch (e) {}
 
@@ -2232,7 +2258,7 @@
         if (res.ok) {
           const data = await res.json();
           if (data && data.plans) {
-            window.globalLivePricing = { ...window.globalLivePricing, ...data.plans };
+            window.globalLivePricing = normalizePricingDefaults(data.plans);
             localStorage.setItem('digitalsnova_global_pricing', JSON.stringify(window.globalLivePricing));
           }
         }
@@ -2281,15 +2307,15 @@
       const ps4 = document.getElementById('priceSubtext4');
 
       if (cycle === '3_YEARS') {
-        if (p1) p1.innerText = Number(p.retailThreeYear || 129000).toLocaleString();
+        if (p1) p1.innerText = Number(p.retailThreeYear || 139000).toLocaleString();
         if (pp1) pp1.innerText = '/ 3 years';
         if (ps1) ps1.innerHTML = '🏆 3-Year Enterprise License &bull; <strong style="color: #38bdf8;">Locked Zero-Hike Rate</strong>';
 
-        if (p2) p2.innerText = Number(p.pharmacyThreeYear || 159000).toLocaleString();
+        if (p2) p2.innerText = Number(p.pharmacyThreeYear || 169000).toLocaleString();
         if (pp2) pp2.innerText = '/ 3 years';
         if (ps2) ps2.innerHTML = '🏆 3-Year Enterprise License &bull; <strong style="color: #10b981;">Complete Formulary Locked</strong>';
 
-        if (p3) p3.innerText = Number(p.restaurantThreeYear || 189000).toLocaleString();
+        if (p3) p3.innerText = Number(p.restaurantThreeYear || 199000).toLocaleString();
         if (pp3) pp3.innerText = '/ 3 years';
         if (ps3) ps3.innerHTML = '🏆 3-Year Enterprise License &bull; <strong style="color: #f59e0b;">Full Table & KOT Suite</strong>';
 
@@ -2299,19 +2325,19 @@
       } else if (cycle === 'YEARLY') {
         if (p1) p1.innerText = Number(p.retailYearly || 49990).toLocaleString();
         if (pp1) pp1.innerText = '/ year';
-        if (ps1) ps1.innerHTML = '⚡ PKR ' + Number(p.retailYearly || 49990).toLocaleString() + ' / year &bull; <strong style="color: #10b981;">Save 20% (2 Months Free)</strong>';
+        if (ps1) ps1.innerHTML = '⚡ PKR ' + Number(p.retailYearly || 49990).toLocaleString() + ' / year &bull; <strong style="color: #10b981;">2 Months Completely Free</strong>';
 
         if (p2) p2.innerText = Number(p.pharmacyYearly || 59990).toLocaleString();
         if (pp2) pp2.innerText = '/ year';
-        if (ps2) ps2.innerHTML = '⚡ PKR ' + Number(p.pharmacyYearly || 59990).toLocaleString() + ' / year &bull; <strong style="color: #10b981;">Save 20% (2 Months Free)</strong>';
+        if (ps2) ps2.innerHTML = '⚡ PKR ' + Number(p.pharmacyYearly || 59990).toLocaleString() + ' / year &bull; <strong style="color: #10b981;">2 Months Completely Free</strong>';
 
         if (p3) p3.innerText = Number(p.restaurantYearly || 69990).toLocaleString();
         if (pp3) pp3.innerText = '/ year';
-        if (ps3) ps3.innerHTML = '⚡ PKR ' + Number(p.restaurantYearly || 69990).toLocaleString() + ' / year &bull; <strong style="color: #10b981;">Save 20% (2 Months Free)</strong>';
+        if (ps3) ps3.innerHTML = '⚡ PKR ' + Number(p.restaurantYearly || 69990).toLocaleString() + ' / year &bull; <strong style="color: #10b981;">2 Months Completely Free</strong>';
 
         if (p4) p4.innerText = Number(p.clinicYearly || 79990).toLocaleString();
         if (pp4) pp4.innerText = '/ year';
-        if (ps4) ps4.innerHTML = '⚡ PKR ' + Number(p.clinicYearly || 79990).toLocaleString() + ' / year &bull; <strong style="color: #10b981;">Save 20% (2 Months Free)</strong>';
+        if (ps4) ps4.innerHTML = '⚡ PKR ' + Number(p.clinicYearly || 79990).toLocaleString() + ' / year &bull; <strong style="color: #10b981;">2 Months Completely Free</strong>';
       } else {
         if (p1) p1.innerText = Number(p.retailMonthly || 4999).toLocaleString();
         if (pp1) pp1.innerText = '/ month';
@@ -2361,20 +2387,57 @@
     });
 
     // Modal Handlers
+    function updateTrialModalSummary() {
+      const modal = document.getElementById('trialModal');
+      const typeSelect = document.getElementById('obType');
+      const billingSelect = document.getElementById('obBillingCycle');
+      const badge = document.getElementById('trialModalBadge');
+      const sub = document.getElementById('trialModalSubtitle');
+      const bType = typeSelect ? typeSelect.value : 'Clinic / Hospital';
+      const p = window.globalLivePricing || {};
+      const secKey = bType.includes('Restaurant') ? 'restaurant' : bType.includes('Pharmacy') ? 'pharmacy' : bType.includes('Retail') ? 'retail' : 'clinic';
+      const mFee = Number(p[secKey + 'Monthly'] || (secKey === 'clinic' ? 7999 : secKey === 'restaurant' ? 6999 : secKey === 'pharmacy' ? 5999 : 4999));
+      const yFee = Number(p[secKey + 'Yearly'] || mFee * 10);
+      const y3Fee = Number(p[secKey + 'ThreeYear'] || (secKey === 'clinic' ? 229000 : secKey === 'restaurant' ? 199000 : secKey === 'pharmacy' ? 169000 : 139000));
+      if (billingSelect) {
+        const opts = billingSelect.options;
+        if (opts[0]) opts[0].text = '3-Day Free Enterprise Trial (PKR 0)';
+        if (opts[1]) opts[1].text = 'Monthly Plan (PKR ' + mFee.toLocaleString() + ' / mo)';
+        if (opts[2]) opts[2].text = 'Annual / 1-Year (PKR ' + yFee.toLocaleString() + ' / yr • 2 Mo Free)';
+        if (opts[3]) opts[3].text = '3-Year Enterprise Lock (PKR ' + y3Fee.toLocaleString() + ' / 3 yrs)';
+      }
+      const cyc = (billingSelect && billingSelect.value) || modal.dataset.selectedBilling || 'TRIAL_3_DAYS';
+      modal.dataset.selectedBilling = cyc;
+      if (badge) {
+        badge.innerHTML = cyc === 'TRIAL_3_DAYS'
+          ? '<span class="pulse-green-dot"></span> 3-DAY ENTERPRISE TRIAL ACTIVATION'
+          : '<span class="pulse-green-dot"></span> ' + (cyc === 'YEARLY' ? 'ANNUAL 1-YEAR' : cyc === '3_YEARS' ? '3-YEAR ENTERPRISE' : 'MONTHLY') + ' PLAN ACTIVATION';
+      }
+      if (sub) {
+        sub.innerText = cyc === 'TRIAL_3_DAYS'
+          ? 'Instantly provision your isolated cloud tenant and 16-character license key. No credit card required.'
+          : 'Provisioning your sector-locked Cloud POS workspace (' + (cyc === 'YEARLY' ? 'PKR ' + yFee.toLocaleString() + '/yr' : cyc === '3_YEARS' ? 'PKR ' + y3Fee.toLocaleString() + '/3 yrs' : 'PKR ' + mFee.toLocaleString() + '/mo') + ') with instant 16-char license key.';
+      }
+    }
+
     function openTrialModal(preferredPlan = '', billingCycle = currentBillingCycle) {
       const modal = document.getElementById('trialModal');
       document.getElementById('modalFormView').style.display = 'block';
       document.getElementById('modalLoadingView').style.display = 'none';
       document.getElementById('modalSuccessView').style.display = 'none';
       const typeSelect = document.getElementById('obType');
+      const billingSelect = document.getElementById('obBillingCycle');
       if (preferredPlan) {
         if (preferredPlan.includes('Clinic')) typeSelect.value = 'Clinic / Hospital';
         else if (preferredPlan.includes('Pharmacy')) typeSelect.value = 'Pharmacy & Medical Store';
         else if (preferredPlan.includes('Restaurant')) typeSelect.value = 'Restaurants, Cafes & Food Outlets';
         else if (preferredPlan.includes('Retail')) typeSelect.value = 'Retail Mart / General Store';
       }
+      const cyc = (billingCycle || 'TRIAL_3_DAYS').toUpperCase();
       modal.dataset.selectedPlan = preferredPlan || '';
-      modal.dataset.selectedBilling = billingCycle || 'MONTHLY';
+      modal.dataset.selectedBilling = cyc;
+      if (billingSelect) billingSelect.value = ['TRIAL_3_DAYS', 'MONTHLY', 'YEARLY', '3_YEARS'].includes(cyc) ? cyc : 'MONTHLY';
+      updateTrialModalSummary();
       modal.classList.add('open');
     }
 
@@ -2505,6 +2568,8 @@
         targetSubdomain = 'hq';
       }
 
+      let targetSector = '';
+
       // 2. Central Cloud Backend Authentication (Multi-Device SaaS Sync)
       if (!authenticatedUser) {
         try {
@@ -2522,6 +2587,11 @@
                 authenticatedUser.subdomain = apiData.tenant.subdomain;
                 authenticatedUser.tenantName = apiData.tenant.name;
                 authenticatedUser.clinicName = apiData.tenant.name;
+                targetSector = (apiData.tenant.vertical || apiData.tenant.sector || apiData.tenant.storeType || '').toUpperCase();
+                authenticatedUser.vertical = targetSector || authenticatedUser.vertical;
+                if (!authenticatedUser.role) {
+                  authenticatedUser.role = targetSector === 'CLINIC_HMS' ? 'CLINIC_ADMIN' : 'STORE_ADMIN';
+                }
               }
             }
           }
@@ -2541,7 +2611,7 @@
             return;
           }
           if (matchedStaff.active === false) {
-            alert('This staff account is deactivated. Contact your Clinic Admin.');
+            alert('This staff account is deactivated. Contact your Store Admin.');
             return;
           }
           authenticatedUser = {
@@ -2556,7 +2626,7 @@
         }
       }
 
-      // 3. Registered Tenant authentication
+      // 4. Registered Tenant authentication
       if (!authenticatedUser) {
         let regTenants = [];
         try { regTenants = JSON.parse(localStorage.getItem('digitalsnova_registered_tenants') || '[]'); } catch {}
@@ -2572,15 +2642,21 @@
             alert('Invalid username or password.');
             return;
           }
+          const tBt = String(matchedTenant.vertical || matchedTenant.sector || matchedTenant.storeType || matchedTenant.businessType || matchedTenant.name || '').toLowerCase();
+          targetSector = (tBt.includes('rest') || tBt.includes('food') || tBt.includes('cafe')) ? 'RESTAURANT'
+            : (tBt.includes('pharm') || tBt.includes('med')) ? 'PHARMACY'
+            : (tBt.includes('clinic') || tBt.includes('hosp')) ? 'CLINIC_HMS'
+            : 'RETAIL_MART';
           authenticatedUser = {
             id: 'u_' + matchedTenant.subdomain,
             username: matchedTenant.adminUser?.username || `admin.${matchedTenant.subdomain}`,
             name: matchedTenant.adminUser?.name || matchedTenant.name + ' Admin',
-            role: 'CLINIC_ADMIN',
+            role: matchedTenant.adminUser?.role || (targetSector === 'CLINIC_HMS' ? 'CLINIC_ADMIN' : 'STORE_ADMIN'),
             tenantId: matchedTenant.id,
             tenantName: matchedTenant.name,
             clinicName: matchedTenant.name,
-            subdomain: matchedTenant.subdomain
+            subdomain: matchedTenant.subdomain,
+            vertical: targetSector
           };
           targetSubdomain = matchedTenant.subdomain;
         }
@@ -2591,8 +2667,11 @@
         return;
       }
 
-      // Persist auth user & subdomain in localStorage for DigitalsNova Portal
+      // Persist auth user, locked sector & subdomain in localStorage for DigitalsNova Portal
       localStorage.setItem('digitalsnova_subdomain', targetSubdomain);
+      if (authenticatedUser.role !== 'SUPER_ADMIN' && targetSector) {
+        localStorage.setItem('digitalsnova_active_sector', targetSector);
+      }
       localStorage.setItem('digitalsnova_auth_user', JSON.stringify(authenticatedUser));
 
       // Trigger first login real-time notification
@@ -2621,11 +2700,12 @@
 
       // Launch portal web app with role-based redirection
       if (authenticatedUser.role === 'SUPER_ADMIN') {
-        // Automatically redirect master admin directly to the Super Admin Control Panel
         window.location.href = '/super-admin';
       } else {
-        // Regular store accounts continue to redirect to their standard store dashboard
-        const portalTarget = targetSubdomain ? `/portal?store=${encodeURIComponent(targetSubdomain)}` : '/portal';
+        const portalParams = new URLSearchParams();
+        if (targetSubdomain) portalParams.set('store', targetSubdomain);
+        if (targetSector) portalParams.set('sector', targetSector);
+        const portalTarget = portalParams.toString() ? `/portal/?${portalParams.toString()}` : '/portal/';
         window.location.href = portalTarget;
       }
     }
@@ -2691,33 +2771,62 @@
       const licenseKey = `DNP-${randHex()}-${randHex()}-${randHex()}`;
       const slug = business.toLowerCase().replace(/[^a-z0-9]/g, '') || 'myclinic';
       const tenantUrl = `https://${slug}.digitalsnova.com`;
-      const isYearly = document.getElementById('trialModal').dataset.selectedBilling === 'YEARLY';
+      const billingElem = document.getElementById('obBillingCycle');
+      const selectedBilling = ((billingElem && billingElem.value) || document.getElementById('trialModal').dataset.selectedBilling || currentBillingCycle || 'TRIAL_3_DAYS').toUpperCase();
       const rawSelectedPlan = document.getElementById('trialModal').dataset.selectedPlan || '';
+      const p = window.globalLivePricing || {};
 
-      // Determine accurate sector code, vertical, default package, and live pricing
+      // Determine accurate sector code, vertical, default package, and live pricing across all 4 cycles
       let sectorCode = 'CLINIC_HMS';
       let defaultPlanTitle = 'Clinic & HMS Portal';
-      let sectorMonthlyFee = isYearly ? 76790 : 7999;
+      let secKey = 'clinic';
 
       if (bType === 'Restaurants, Cafes & Food Outlets' || bType.includes('Restaurant') || /resturent|restaurant|cafe|food/i.test(business)) {
         sectorCode = 'RESTAURANT';
         defaultPlanTitle = 'Restaurant & Cafe POS';
-        sectorMonthlyFee = isYearly ? 67190 : 6999;
+        secKey = 'restaurant';
       } else if (bType === 'Pharmacy & Medical Store' || bType.includes('Pharmacy') || /pharmacy|medical|pharma/i.test(business)) {
         sectorCode = 'PHARMACY';
         defaultPlanTitle = 'Pharmacy & Medical POS';
-        sectorMonthlyFee = isYearly ? 57590 : 5999;
+        secKey = 'pharmacy';
       } else if (bType === 'Retail Mart / General Store' || bType.includes('Retail') || /mart|retail|store|general/i.test(business)) {
         sectorCode = 'RETAIL_MART';
         defaultPlanTitle = 'Retail Mart POS';
-        sectorMonthlyFee = isYearly ? 47990 : 4999;
+        secKey = 'retail';
       } else {
         sectorCode = 'CLINIC_HMS';
         defaultPlanTitle = 'Clinic & HMS Portal';
-        sectorMonthlyFee = isYearly ? 76790 : 7999;
+        secKey = 'clinic';
       }
 
-      const planName = rawSelectedPlan ? (rawSelectedPlan + (isYearly ? ' (Annual)' : ' (Monthly)')) : (defaultPlanTitle + (isYearly ? ' (Annual)' : ' (Monthly)'));
+      const mPrice = Number(p[secKey + 'Monthly'] || (secKey === 'clinic' ? 7999 : secKey === 'restaurant' ? 6999 : secKey === 'pharmacy' ? 5999 : 4999));
+      const yPrice = Number(p[secKey + 'Yearly'] || mPrice * 10);
+      const y3Price = Number(p[secKey + 'ThreeYear'] || (secKey === 'clinic' ? 229000 : secKey === 'restaurant' ? 199000 : secKey === 'pharmacy' ? 169000 : 139000));
+
+      let planType = 'MONTHLY';
+      let cycleDays = 30;
+      let sectorMonthlyFee = mPrice;
+      let cycleLabel = 'Monthly';
+
+      if (selectedBilling === 'TRIAL_3_DAYS') {
+        planType = 'TRIAL_3_DAYS';
+        cycleDays = 3;
+        sectorMonthlyFee = 0;
+        cycleLabel = '3-Day Trial';
+      } else if (selectedBilling === 'YEARLY') {
+        planType = 'YEARLY';
+        cycleDays = 365;
+        sectorMonthlyFee = yPrice;
+        cycleLabel = 'Annual';
+      } else if (selectedBilling === '3_YEARS') {
+        planType = '3_YEARS';
+        cycleDays = 1095;
+        sectorMonthlyFee = y3Price;
+        cycleLabel = '3-Year Enterprise';
+      }
+
+      const planName = (rawSelectedPlan ? rawSelectedPlan : defaultPlanTitle) + ' (' + cycleLabel + ')';
+      const expiryIso = new Date(Date.now() + cycleDays * 86400000).toISOString();
 
       const newTenantRecord = {
         id: 'tenant_' + slug,
@@ -2748,19 +2857,21 @@
         },
         createdAt: new Date().toISOString(),
         lastPaymentDate: new Date().toISOString(),
-        planType: isYearly ? 'YEARLY' : 'TRIAL_3_DAYS',
+        planType: planType,
         planName: planName,
-        cycleDays: isYearly ? 365 : 3,
+        cycleDays: cycleDays,
+        subscriptionExpiry: expiryIso,
         licenseKey: licenseKey,
         ownerName: name,
         subscription: {
           state: 'ACTIVE',
           billingCycleDay: 1,
           graceDaysRemaining: 3,
-          totalDays: isYearly ? 365 : 3,
-          plan: isYearly ? 'YEARLY' : 'TRIAL_3_DAYS',
+          totalDays: cycleDays,
+          plan: planType,
           planName: planName,
-          monthlyFee: sectorMonthlyFee
+          monthlyFee: sectorMonthlyFee,
+          validUntil: expiryIso
         },
         adminUsername: 'admin.' + slug,
         adminPassword: password,
@@ -2803,6 +2914,7 @@
           localStorage.setItem('digitalsnova_custom_inventory', JSON.stringify(customInv));
         } catch(e) {}
         localStorage.setItem('digitalsnova_subdomain', slug);
+        localStorage.setItem('digitalsnova_active_sector', sectorCode);
         localStorage.setItem('digitalsnova_auth_user', JSON.stringify({
           username: 'admin.' + slug,
           name: name,
@@ -2834,7 +2946,7 @@
           email: email,
           plan: planName,
           planName: planName,
-          planType: isYearly ? 'YEARLY' : 'TRIAL_3_DAYS',
+          planType: planType,
           businessType: bType,
           vertical: sectorCode,
           monthlyFee: sectorMonthlyFee,
@@ -2876,19 +2988,32 @@
         console.warn('Sync error:', err);
       }
 
-      document.getElementById('pstep4').innerHTML = '<span style="color: #10b981;">&#10003;</span> 3-Day Enterprise Trial Active & Credentials Emailed!';
+      document.getElementById('pstep4').innerHTML = '<span style="color: #10b981;">&#10003;</span> ' + planName + ' Active &amp; Credentials Emailed!';
 
       document.getElementById('displayLicenseKey').innerText = licenseKey;
       document.getElementById('displayTenantUrl').innerText = tenantUrl;
 
+      const sucSub = document.getElementById('modalSuccessSubtitle');
+      if (sucSub) {
+        sucSub.innerText = planType === 'TRIAL_3_DAYS'
+          ? 'Your 3-day enterprise trial (' + defaultPlanTitle + ') is fully active and ready for immediate deployment.'
+          : 'Your ' + planName + ' workspace is provisioned and ready for immediate commercial deployment.';
+      }
+      const sucStat = document.getElementById('modalSuccessStatus');
+      if (sucStat) {
+        sucStat.innerHTML = planType === 'TRIAL_3_DAYS'
+          ? '● Status: Active (3 Days Remaining &bull; Zero Card Required)'
+          : '● Status: Active (' + cycleDays + ' Days &bull; PKR ' + Number(sectorMonthlyFee).toLocaleString() + ')';
+      }
+
       // Wire up Launch Web App button
       const launchWebAppBtn = document.getElementById('btnLaunchWebApp');
       if (launchWebAppBtn) {
-        launchWebAppBtn.href = `/portal/?store=${encodeURIComponent(slug)}`;
+        launchWebAppBtn.href = `/portal/?store=${encodeURIComponent(slug)}&sector=${encodeURIComponent(sectorCode)}`;
       }
 
       // Setup WhatsApp save link
-      const waMsg = encodeURIComponent(`Hello DigitalsNova Support, I have provisioned a 3-Day Enterprise Trial for my business: ${business}!\nName: ${name}\nMaster License Key: ${licenseKey}\nTenant Subdomain: ${tenantUrl}\nPlease provide onboarding guidance.`);
+      const waMsg = encodeURIComponent(`Hello DigitalsNova Support, I have provisioned ${planName} for my business: ${business}!\nName: ${name}\nSector: ${sectorCode}\nMaster License Key: ${licenseKey}\nTenant Subdomain: ${tenantUrl}\nPlease provide onboarding guidance.`);
       document.getElementById('btnWhatsAppSave').href = `https://wa.me/923019643900?text=${waMsg}`;
 
       await new Promise(r => setTimeout(r, 500));

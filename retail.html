@@ -510,19 +510,19 @@
         <div style="background: #04091a; border-radius: 12px; padding: 16px; border: 1px solid #1c2b54; margin-bottom: 16px;">
           <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 8px;">
             <span style="color: #94a3b8;">Monthly Plan:</span>
-            <strong style="color: #fff; font-family: monospace;">PKR 4,999 / mo</strong>
+            <strong id="heroPriceMonthly" style="color: #fff; font-family: monospace;">PKR 4,999 / mo</strong>
           </div>
           <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 8px;">
-            <span style="color: #94a3b8;">1-Year Annual (Save 20%):</span>
-            <strong style="color: #00e5ff; font-family: monospace;">PKR 49,990 / yr</strong>
+            <span style="color: #94a3b8;">1-Year Annual (2 Months Free):</span>
+            <strong id="heroPriceYearly" style="color: #00e5ff; font-family: monospace;">PKR 49,990 / yr</strong>
           </div>
           <div style="display: flex; justify-content: space-between; font-size: 12px;">
             <span style="color: #94a3b8;">3-Year Long Term License:</span>
-            <strong style="color: #fbbf24; font-family: monospace;">PKR 139,000 locked</strong>
+            <strong id="heroPrice3Yr" style="color: #fbbf24; font-family: monospace;">PKR 139,000 locked</strong>
           </div>
         </div>
 
-        <button class="btn-saas-primary" style="width: 100%; justify-content: center; font-size: 13px; padding: 12px;" onclick="openTrialModal('Retail Mart / General Store')">
+        <button class="btn-saas-primary" style="width: 100%; justify-content: center; font-size: 13px; padding: 12px;" onclick="openTrialModal('Retail Mart / General Store', 'TRIAL_3_DAYS')">
           Claim 3-Day Free Trial For This Store &rarr;
         </button>
       </div>
@@ -623,7 +623,7 @@
       </button>
       <button type="button" class="billing-toggle-option" id="btnOptYearly" onclick="switchPricingCycle('YEARLY')">
         Annual / 1-Year
-        <span class="billing-discount-badge">Save 20% &bull; 2 Mo Free</span>
+        <span class="billing-discount-badge">2 Months Free</span>
       </button>
       <button type="button" class="billing-toggle-option" id="btnOpt3Years" onclick="switchPricingCycle('3_YEARS')">
         3-Year Enterprise
@@ -635,7 +635,7 @@
     <div class="sector-pricing-grid-3">
       
       <!-- CARD 1: Monthly Starter -->
-      <div class="sector-plan-card">
+      <div class="sector-plan-card" id="cardMonthly">
         <div>
           <span style="color: #94a3b8; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em;">STANDARD MONTHLY</span>
           <h3 style="color: #fff; font-size: 22px; font-weight: 900; margin: 8px 0 16px;">Flexible Monthly Plan</h3>
@@ -644,7 +644,7 @@
           <div style="margin: 20px 0 16px;">
             <div style="display: flex; align-items: baseline; gap: 4px;">
               <span style="color: #64748b; font-size: 16px; font-weight: 800;">PKR</span>
-              <span style="color: #fff; font-size: 38px; font-weight: 900; font-family: monospace;">4,999</span>
+              <span id="cardPriceMonthly" style="color: #fff; font-size: 38px; font-weight: 900; font-family: monospace;">4,999</span>
               <span style="color: #94a3b8; font-size: 13px;">/ month</span>
             </div>
             <div style="font-size: 11px; color: #10b981; font-weight: 700; margin-top: 4px;">Includes 3-Day Full Feature Free Trial</div>
@@ -662,7 +662,7 @@
 
         <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 20px;">
           <button class="btn-saas-primary" style="width: 100%; justify-content: center; font-size: 14px; padding: 12px;" onclick="openTrialModal('Retail Mart / General Store', 'MONTHLY')">
-            Start 3-Day Free Trial &rarr;
+            Start Monthly Plan &rarr;
           </button>
           <button class="btn-apk-install" style="width: 100%; justify-content: center; font-size: 13px; padding: 10px;" onclick="openDownloadAppModal()">
             📲 Download App / APK
@@ -671,8 +671,8 @@
       </div>
 
       <!-- CARD 2: 1-Year Annual Pro (FEATURED) -->
-      <div class="sector-plan-card featured">
-        <div class="plan-badge-top plan-badge-cyan">&#9733; MOST POPULAR &bull; SAVE 20%</div>
+      <div class="sector-plan-card featured" id="cardYearly">
+        <div class="plan-badge-top plan-badge-cyan">&#9733; MOST POPULAR &bull; 2 MONTHS FREE</div>
         <div>
           <span style="color: #00e5ff; font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.05em;">ANNUAL PRO (1-YEAR)</span>
           <h3 style="color: #fff; font-size: 22px; font-weight: 900; margin: 8px 0 16px;">1-Year Annual Pro</h3>
@@ -681,10 +681,10 @@
           <div style="margin: 20px 0 16px;">
             <div style="display: flex; align-items: baseline; gap: 4px;">
               <span style="color: #64748b; font-size: 16px; font-weight: 800;">PKR</span>
-              <span style="color: #00e5ff; font-size: 38px; font-weight: 900; font-family: monospace;">49,990</span>
+              <span id="cardPriceYearly" style="color: #00e5ff; font-size: 38px; font-weight: 900; font-family: monospace;">49,990</span>
               <span style="color: #94a3b8; font-size: 13px;">/ year</span>
             </div>
-            <div style="font-size: 11px; color: #38bdf8; font-weight: 700; margin-top: 4px;">Equivalent to PKR 4,165/mo &bull; Save PKR 9,998</div>
+            <div id="cardAnnualMeta" style="font-size: 11px; color: #38bdf8; font-weight: 700; margin-top: 4px;">Equivalent to PKR 4,165/mo &bull; Save PKR 9,998</div>
           </div>
 
           <ul style="list-style: none; padding: 0; margin: 24px 0; space-y: 10px; font-size: 13px; color: #e2e8f0;">
@@ -708,7 +708,7 @@
       </div>
 
       <!-- CARD 3: 3-Year Enterprise License -->
-      <div class="sector-plan-card enterprise">
+      <div class="sector-plan-card enterprise" id="card3Years">
         <div class="plan-badge-top plan-badge-gold">&#128081; LIFETIME OFFLINE LICENSE &bull; MAX ROI</div>
         <div>
           <span style="color: #fbbf24; font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.05em;">3-YEAR LONG TERM</span>
@@ -718,10 +718,10 @@
           <div style="margin: 20px 0 16px;">
             <div style="display: flex; align-items: baseline; gap: 4px;">
               <span style="color: #64748b; font-size: 16px; font-weight: 800;">PKR</span>
-              <span style="color: #fbbf24; font-size: 38px; font-weight: 900; font-family: monospace;">139,000</span>
+              <span id="cardPrice3Yr" style="color: #fbbf24; font-size: 38px; font-weight: 900; font-family: monospace;">139,000</span>
               <span style="color: #94a3b8; font-size: 13px;">locked / 3 yrs</span>
             </div>
-            <div style="font-size: 11px; color: #fbbf24; font-weight: 700; margin-top: 4px;">Save PKR 40,964 &bull; No Monthly Renewals</div>
+            <div id="cardThreeYearMeta" style="font-size: 11px; color: #fbbf24; font-weight: 700; margin-top: 4px;">Save PKR 40,964 &bull; No Monthly Renewals</div>
           </div>
 
           <ul style="list-style: none; padding: 0; margin: 24px 0; space-y: 10px; font-size: 13px; color: #e2e8f0;">
@@ -899,7 +899,7 @@
       <button class="modal-close-btn" onclick="closeTrialModal()">&times;</button>
 
       <div id="modalFormView">
-        <span class="billing-discount-badge" style="background: rgba(0, 229, 255, 0.2); color: #00e5ff; border: 1px solid rgba(0, 229, 255, 0.4); margin-bottom: 8px; display: inline-block;">
+        <span id="modalPlanBadge" class="billing-discount-badge" style="background: rgba(0, 229, 255, 0.2); color: #00e5ff; border: 1px solid rgba(0, 229, 255, 0.4); margin-bottom: 8px; display: inline-block;">
           3-DAY FULL ENTERPRISE TRIAL ACTIVATION
         </span>
         <h3 style="font-size: 22px; font-weight: 900; color: #fff; margin: 8px 0 6px;">Launch Your Retail Mart / General Store Portal</h3>
@@ -1024,25 +1024,125 @@
       console.log('Downloading ' + type + ' for RETAIL_MART');
     }
 
+    // Live Pricing Sync (Synchronized with cloud-pos-saas.html, Super Admin & Cloud Backend)
+    let liveSectorPricing = {
+      pricingVersion: 2,
+      retailMonthly: 4999, retailYearly: 49990, retailThreeYear: 139000,
+      pharmacyMonthly: 5999, pharmacyYearly: 59990, pharmacyThreeYear: 169000,
+      restaurantMonthly: 6999, restaurantYearly: 69990, restaurantThreeYear: 199000,
+      clinicMonthly: 7999, clinicYearly: 79990, clinicThreeYear: 229000
+    };
+
+    function getSectorKeyPrefix(secCode) {
+      if (secCode === 'RESTAURANT') return 'restaurant';
+      if (secCode === 'PHARMACY') return 'pharmacy';
+      if (secCode === 'CLINIC_HMS') return 'clinic';
+      return 'retail';
+    }
+
+    function applyLivePricesToPage() {
+      const prefix = getSectorKeyPrefix('RETAIL_MART');
+      const m = Number(liveSectorPricing[prefix + 'Monthly'] || 4999);
+      const y = Number(liveSectorPricing[prefix + 'Yearly'] || m * 10);
+      const y3 = Number(liveSectorPricing[prefix + 'ThreeYear'] || 139000);
+      const eq = Math.floor(y / 12);
+      const ySave = Math.max(0, m * 12 - y);
+      const y3Save = Math.max(0, m * 36 - y3);
+
+      const hm = document.getElementById('heroPriceMonthly');
+      const hy = document.getElementById('heroPriceYearly');
+      const h3 = document.getElementById('heroPrice3Yr');
+      if (hm) hm.innerText = 'PKR ' + m.toLocaleString() + ' / mo';
+      if (hy) hy.innerText = 'PKR ' + y.toLocaleString() + ' / yr';
+      if (h3) h3.innerText = 'PKR ' + y3.toLocaleString() + ' locked';
+
+      const cm = document.getElementById('cardPriceMonthly');
+      const cy = document.getElementById('cardPriceYearly');
+      const ca = document.getElementById('cardAnnualMeta');
+      const c3 = document.getElementById('cardPrice3Yr');
+      const c3m = document.getElementById('cardThreeYearMeta');
+      if (cm) cm.innerText = m.toLocaleString();
+      if (cy) cy.innerText = y.toLocaleString();
+      if (ca) ca.innerHTML = 'Equivalent to PKR ' + eq.toLocaleString() + '/mo &bull; Save PKR ' + ySave.toLocaleString();
+      if (c3) c3.innerText = y3.toLocaleString();
+      if (c3m) c3m.innerHTML = 'Save PKR ' + y3Save.toLocaleString() + ' &bull; No Monthly Renewals';
+    }
+
+    async function syncSectorPagePricing() {
+      try {
+        const localRaw = localStorage.getItem('digitalsnova_global_pricing');
+        if (localRaw) {
+          const parsed = JSON.parse(localRaw);
+          if (Number(parsed.pricingVersion) !== 2) {
+            if (Number(parsed.yearlyFee) === 76790) parsed.yearlyFee = 79990;
+            if (Number(parsed.clinicYearly) === 76790) parsed.clinicYearly = 79990;
+            if (Number(parsed.retailThreeYear) === 129000) parsed.retailThreeYear = 139000;
+            if (Number(parsed.pharmacyThreeYear) === 159000) parsed.pharmacyThreeYear = 169000;
+            if (Number(parsed.restaurantThreeYear) === 189000) parsed.restaurantThreeYear = 199000;
+          }
+          parsed.pricingVersion = 2;
+          liveSectorPricing = { ...liveSectorPricing, ...parsed };
+        }
+      } catch(e) {}
+      try {
+        const res = await fetch('/api/sync.php?action=get_pricing_plans');
+        if (res.ok) {
+          const d = await res.json();
+          if (d && d.plans) {
+            liveSectorPricing = { ...liveSectorPricing, ...d.plans };
+            localStorage.setItem('digitalsnova_global_pricing', JSON.stringify(liveSectorPricing));
+          }
+        }
+      } catch(e) {}
+      applyLivePricesToPage();
+    }
+
+    window.addEventListener('DOMContentLoaded', syncSectorPagePricing);
+    window.addEventListener('storage', (e) => {
+      if (e.key === 'digitalsnova_global_pricing') syncSectorPagePricing();
+    });
+
     // Pricing Cycle Switcher
     let currentPricingCycle = 'MONTHLY';
     function switchPricingCycle(cycle) {
-      currentPricingCycle = cycle;
+      currentPricingCycle = cycle || 'MONTHLY';
       document.querySelectorAll('.billing-toggle-option').forEach(b => b.classList.remove('active'));
-      if (cycle === 'MONTHLY') document.getElementById('btnOptMonthly')?.classList.add('active');
-      else if (cycle === 'YEARLY') document.getElementById('btnOptYearly')?.classList.add('active');
-      else if (cycle === '3_YEARS') document.getElementById('btnOpt3Years')?.classList.add('active');
+      if (currentPricingCycle === 'MONTHLY') document.getElementById('btnOptMonthly')?.classList.add('active');
+      else if (currentPricingCycle === 'YEARLY') document.getElementById('btnOptYearly')?.classList.add('active');
+      else if (currentPricingCycle === '3_YEARS') document.getElementById('btnOpt3Years')?.classList.add('active');
+
+      const mapCard = { MONTHLY: 'cardMonthly', YEARLY: 'cardYearly', '3_YEARS': 'card3Years' };
+      ['cardMonthly', 'cardYearly', 'card3Years'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.outline = (id === mapCard[currentPricingCycle]) ? '2px solid #00e5ff' : 'none';
+      });
     }
 
-    // Trial Modal
-    function openTrialModal(industry = 'Retail Mart / General Store', cycle = 'MONTHLY') {
+    // Trial / Plan Activation Modal
+    function openTrialModal(industry = 'Retail Mart / General Store', cycle) {
+      if (cycle) {
+        currentPricingCycle = cycle;
+      }
       const modal = document.getElementById('trialModal');
       if (modal) {
         modal.classList.add('open');
+        modal.dataset.selectedBilling = currentPricingCycle || 'TRIAL_3_DAYS';
         document.getElementById('modalFormView').style.display = 'block';
         document.getElementById('modalSuccessView').style.display = 'none';
+        const btn = document.getElementById('btnSubmitOnboarding');
+        if (btn) { btn.disabled = false; btn.innerText = 'Activate Cloud Portal & Generate License →'; }
         const typeSelect = document.getElementById('obType');
         if (typeSelect && industry) typeSelect.value = industry;
+        const badge = document.getElementById('modalPlanBadge');
+        if (badge) {
+          badge.innerText = currentPricingCycle === 'YEARLY'
+            ? '1-YEAR ANNUAL PRO ACTIVATION (2 MONTHS FREE)'
+            : currentPricingCycle === '3_YEARS'
+            ? '3-YEAR ENTERPRISE LICENSE ACTIVATION'
+            : currentPricingCycle === 'TRIAL_3_DAYS'
+            ? '3-DAY FULL ENTERPRISE TRIAL ACTIVATION'
+            : 'STANDARD MONTHLY PLAN + 3-DAY FREE TRIAL';
+        }
       }
     }
 
@@ -1075,50 +1175,121 @@
       const sub = business.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 16) || ('store' + Math.floor(Math.random() * 8999 + 1000));
       const key = 'DNOV-' + Math.floor(1000 + Math.random()*9000) + '-' + Math.floor(1000 + Math.random()*9000) + '-' + Math.floor(1000 + Math.random()*9000);
 
-      const fee = '4,999';
+      let sectorCode = 'RETAIL_MART';
+      const tLow = (type || '').toLowerCase();
+      if (tLow.includes('restaurant') || tLow.includes('food') || tLow.includes('cafe')) sectorCode = 'RESTAURANT';
+      else if (tLow.includes('pharmacy') || tLow.includes('medical')) sectorCode = 'PHARMACY';
+      else if (tLow.includes('clinic') || tLow.includes('hospital')) sectorCode = 'CLINIC_HMS';
+      else if (tLow.includes('retail') || tLow.includes('mart')) sectorCode = 'RETAIL_MART';
+
+      const secKey = getSectorKeyPrefix(sectorCode);
+      const secTitle = sectorCode === 'RESTAURANT' ? 'Restaurant & Cafe POS'
+        : sectorCode === 'PHARMACY' ? 'Pharmacy & Medical POS'
+        : sectorCode === 'CLINIC_HMS' ? 'Clinic & HMS Portal'
+        : 'Retail Mart POS';
+
+      const activeCycle = (currentPricingCycle || 'MONTHLY').toUpperCase();
+      const cycleDays = activeCycle === 'TRIAL_3_DAYS' ? 3 : activeCycle === 'YEARLY' ? 365 : activeCycle === '3_YEARS' ? 1095 : 30;
+      const feeNum = activeCycle === 'TRIAL_3_DAYS' ? 0
+        : activeCycle === 'YEARLY' ? Number(liveSectorPricing[secKey + 'Yearly'] || 49990)
+        : activeCycle === '3_YEARS' ? Number(liveSectorPricing[secKey + 'ThreeYear'] || 139000)
+        : Number(liveSectorPricing[secKey + 'Monthly'] || 4999);
+      const planName = secTitle + (activeCycle === 'YEARLY' ? ' (Annual)' : activeCycle === '3_YEARS' ? ' (3-Year Enterprise)' : activeCycle === 'TRIAL_3_DAYS' ? ' (3-Day Trial)' : ' (Monthly)');
+      const expiryIso = new Date(Date.now() + cycleDays * 86400000).toISOString();
+      const adminRole = sectorCode === 'CLINIC_HMS' ? 'CLINIC_ADMIN' : 'STORE_ADMIN';
+
       const newTenant = {
         id: 'tenant_' + sub,
         name: business,
         subdomain: sub,
         domain: sub + '.digitalsnova.com',
         businessType: type,
-        vertical: 'RETAIL_MART',
-        sector: 'RETAIL_MART',
-        storeType: 'RETAIL_MART',
+        business_type: type,
+        vertical: sectorCode,
+        sector: sectorCode,
+        storeType: sectorCode,
         phone: phone,
         email: email,
-        planType: currentPricingCycle,
-        monthlyFee: Number(fee.replace(/,/g, '')),
+        planType: activeCycle,
+        planName: planName,
+        cycleDays: cycleDays,
+        subscriptionExpiry: expiryIso,
+        monthlyFee: feeNum,
+        monthly_fee: feeNum,
+        licenseKey: key,
+        adminName: name,
+        adminUsername: 'admin.' + sub,
+        adminPassword: password,
+        adminPin: '1234',
+        enabledModules: {
+          pos: true,
+          inventory: true,
+          patientsLedger: sectorCode === 'CLINIC_HMS',
+          tableManagement: sectorCode === 'RESTAURANT',
+          expiryBatch: sectorCode === 'PHARMACY'
+        },
         createdAt: new Date().toISOString(),
+        lastPaymentDate: new Date().toISOString(),
         subscription: {
           state: 'ACTIVE',
           billingCycleDay: 1,
           graceDaysRemaining: 3,
-          plan: '3-Day Free Trial'
+          totalDays: cycleDays,
+          plan: activeCycle,
+          planName: planName,
+          monthlyFee: feeNum,
+          validUntil: expiryIso
+        },
+        adminUser: {
+          name: name,
+          username: 'admin.' + sub,
+          password: password,
+          email: email,
+          phone: phone,
+          role: adminRole
         }
       };
 
       try {
-        const stored = JSON.parse(localStorage.getItem('digitalsnova_registered_tenants') || '[]');
+        const stored = JSON.parse(localStorage.getItem('digitalsnova_registered_tenants') || '[]').filter(t => t.subdomain !== sub && t.id !== newTenant.id);
         stored.push(newTenant);
         localStorage.setItem('digitalsnova_registered_tenants', JSON.stringify(stored));
         localStorage.setItem('digitalsnova_subdomain', sub);
-        localStorage.setItem('digitalsnova_active_sector', 'RETAIL_MART');
+        localStorage.setItem('digitalsnova_active_sector', sectorCode);
         localStorage.setItem('digitalsnova_auth_user', JSON.stringify({
           id: 'u_' + sub,
           tenantId: newTenant.id,
           name: name,
+          tenantName: business,
           username: 'admin.' + sub,
-          role: 'CLINIC_ADMIN',
-          subdomain: sub
+          role: adminRole,
+          subdomain: sub,
+          vertical: sectorCode
         }));
+      } catch(err) {}
+
+      try {
+        await Promise.race([
+          fetch('/api/sync.php?action=register_tenant', {
+            method: 'POST',
+            keepalive: true,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(newTenant)
+          }).catch(() => fetch('./api/sync.php?action=register_tenant', {
+            method: 'POST',
+            keepalive: true,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(newTenant)
+          })),
+          new Promise(r => setTimeout(r, 4000))
+        ]);
       } catch(err) {}
 
       document.getElementById('modalFormView').style.display = 'none';
       document.getElementById('modalSuccessView').style.display = 'block';
       document.getElementById('resLicense').innerText = key;
-      document.getElementById('resPortalUrl').innerText = 'https://digitalsnova.com/portal/?store=' + sub + '&sector=RETAIL_MART';
-      document.getElementById('btnGoToStore').href = '/portal/?store=' + sub + '&sector=RETAIL_MART';
+      document.getElementById('resPortalUrl').innerText = 'https://digitalsnova.com/portal/?store=' + sub + '&sector=' + sectorCode;
+      document.getElementById('btnGoToStore').href = '/portal/?store=' + encodeURIComponent(sub) + '&sector=' + encodeURIComponent(sectorCode);
     }
   </script>
 </body>
