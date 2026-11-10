@@ -1,18 +1,24 @@
 // DigitalsNova Enterprise POS Offline Service Worker & PWA Cache
-const CACHE_NAME = 'digitalsnova-pos-v17-offline';
+const CACHE_NAME = 'digitalsnova-pos-v18-offline';
 const PRECACHE_ASSETS = [
+  './',
   './index.html',
   './manifest.json',
+  './icon.svg',
+  './icon-192.png',
+  './icon-512.png',
+  './icon-maskable-512.png',
   './assets/index-DNv15Live.js',
-  './assets/index-DNv14Live.js',
+  './assets/index-DNv15Live.js?v=20261110v18',
   './assets/index-Db2yxC1M.css',
+  './assets/index-Db2yxC1M.css?v=20261110v18',
   'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap'
 ];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log('[SW] Pre-caching offline POS shell v17');
+      console.log('[SW] Pre-caching offline POS shell v18');
       return Promise.all(
         PRECACHE_ASSETS.map((url) =>
           cache.add(url).catch((err) => {
@@ -58,12 +64,20 @@ self.addEventListener('sync', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  const url = new URL(event.request.url);
+  const req = event.request;
+  if (req.method !== 'GET') return;
+
+  const url = new URL(req.url);
+
+  // Never intercept downloadable setup packages
+  if (url.pathname.includes('/downloads/')) {
+    return;
+  }
 
   // If calling an API route, use Network First, failover to offline response
   if (url.pathname.includes('/api/')) {
     event.respondWith(
-      fetch(event.request).catch(() => {
+      fetch(req).catch(() => {
         return new Response(
           JSON.stringify({
             offline: true,
@@ -77,29 +91,31 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Stale-While-Revalidate / Cache-First for assets
+  // Stale-While-Revalidate / Cache-First for shell & static assets (with ignoreSearch fallback)
   event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
-      if (cachedResponse) {
-        fetch(event.request).then((networkResponse) => {
-          if (networkResponse && networkResponse.status === 200) {
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, networkResponse));
+    caches.match(req).then((exactMatch) => {
+      if (exactMatch) {
+        fetch(req).then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
+            caches.open(CACHE_NAME).then((cache) => cache.put(req, networkResponse));
           }
         }).catch(() => {});
-        return cachedResponse;
+        return exactMatch;
       }
 
-      return fetch(event.request).then((networkResponse) => {
-        if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
+      return caches.match(req, { ignoreSearch: true }).then((searchIgnoredMatch) => {
+        return fetch(req).then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
+            const toCache = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(req, toCache));
+          }
           return networkResponse;
-        }
-        const toCache = networkResponse.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, toCache));
-        return networkResponse;
-      }).catch(() => {
-        if (event.request.mode === 'navigate') {
-          return caches.match('./index.html');
-        }
+        }).catch(() => {
+          if (searchIgnoredMatch) return searchIgnoredMatch;
+          if (req.mode === 'navigate') {
+            return caches.match('./index.html', { ignoreSearch: true });
+          }
+        });
       });
     })
   );

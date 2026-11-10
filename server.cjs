@@ -22,8 +22,12 @@ const MIME_TYPES = {
   '.jpg': 'image/jpeg',
   '.jpeg': 'image/jpeg',
   '.gif': 'image/gif',
+  '.webp': 'image/webp',
   '.svg': 'image/svg+xml',
   '.ico': 'image/x-icon',
+  '.woff2': 'font/woff2',
+  '.bat': 'application/x-msdos-program',
+  '.apk': 'application/vnd.android.package-archive',
   '.txt': 'text/plain; charset=utf-8'
 };
 
@@ -40,6 +44,8 @@ const server = http.createServer((req, res) => {
       filePath = filePath + '.html';
     } else if (fs.existsSync(path.join(filePath, 'index.html'))) {
       filePath = path.join(filePath, 'index.html');
+    } else if (/^\/(admin|super-admin|portal)(\/|$)/.test(cleanPath) && !cleanPath.startsWith('/portal/assets') && !cleanPath.startsWith('/portal/api') && !cleanPath.startsWith('/portal/downloads')) {
+      filePath = path.join(PUBLIC_DIR, 'portal', 'index.html');
     }
   }
 
@@ -61,11 +67,16 @@ const server = http.createServer((req, res) => {
     const ext = path.extname(filePath).toLowerCase();
     const contentType = MIME_TYPES[ext] || 'application/octet-stream';
 
-    res.writeHead(200, {
+    const headers = {
       'Content-Type': contentType,
       'Cache-Control': 'no-cache, no-store, must-revalidate',
       'Access-Control-Allow-Origin': '*'
-    });
+    };
+    if (ext === '.bat') {
+      headers['Content-Disposition'] = `attachment; filename="${path.basename(filePath)}"`;
+    }
+
+    res.writeHead(200, headers);
     const stream = fs.createReadStream(filePath);
     stream.on('error', (err) => {
       console.error('Stream error:', err);

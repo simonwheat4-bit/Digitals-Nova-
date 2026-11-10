@@ -1,22 +1,58 @@
 @echo off
-title DigitalsNova Pharmacy Cloud POS - Desktop POS Software
+setlocal EnableExtensions
+title DigitalsNova Pharmacy Cloud POS - Windows Desktop Installer
 echo ==============================================================================
 echo   DIGITALSNOVA PHARMACY CLOUD POS
-echo   Dedicated Cloud POS ^& Offline Desktop Client
+echo   Windows Desktop App Shortcut Installer ^& Standalone POS Launcher
 echo ==============================================================================
 echo.
-echo Launching standalone POS window...
+set "DN_URL=https://digitalsnova.com/portal/?sector=PHARMACY"
+set "DN_LINK_NAME=Pharmacy POS - DigitalsNova POS.lnk"
+set "DN_DESC=Batch & Expiry Date Tracking, Laser Barcode Scanning, Strips & Loose Dispenser."
+set "DN_BROWSER="
+if exist "%ProgramFiles%\Google\Chrome\Application\chrome.exe" set "DN_BROWSER=%ProgramFiles%\Google\Chrome\Application\chrome.exe"
+if not defined DN_BROWSER if exist "%ProgramFiles(x86)%\Google\Chrome\Application\chrome.exe" set "DN_BROWSER=%ProgramFiles(x86)%\Google\Chrome\Application\chrome.exe"
+if not defined DN_BROWSER if exist "%LOCALAPPDATA%\Google\Chrome\Application\chrome.exe" set "DN_BROWSER=%LOCALAPPDATA%\Google\Chrome\Application\chrome.exe"
+if not defined DN_BROWSER if exist "%ProgramFiles(x86)%\Microsoft\Edge\Application\msedge.exe" set "DN_BROWSER=%ProgramFiles(x86)%\Microsoft\Edge\Application\msedge.exe"
+if not defined DN_BROWSER if exist "%ProgramFiles%\Microsoft\Edge\Application\msedge.exe" set "DN_BROWSER=%ProgramFiles%\Microsoft\Edge\Application\msedge.exe"
+if not defined DN_BROWSER if exist "%LOCALAPPDATA%\Microsoft\Edge\Application\msedge.exe" set "DN_BROWSER=%LOCALAPPDATA%\Microsoft\Edge\Application\msedge.exe"
 
-set "URL=https://digitalsnova.com/portal/?sector=PHARMACY"
-set "BROWSER="
-if exist "%ProgramFiles%\Google\Chrome\Application\chrome.exe" set "BROWSER=%ProgramFiles%\Google\Chrome\Application\chrome.exe"
-if not defined BROWSER if exist "%ProgramFiles(x86)%\Google\Chrome\Application\chrome.exe" set "BROWSER=%ProgramFiles(x86)%\Google\Chrome\Application\chrome.exe"
-if not defined BROWSER if exist "%ProgramFiles(x86)%\Microsoft\Edge\Application\msedge.exe" set "BROWSER=%ProgramFiles(x86)%\Microsoft\Edge\Application\msedge.exe"
-if not defined BROWSER if exist "%ProgramFiles%\Microsoft\Edge\Application\msedge.exe" set "BROWSER=%ProgramFiles%\Microsoft\Edge\Application\msedge.exe"
-
-if defined BROWSER (
-    start "" "%BROWSER%" --app="%URL%" --disable-translate --start-maximized --user-data-dir="%LOCALAPPDATA%\DigitalsNova\PHARMACY"
-) else (
-    start "" "%URL%"
-)
-exit
+if not defined DN_BROWSER goto :open_default
+set "VBS=%TEMP%\dn_shortcut_%RANDOM%.vbs"
+if not defined VBS goto :launch_app
+echo [1/2] Creating Desktop ^& Start Menu shortcuts...
+(
+  echo Set oWS = WScript.CreateObject^("WScript.Shell"^)
+  echo Set oEnv = oWS.Environment^("Process"^)
+  echo sUrl = oEnv^("DN_URL"^)
+  echo sBrowser = oEnv^("DN_BROWSER"^)
+  echo sLink = oEnv^("DN_LINK_NAME"^)
+  echo sDesc = oEnv^("DN_DESC"^)
+  echo sDesktop = oWS.SpecialFolders^("Desktop"^)
+  echo sPrograms = oWS.SpecialFolders^("Programs"^)
+  echo Set oL1 = oWS.CreateShortcut^(sDesktop ^& "\" ^& sLink^)
+  echo oL1.TargetPath = sBrowser
+  echo oL1.Arguments = "--app=" ^& Chr^(34^) ^& sUrl ^& Chr^(34^) ^& " --start-maximized"
+  echo oL1.Description = sDesc
+  echo oL1.IconLocation = sBrowser ^& ",0"
+  echo oL1.Save
+  echo Set oL2 = oWS.CreateShortcut^(sPrograms ^& "\" ^& sLink^)
+  echo oL2.TargetPath = sBrowser
+  echo oL2.Arguments = "--app=" ^& Chr^(34^) ^& sUrl ^& Chr^(34^) ^& " --start-maximized"
+  echo oL2.Description = sDesc
+  echo oL2.IconLocation = sBrowser ^& ",0"
+  echo oL2.Save
+) > "%VBS%"
+cscript //nologo "%VBS%" >nul 2>&1
+if defined VBS if exist "%VBS%" del /f /q "%VBS%" >nul 2>&1
+:launch_app
+echo [2/2] Launching Pharmacy POS in standalone Desktop App Mode...
+start "" "%DN_BROWSER%" --app="%DN_URL%" --start-maximized
+goto :done
+:open_default
+echo Chrome or Microsoft Edge not found in standard folders. Opening default browser...
+start "" "%DN_URL%"
+:done
+echo.
+echo Shortcut saved to your Desktop. You can close this window safely.
+exit /b 0

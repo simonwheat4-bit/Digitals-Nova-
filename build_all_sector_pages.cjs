@@ -5,7 +5,6 @@ const sectorsData = {
   clinics: {
     fileName: 'clinics.html',
     sectorKey: 'CLINIC_HMS',
-    apkName: 'DigitalsNova-Clinic-HMS.apk',
     batName: 'DigitalsNova-Clinic-HMS-Windows-Setup.bat',
     industryName: 'Clinic / Hospital',
     pageTitle: 'Clinics & Hospitals (HMS) — DigitalsNova Cloud Healthcare Management SaaS',
@@ -62,7 +61,6 @@ const sectorsData = {
   restaurants: {
     fileName: 'restaurants.html',
     sectorKey: 'RESTAURANT',
-    apkName: 'DigitalsNova-Restaurant-POS.apk',
     batName: 'DigitalsNova-Restaurant-POS-Windows-Setup.bat',
     industryName: 'Restaurants, Cafes & Food Outlets',
     pageTitle: 'Restaurants, Cafes & Food Outlets — DigitalsNova Cloud Restaurant ERP & POS',
@@ -119,7 +117,6 @@ const sectorsData = {
   pharmacy: {
     fileName: 'pharmacy.html',
     sectorKey: 'PHARMACY',
-    apkName: 'DigitalsNova-Pharmacy-POS.apk',
     batName: 'DigitalsNova-Pharmacy-POS-Windows-Setup.bat',
     industryName: 'Pharmacy & Medical Store',
     pageTitle: 'Pharmacies & Medical Stores — DigitalsNova High-Velocity Cloud Pharmacy POS',
@@ -176,7 +173,6 @@ const sectorsData = {
   retail: {
     fileName: 'retail.html',
     sectorKey: 'RETAIL_MART',
-    apkName: 'DigitalsNova-Retail-POS.apk',
     batName: 'DigitalsNova-Retail-POS-Windows-Setup.bat',
     industryName: 'Retail Mart / General Store',
     pageTitle: 'Retail Marts & General Stores — DigitalsNova Enterprise Cloud Retail POS',
@@ -707,7 +703,7 @@ function generateSectorPageHtml(data) {
             Start 3-Day Free Trial &rarr;
           </button>
           <button class="btn-apk-install" id="btnInstallPwa" onclick="openDownloadAppModal()">
-            📲 Install App / Android APK
+            📲 Install Desktop &amp; Mobile App
           </button>
           <a href="#pricing" class="btn-saas-secondary" style="font-size: 14px; padding: 14px 20px; text-decoration: none;">
             View All 3 Pricing Plans
@@ -845,7 +841,7 @@ function generateSectorPageHtml(data) {
             Start Monthly Plan &rarr;
           </button>
           <button class="btn-apk-install" style="width: 100%; justify-content: center; font-size: 13px; padding: 10px;" onclick="openDownloadAppModal()">
-            📲 Download App / APK
+            📲 Install Desktop &amp; Mobile App
           </button>
         </div>
       </div>
@@ -882,7 +878,7 @@ function generateSectorPageHtml(data) {
             Get 1-Year Annual Pro &rarr;
           </button>
           <button class="btn-apk-install" style="width: 100%; justify-content: center; font-size: 13px; padding: 10px;" onclick="openDownloadAppModal()">
-            📲 Download App / APK
+            📲 Install Desktop &amp; Mobile App
           </button>
         </div>
       </div>
@@ -919,7 +915,7 @@ function generateSectorPageHtml(data) {
             Get 3-Year Enterprise License &rarr;
           </button>
           <button class="btn-apk-install" style="width: 100%; justify-content: center; font-size: 13px; padding: 10px;" onclick="openDownloadAppModal()">
-            📲 Download App / APK
+            📲 Install Desktop &amp; Mobile App
           </button>
         </div>
       </div>
@@ -1004,18 +1000,18 @@ function generateSectorPageHtml(data) {
       </div>
 
       <div class="download-grid">
-        <!-- Option 1: Android APK Package -->
-        <a href="/downloads/${data.apkName}" download="${data.apkName}" class="download-card-opt" onclick="trackDownload('APK')">
+        <!-- Option 1: Mobile & Tablet Native App (Android Chrome WebAPK / iOS) -->
+        <a href="/portal/?sector=${data.sectorKey}&action=install" class="download-card-opt" onclick="trackDownload('MOBILE_APP')">
           <div>
             <div style="font-size: 24px; margin-bottom: 8px;">📱</div>
-            <h4 style="color: #fff; font-size: 15px; font-weight: 800; margin: 0 0 4px;">Android APK Package</h4>
+            <h4 style="color: #fff; font-size: 15px; font-weight: 800; margin: 0 0 4px;">Android &amp; Tablet App</h4>
             <p style="color: #94a3b8; font-size: 11px; margin: 0; line-height: 1.4;">
-              Native Android installer (.apk). Install on any Android tablet, phone, or POS terminal.
+              Install directly onto Android Home Screen &amp; App Drawer via Chrome (100% offline WebAPK, zero Play Store needed).
             </p>
           </div>
           <div style="margin-top: 14px; font-size: 11px; font-weight: 800; color: #10b981; display: flex; align-items: center; justify-content: space-between;">
-            <span>Direct .APK File</span>
-            <span style="background: rgba(16,185,129,0.2); padding: 2px 8px; border-radius: 9999px;">⬇️ Download</span>
+            <span>Mobile App Install</span>
+            <span style="background: rgba(16,185,129,0.2); padding: 2px 8px; border-radius: 9999px;">📲 Install</span>
           </div>
         </a>
 
@@ -1025,7 +1021,7 @@ function generateSectorPageHtml(data) {
             <div style="font-size: 24px; margin-bottom: 8px;">💻</div>
             <h4 style="color: #fff; font-size: 15px; font-weight: 800; margin: 0 0 4px;">Windows PC Software</h4>
             <p style="color: #94a3b8; font-size: 11px; margin: 0; line-height: 1.4;">
-              Standalone desktop application with dedicated desktop icon &amp; borderless window.
+              Creates a permanent Desktop icon &amp; opens standalone borderless POS window with Chrome/Edge.
             </p>
           </div>
           <div style="margin-top: 14px; font-size: 11px; font-weight: 800; color: #38bdf8; display: flex; align-items: center; justify-content: space-between;">
@@ -1038,9 +1034,9 @@ function generateSectorPageHtml(data) {
         <div class="download-card-opt" style="cursor: pointer;" onclick="triggerPwaPrompt()">
           <div>
             <div style="font-size: 24px; margin-bottom: 8px;">⚡</div>
-            <h4 style="color: #fff; font-size: 15px; font-weight: 800; margin: 0 0 4px;">1-Click PWA Install</h4>
+            <h4 style="color: #fff; font-size: 15px; font-weight: 800; margin: 0 0 4px;">1-Click Browser App (PWA)</h4>
             <p style="color: #94a3b8; font-size: 11px; margin: 0; line-height: 1.4;">
-              Pin directly to your Desktop or Android Home Screen with zero download wait time.
+              Install straight from Chrome / Edge on Windows, Mac, or Android with instant offline sync.
             </p>
           </div>
           <div style="margin-top: 14px; font-size: 11px; font-weight: 800; color: #00e5ff; display: flex; align-items: center; justify-content: space-between;">
@@ -1167,22 +1163,10 @@ function generateSectorPageHtml(data) {
       window._deferredPwaPrompt = e;
     });
 
-    // Open Download Modal & Auto-Trigger Direct Download
+    // Open Download Modal
     function openDownloadAppModal() {
       const modal = document.getElementById('downloadAppModal');
       if (modal) modal.classList.add('open');
-      
-      // Auto-trigger direct APK download
-      try {
-        const autoLink = document.createElement('a');
-        autoLink.href = '/downloads/${data.apkName}';
-        autoLink.download = '${data.apkName}';
-        document.body.appendChild(autoLink);
-        autoLink.click();
-        document.body.removeChild(autoLink);
-      } catch(err) {
-        console.warn('Auto-download note:', err);
-      }
     }
 
     function closeDownloadAppModal() {
@@ -1195,8 +1179,7 @@ function generateSectorPageHtml(data) {
         deferredPwaInstallPrompt.prompt();
         deferredPwaInstallPrompt = null;
       } else {
-        alert("📲 To Install as Native Desktop / Mobile Software:\\n\\n1. On Android Chrome: Tap Menu (3 dots) > 'Install app' or 'Add to Home screen'.\\n2. On Windows / Mac: Click the Install icon in the browser address bar.\\n\\nOffline POS & Instant Sync are fully enabled!");
-        window.location.href = '/portal/?sector=${data.sectorKey}';
+        window.location.href = '/portal/?sector=${data.sectorKey}&action=install';
       }
     }
 
@@ -1331,11 +1314,17 @@ function generateSectorPageHtml(data) {
       if (modal) modal.classList.remove('open');
     }
 
-    // Close modals on backdrop click
+    // Close modals on backdrop click or Escape key
     document.querySelectorAll('.saas-modal-backdrop').forEach(modal => {
       modal.addEventListener('click', (e) => {
         if (e.target === modal) modal.classList.remove('open');
       });
+    });
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closeDownloadAppModal();
+        closeTrialModal();
+      }
     });
 
     // Handle Trial Onboarding Submit

@@ -1,24 +1,24 @@
-// DigitalsNova Enterprise POS Offline Service Worker & PWA Cache
-const CACHE_NAME = 'digitalsnova-pos-v17-offline';
+// DigitalsNova Enterprise POS Offline Service Worker & PWA Cache (Mirror)
+const CACHE_NAME = 'digitalsnova-pos-v18-offline';
 const PRECACHE_ASSETS = [
-  './index.html',
-  './manifest.json',
+  './portal/',
+  './portal/index.html',
+  './portal/manifest.json',
+  './portal/icon.svg',
+  './portal/icon-192.png',
+  './portal/icon-512.png',
+  './portal/icon-maskable-512.png',
   './assets/index-DNv15Live.js',
-  './assets/index-DNv14Live.js',
+  './assets/index-DNv15Live.js?v=20261110v18',
   './assets/index-Db2yxC1M.css',
-  'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap'
+  './assets/index-Db2yxC1M.css?v=20261110v18'
 ];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log('[SW] Pre-caching offline POS shell v17');
       return Promise.all(
-        PRECACHE_ASSETS.map((url) =>
-          cache.add(url).catch((err) => {
-            console.warn('[SW] Pre-cache skipped for:', url, err);
-          })
-        )
+        PRECACHE_ASSETS.map((url) => cache.add(url).catch(() => {}))
       );
     }).then(() => self.skipWaiting())
   );
@@ -28,12 +28,7 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) => {
       return Promise.all(
-        keys.map((key) => {
-          if (key !== CACHE_NAME) {
-            console.log('[SW] Purging obsolete cache:', key);
-            return caches.delete(key);
-          }
-        })
+        keys.map((key) => (key !== CACHE_NAME ? caches.delete(key) : Promise.resolve()))
       );
     }).then(() => self.clients.claim())
   );
@@ -49,58 +44,50 @@ self.addEventListener('sync', (event) => {
   if (event.tag === 'digitalsnova-sync-offline') {
     event.waitUntil(
       self.clients.matchAll({ includeUncontrolled: true, type: 'window' }).then((clients) => {
-        clients.forEach((client) => {
-          client.postMessage({ type: 'SYNC_OFFLINE_QUEUES' });
-        });
+        clients.forEach((client) => client.postMessage({ type: 'SYNC_OFFLINE_QUEUES' }));
       })
     );
   }
 });
 
 self.addEventListener('fetch', (event) => {
-  const url = new URL(event.request.url);
+  const req = event.request;
+  if (req.method !== 'GET') return;
 
-  // If calling an API route, use Network First, failover to offline response
+  const url = new URL(req.url);
+  if (url.pathname.includes('/downloads/')) return;
+
   if (url.pathname.includes('/api/')) {
     event.respondWith(
-      fetch(event.request).catch(() => {
-        return new Response(
-          JSON.stringify({
-            offline: true,
-            status: 'offline_buffered',
-            message: 'Device is offline. Transaction safely queued in IndexedDB & local storage.'
-          }),
-          { status: 200, headers: { 'Content-Type': 'application/json' } }
-        );
-      })
+      fetch(req).catch(() => new Response(
+        JSON.stringify({
+          offline: true,
+          status: 'offline_buffered',
+          message: 'Device is offline. Transaction safely queued in IndexedDB & local storage.'
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
+      ))
     );
     return;
   }
 
-  // Stale-While-Revalidate / Cache-First for assets
   event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
-      if (cachedResponse) {
-        fetch(event.request).then((networkResponse) => {
-          if (networkResponse && networkResponse.status === 200) {
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, networkResponse));
+    caches.match(req).then((exactMatch) => {
+      if (exactMatch) {
+        fetch(req).then((res) => {
+          if (res && res.status === 200 && res.type === 'basic') {
+            caches.open(CACHE_NAME).then((cache) => cache.put(req, res));
           }
         }).catch(() => {});
-        return cachedResponse;
+        return exactMatch;
       }
-
-      return fetch(event.request).then((networkResponse) => {
-        if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
-          return networkResponse;
+      return fetch(req).then((res) => {
+        if (res && res.status === 200 && res.type === 'basic') {
+          const clone = res.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(req, clone));
         }
-        const toCache = networkResponse.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, toCache));
-        return networkResponse;
-      }).catch(() => {
-        if (event.request.mode === 'navigate') {
-          return caches.match('./index.html');
-        }
-      });
+        return res;
+      }).catch(() => caches.match(req, { ignoreSearch: true }));
     })
   );
 });

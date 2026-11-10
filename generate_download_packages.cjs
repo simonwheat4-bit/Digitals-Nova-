@@ -1,19 +1,16 @@
 const fs = require('fs');
 const path = require('path');
-const { createZip } = require('./scratch_zip_builder.cjs');
 
 const sectors = [
   {
     key: 'CLINIC_HMS',
-    pkg: 'com.digitalsnova.clinic_hms',
     title: 'DigitalsNova Clinic & Hospital HMS',
     shortName: 'Clinic HMS',
     fileName: 'DigitalsNova-Clinic-HMS',
-    desc: 'Pakistan Premier Hospital & Clinic Management System. OPD Tokens, EMR, Doctor Commissions.'
+    desc: 'Hospital & Clinic Management System - OPD Tokens, EMR, Doctor Commissions.'
   },
   {
     key: 'RESTAURANT',
-    pkg: 'com.digitalsnova.restaurant_pos',
     title: 'DigitalsNova Restaurant & Cafe POS',
     shortName: 'Restaurant POS',
     fileName: 'DigitalsNova-Restaurant-POS',
@@ -21,7 +18,6 @@ const sectors = [
   },
   {
     key: 'PHARMACY',
-    pkg: 'com.digitalsnova.pharmacy_pos',
     title: 'DigitalsNova Pharmacy Cloud POS',
     shortName: 'Pharmacy POS',
     fileName: 'DigitalsNova-Pharmacy-POS',
@@ -29,7 +25,6 @@ const sectors = [
   },
   {
     key: 'RETAIL_MART',
-    pkg: 'com.digitalsnova.retail_pos',
     title: 'DigitalsNova Retail Mart & General Store',
     shortName: 'Retail Mart POS',
     fileName: 'DigitalsNova-Retail-POS',
@@ -45,106 +40,108 @@ const targetDirs = [
   'digitalsnove-hostinger-cpanel/downloads'
 ];
 
+// Clean up any obsolete broken stub .apk files and ensure target directories exist
 targetDirs.forEach(d => {
-  if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true });
+  if (!fs.existsSync(d)) {
+    fs.mkdirSync(d, { recursive: true });
+  } else {
+    for (const f of fs.readdirSync(d)) {
+      if (f.endsWith('.apk')) {
+        try { fs.unlinkSync(path.join(d, f)); } catch (_) {}
+      }
+    }
+  }
 });
+
+function escCmdUnquoted(str) {
+  return String(str || '').replace(/[&|<>^]/g, '^$&').replace(/%/g, '%%');
+}
+
+function safeCmdQuoted(str) {
+  return String(str || '').replace(/["%]/g, '').trim();
+}
+
+function buildWindowsSetupBat({ url, title, shortName, desc }) {
+  const safeTitleCmd = escCmdUnquoted(title);
+  const safeShortCmd = escCmdUnquoted(shortName);
+  const lines = [
+    '@echo off',
+    'setlocal EnableExtensions',
+    `title ${safeTitleCmd} - Windows Desktop Installer`,
+    'echo ==============================================================================',
+    `echo   ${safeTitleCmd.toUpperCase()}`,
+    'echo   Windows Desktop App Shortcut Installer ^& Standalone POS Launcher',
+    'echo ==============================================================================',
+    'echo.',
+    `set "DN_URL=${safeCmdQuoted(url)}"`,
+    `set "DN_LINK_NAME=${safeCmdQuoted(shortName)} - DigitalsNova POS.lnk"`,
+    `set "DN_DESC=${safeCmdQuoted(desc)}"`,
+    'set "DN_BROWSER="',
+    'if exist "%ProgramFiles%\\Google\\Chrome\\Application\\chrome.exe" set "DN_BROWSER=%ProgramFiles%\\Google\\Chrome\\Application\\chrome.exe"',
+    'if not defined DN_BROWSER if exist "%ProgramFiles(x86)%\\Google\\Chrome\\Application\\chrome.exe" set "DN_BROWSER=%ProgramFiles(x86)%\\Google\\Chrome\\Application\\chrome.exe"',
+    'if not defined DN_BROWSER if exist "%LOCALAPPDATA%\\Google\\Chrome\\Application\\chrome.exe" set "DN_BROWSER=%LOCALAPPDATA%\\Google\\Chrome\\Application\\chrome.exe"',
+    'if not defined DN_BROWSER if exist "%ProgramFiles(x86)%\\Microsoft\\Edge\\Application\\msedge.exe" set "DN_BROWSER=%ProgramFiles(x86)%\\Microsoft\\Edge\\Application\\msedge.exe"',
+    'if not defined DN_BROWSER if exist "%ProgramFiles%\\Microsoft\\Edge\\Application\\msedge.exe" set "DN_BROWSER=%ProgramFiles%\\Microsoft\\Edge\\Application\\msedge.exe"',
+    'if not defined DN_BROWSER if exist "%LOCALAPPDATA%\\Microsoft\\Edge\\Application\\msedge.exe" set "DN_BROWSER=%LOCALAPPDATA%\\Microsoft\\Edge\\Application\\msedge.exe"',
+    '',
+    'if not defined DN_BROWSER goto :open_default',
+    'set "VBS=%TEMP%\\dn_shortcut_%RANDOM%.vbs"',
+    'if not defined VBS goto :launch_app',
+    'echo [1/2] Creating Desktop ^& Start Menu shortcuts...',
+    '(',
+    '  echo Set oWS = WScript.CreateObject^("WScript.Shell"^)',
+    '  echo Set oEnv = oWS.Environment^("Process"^)',
+    '  echo sUrl = oEnv^("DN_URL"^)',
+    '  echo sBrowser = oEnv^("DN_BROWSER"^)',
+    '  echo sLink = oEnv^("DN_LINK_NAME"^)',
+    '  echo sDesc = oEnv^("DN_DESC"^)',
+    '  echo sDesktop = oWS.SpecialFolders^("Desktop"^)',
+    '  echo sPrograms = oWS.SpecialFolders^("Programs"^)',
+    '  echo Set oL1 = oWS.CreateShortcut^(sDesktop ^& "\\" ^& sLink^)',
+    '  echo oL1.TargetPath = sBrowser',
+    '  echo oL1.Arguments = "--app=" ^& Chr^(34^) ^& sUrl ^& Chr^(34^) ^& " --start-maximized"',
+    '  echo oL1.Description = sDesc',
+    '  echo oL1.IconLocation = sBrowser ^& ",0"',
+    '  echo oL1.Save',
+    '  echo Set oL2 = oWS.CreateShortcut^(sPrograms ^& "\\" ^& sLink^)',
+    '  echo oL2.TargetPath = sBrowser',
+    '  echo oL2.Arguments = "--app=" ^& Chr^(34^) ^& sUrl ^& Chr^(34^) ^& " --start-maximized"',
+    '  echo oL2.Description = sDesc',
+    '  echo oL2.IconLocation = sBrowser ^& ",0"',
+    '  echo oL2.Save',
+    ') > "%VBS%"',
+    'cscript //nologo "%VBS%" >nul 2>&1',
+    'if defined VBS if exist "%VBS%" del /f /q "%VBS%" >nul 2>&1',
+    ':launch_app',
+    `echo [2/2] Launching ${safeShortCmd} in standalone Desktop App Mode...`,
+    'start "" "%DN_BROWSER%" --app="%DN_URL%" --start-maximized',
+    'goto :done',
+    ':open_default',
+    'echo Chrome or Microsoft Edge not found in standard folders. Opening default browser...',
+    'start "" "%DN_URL%"',
+    ':done',
+    'echo.',
+    'echo Shortcut saved to your Desktop. You can close this window safely.',
+    'exit /b 0',
+    ''
+  ];
+  return lines.join('\r\n');
+}
 
 sectors.forEach(sec => {
   const url = `https://digitalsnova.com/portal/?sector=${sec.key}`;
-
-  // 1. Build APK Package
-  const manifestXml = `<?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="${sec.pkg}"
-    android:versionCode="20261106"
-    android:versionName="2.6.0">
-    <uses-sdk android:minSdkVersion="24" android:targetSdkVersion="34" />
-    <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-    <uses-permission android:name="android.permission.CAMERA" />
-    <uses-permission android:name="android.permission.BLUETOOTH" />
-    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
-    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
-    <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
-    <application
-        android:label="${sec.title}"
-        android:icon="@drawable/icon"
-        android:theme="@android:style/Theme.NoTitleBar.Fullscreen"
-        android:hardwareAccelerated="true"
-        android:usesCleartextTraffic="true">
-        <activity
-            android:name="${sec.pkg}.MainActivity"
-            android:label="${sec.shortName}"
-            android:exported="true"
-            android:configChanges="orientation|keyboardHidden|screenSize">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-    </application>
-</manifest>`;
-
-  const stringsXml = `<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <string name="app_name">${sec.title}</string>
-    <string name="package_name">${sec.pkg}</string>
-    <string name="start_url">${url}</string>
-</resources>`;
-
-  const appJson = JSON.stringify({
-    name: sec.title,
-    short_name: sec.shortName,
-    package: sec.pkg,
-    version: '2.6.0',
-    start_url: url,
-    sector: sec.key,
-    offline_capable: true,
-    service_worker: '/portal/sw.js'
-  }, null, 2);
-
-  const metaManifest = `Manifest-Version: 1.0\r\nCreated-By: 2.6.0 (DigitalsNova Enterprise POS Engine)\r\nBuilt-By: DigitalsNova SaaS Infrastructure\r\n\r\nName: AndroidManifest.xml\r\nSHA-256-Digest: DigitalsNovaAppSecureHash\r\n`;
-
-  const apkFiles = [
-    { name: 'AndroidManifest.xml', content: manifestXml },
-    { name: 'res/values/strings.xml', content: stringsXml },
-    { name: 'assets/app_config.json', content: appJson },
-    { name: 'META-INF/MANIFEST.MF', content: metaManifest }
-  ];
-
-  const apkBuffer = createZip(apkFiles);
-
-  // 2. Build Windows Desktop Launcher (.bat)
-  const batScript = `@echo off
-title ${sec.title} - Desktop POS Software
-echo ==============================================================================
-echo   ${sec.title.toUpperCase()}
-echo   Dedicated Cloud POS ^& Offline Desktop Client
-echo ==============================================================================
-echo.
-echo Launching standalone POS window...
-
-set "URL=${url}"
-set "BROWSER="
-if exist "%ProgramFiles%\\Google\\Chrome\\Application\\chrome.exe" set "BROWSER=%ProgramFiles%\\Google\\Chrome\\Application\\chrome.exe"
-if not defined BROWSER if exist "%ProgramFiles(x86)%\\Google\\Chrome\\Application\\chrome.exe" set "BROWSER=%ProgramFiles(x86)%\\Google\\Chrome\\Application\\chrome.exe"
-if not defined BROWSER if exist "%ProgramFiles(x86)%\\Microsoft\\Edge\\Application\\msedge.exe" set "BROWSER=%ProgramFiles(x86)%\\Microsoft\\Edge\\Application\\msedge.exe"
-if not defined BROWSER if exist "%ProgramFiles%\\Microsoft\\Edge\\Application\\msedge.exe" set "BROWSER=%ProgramFiles%\\Microsoft\\Edge\\Application\\msedge.exe"
-
-if defined BROWSER (
-    start "" "%BROWSER%" --app="%URL%" --disable-translate --start-maximized --user-data-dir="%LOCALAPPDATA%\\DigitalsNova\\${sec.key}"
-) else (
-    start "" "%URL%"
-)
-exit
-`;
-
-  targetDirs.forEach(dest => {
-    fs.writeFileSync(path.join(dest, `${sec.fileName}.apk`), apkBuffer);
-    fs.writeFileSync(path.join(dest, `${sec.fileName}-Windows-Setup.bat`), batScript);
+  const batScript = buildWindowsSetupBat({
+    url,
+    title: sec.title,
+    shortName: sec.shortName,
+    desc: sec.desc
   });
 
-  console.log(`✓ Generated ${sec.fileName}.apk (${apkBuffer.length} bytes) and Windows launcher`);
+  targetDirs.forEach(dest => {
+    fs.writeFileSync(path.join(dest, `${sec.fileName}-Windows-Setup.bat`), batScript, 'utf8');
+  });
+
+  console.log(`✓ Generated ${sec.fileName}-Windows-Setup.bat (${batScript.length} bytes)`);
 });
 
-console.log('All sector download packages successfully generated across all directories.');
+console.log('All sector Windows Desktop setup packages generated cleanly.');

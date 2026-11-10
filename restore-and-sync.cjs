@@ -65,6 +65,11 @@ targetDirectories.forEach(destDir => {
   if (fs.existsSync('manifest.json')) {
     fs.copyFileSync('manifest.json', path.join(destDir, 'manifest.json'));
   }
+  ['icon.svg', 'icon-192.png', 'icon-512.png', 'icon-maskable-512.png'].forEach(iconFile => {
+    if (fs.existsSync(iconFile)) {
+      fs.copyFileSync(iconFile, path.join(destDir, iconFile));
+    }
+  });
 
   // Copy all other subpage HTML files
   const rootFiles = fs.readdirSync('.');
@@ -75,6 +80,16 @@ targetDirectories.forEach(destDir => {
   });
 
   // Copy folders: css, js, assets, portal, api, downloads
+  ['downloads', 'portal/downloads'].forEach(dl => {
+    const destDl = path.join(destDir, dl);
+    if (fs.existsSync(destDl)) {
+      fs.readdirSync(destDl).forEach(f => {
+        if (f.endsWith('.apk')) {
+          try { fs.unlinkSync(path.join(destDl, f)); } catch (_) {}
+        }
+      });
+    }
+  });
   ['css', 'js', 'assets', 'portal', 'api', 'downloads'].forEach(folder => {
     if (fs.existsSync(folder)) {
       copyFolderRecursiveSync(folder, path.join(destDir, folder));

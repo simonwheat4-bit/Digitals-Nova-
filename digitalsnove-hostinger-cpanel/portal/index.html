@@ -8,8 +8,14 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <meta name="theme-color" content="#03145E" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="DigitalsNova POS" />
     <meta name="description" content="Digitalsnova White-Label Multi-Tenant SaaS Cloud POS & ERP (Retail Mart, Pharmacy, Restaurant, Clinic & Hospital Management)" />
     <link rel="manifest" href="./manifest.json" />
+    <link rel="icon" type="image/svg+xml" href="./icon.svg" />
+    <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png" />
+    <link rel="apple-touch-icon" sizes="192x192" href="./icon-192.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
@@ -30,8 +36,8 @@
         }
       } catch (e) {}
     </script>
-    <script type="module" crossorigin src="./assets/index-DNv15Live.js?v=20261110v17"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-Db2yxC1M.css?v=20261110v17">
+    <script type="module" crossorigin src="./assets/index-DNv15Live.js?v=20261110v18"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-Db2yxC1M.css?v=20261110v18">
   </head>
   <body class="bg-ice text-slate-900 antialiased selection:bg-gold selection:text-navy">
     <div id="root"></div>
@@ -40,25 +46,38 @@
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
           navigator.serviceWorker.register('./sw.js').then((reg) => {
-            console.log('[PWA] Service Worker v17 registered:', reg.scope);
+            console.log('[PWA] Service Worker v18 registered:', reg.scope);
             if (reg.waiting) {
               reg.waiting.postMessage({ type: 'SKIP_WAITING' });
             }
-            reg.update();
+            reg.update().catch(() => {});
           }).catch((err) => {
             console.warn('[PWA] Service Worker registration failed:', err);
           });
         });
       }
 
-      // Capture beforeinstallprompt for Android APK / PWA installation
+      // Capture beforeinstallprompt & appinstalled for Desktop (Chrome/Edge) and Android WebAPK
       window.deferredPwaPrompt = null;
       window._deferredPwaPrompt = null;
+      window._pwaInstalled = Boolean(
+        (window.matchMedia && (
+          window.matchMedia('(display-mode: standalone)').matches ||
+          window.matchMedia('(display-mode: window-controls-overlay)').matches
+        )) || window.navigator.standalone === true
+      );
       window.addEventListener('beforeinstallprompt', (e) => {
         e.preventDefault();
         window.deferredPwaPrompt = e;
         window._deferredPwaPrompt = e;
+        window._pwaInstalled = false;
         window.dispatchEvent(new CustomEvent('pwa-install-ready'));
+      });
+      window.addEventListener('appinstalled', () => {
+        window.deferredPwaPrompt = null;
+        window._deferredPwaPrompt = null;
+        window._pwaInstalled = true;
+        window.dispatchEvent(new CustomEvent('pwa-installed'));
       });
     </script>
   </body>
