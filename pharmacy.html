@@ -983,10 +983,10 @@
       localStorage.setItem('digitalsnova_active_sector', 'PHARMACY');
     } catch(e) {}
 
-    // Register Root Service Worker so 1-Click PWA Install Prompt works directly from sector pages
+    // Register Root Service Worker with updateViaCache:'none' so 1-Click PWA Install Prompt & auto-updates work immediately
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js').then((reg) => {
+        navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' }).then((reg) => {
           if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
           reg.update().catch(() => {});
         }).catch(() => {});

@@ -2578,8 +2578,8 @@
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ identifier: cleanU, password: cleanP })
           });
+          const apiData = await apiRes.json().catch(() => null);
           if (apiRes.ok) {
-            const apiData = await apiRes.json();
             if (apiData && apiData.success && apiData.user) {
               authenticatedUser = apiData.user;
               if (apiData.tenant && apiData.tenant.subdomain) {
@@ -2594,6 +2594,9 @@
                 }
               }
             }
+          } else if (apiRes.status === 401 || apiRes.status === 403) {
+            showLoginError('?? ' + ((apiData && apiData.error) || 'Invalid credentials or account suspended by administrator.'));
+            return;
           }
         } catch (netErr) {
           console.warn('Central API login check error, falling back to local cache:', netErr);
@@ -2607,11 +2610,11 @@
         const matchedStaff = staffList.find(s => s.username.toLowerCase() === cleanU);
         if (matchedStaff) {
           if ((matchedStaff.password || '123') !== cleanP) {
-            alert('Invalid username or password.');
+            showLoginError('?? Invalid username or password.');
             return;
           }
           if (matchedStaff.active === false) {
-            alert('This staff account is deactivated. Contact your Store Admin.');
+            showLoginError('?? This staff account is deactivated. Contact your Store Admin.');
             return;
           }
           authenticatedUser = {
@@ -2630,7 +2633,7 @@
       if (!authenticatedUser) {
         let regTenants = [];
         try { regTenants = JSON.parse(localStorage.getItem('digitalsnova_registered_tenants') || '[]'); } catch {}
-        const matchedTenant = regTenants.find(t => 
+        const matchedTenant = regTenants.find(t =>
           (t.adminUser && t.adminUser.username && t.adminUser.username.toLowerCase() === cleanU) ||
           (t.subdomain && t.subdomain.toLowerCase() === cleanU) ||
           (t.phone && t.phone.replace(/[^0-9]/g, '') === cleanU.replace(/[^0-9]/g, '')) ||
@@ -2639,7 +2642,11 @@
         if (matchedTenant) {
           const expectedPass = matchedTenant.adminUser?.password || matchedTenant.adminPassword || '123';
           if (expectedPass !== cleanP) {
-            alert('Invalid username or password.');
+            showLoginError('?? Invalid username or password.');
+            return;
+          }
+          if (matchedTenant.manualBlocked === true || String(matchedTenant.status || '').toUpperCase() === 'BLOCKED') {
+            showLoginError('?? This store account has been suspended by administrator.');
             return;
           }
           const tBt = String(matchedTenant.vertical || matchedTenant.sector || matchedTenant.storeType || matchedTenant.businessType || matchedTenant.name || '').toLowerCase();
@@ -2649,7 +2656,7 @@
             : 'RETAIL_MART';
           authenticatedUser = {
             id: 'u_' + matchedTenant.subdomain,
-            username: matchedTenant.adminUser?.username || `admin.${matchedTenant.subdomain}`,
+            username: matchedTenant.adminUser?.username || ('admin.' + matchedTenant.subdomain),
             name: matchedTenant.adminUser?.name || matchedTenant.name + ' Admin',
             role: matchedTenant.adminUser?.role || (targetSector === 'CLINIC_HMS' ? 'CLINIC_ADMIN' : 'STORE_ADMIN'),
             tenantId: matchedTenant.id,
@@ -2663,9 +2670,11 @@
       }
 
       if (!authenticatedUser) {
-        showLoginError('⚠️ Invalid username or password. Please verify your credentials or register a new account.');
+        showLoginError('?? Invalid username or password. Please verify your credentials or register a new account.');
         return;
       }
+
+      authenticatedUser.loggedInAt = Date.now();
 
       // Persist auth user, locked sector & subdomain in localStorage for DigitalsNova Portal
       localStorage.setItem('digitalsnova_subdomain', targetSubdomain);

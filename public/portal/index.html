@@ -36,24 +36,47 @@
         }
       } catch (e) {}
     </script>
-    <script type="module" crossorigin src="./assets/index-DNv15Live.js?v=20261111v19"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-Db2yxC1M.css?v=20261111v19">
+    <script type="module" crossorigin src="./assets/index-DNv15Live.js?v=20261111v20"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-Db2yxC1M.css?v=20261111v20">
   </head>
   <body class="bg-ice text-slate-900 antialiased selection:bg-gold selection:text-navy">
     <div id="root"></div>
     <script>
-      // Register Offline PWA Service Worker
+      // Register Offline PWA Service Worker with zero HTTP cache lag + auto-update signaling
       if ('serviceWorker' in navigator) {
+        window._dnHadSwController = Boolean(navigator.serviceWorker.controller);
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('./sw.js').then((reg) => {
-            console.log('[PWA] Service Worker v19 registered:', reg.scope);
+          navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' }).then((reg) => {
+            window._dnSwReg = reg;
+            console.log('[PWA] Service Worker v20 registered:', reg.scope);
             if (reg.waiting) {
               reg.waiting.postMessage({ type: 'SKIP_WAITING' });
             }
+            reg.addEventListener('updatefound', () => {
+              const nw = reg.installing;
+              if (!nw) return;
+              nw.addEventListener('statechange', () => {
+                if (nw.state === 'installed' && navigator.serviceWorker.controller) {
+                  nw.postMessage({ type: 'SKIP_WAITING' });
+                  window.dispatchEvent(new CustomEvent('dn-sw-updated', { detail: { version: 'v20' } }));
+                }
+              });
+            });
             reg.update().catch(() => {});
           }).catch((err) => {
             console.warn('[PWA] Service Worker registration failed:', err);
           });
+        });
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+          if (window._dnHadSwController) {
+            window.dispatchEvent(new CustomEvent('dn-sw-updated', { detail: { version: 'v20' } }));
+          }
+          window._dnHadSwController = true;
+        });
+        navigator.serviceWorker.addEventListener('message', (ev) => {
+          if (ev.data && ev.data.type === 'SW_UPDATED' && window._dnHadSwController) {
+            window.dispatchEvent(new CustomEvent('dn-sw-updated', { detail: ev.data }));
+          }
         });
       }
 

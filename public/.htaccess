@@ -8,14 +8,19 @@ ErrorDocument 404 /404.html
   RewriteEngine On
   RewriteBase /
 
-  # API Cloud Sync
-  RewriteRule ^api/sync/?$ api/sync.php [L,QSA]
-
   # Dedicated Super Admin SaaS Control Panel Routes
   RewriteRule ^admin/?$ portal/index.html?view=super-admin [L,QSA]
   RewriteRule ^super-admin/?$ portal/index.html?view=super-admin [L,QSA]
   RewriteRule ^portal/super-admin/?$ portal/index.html?view=super-admin [L,QSA]
   RewriteRule ^portal/admin/?$ portal/index.html?view=super-admin [L,QSA]
+
+  # Automated Stripe & Card Payment Gateway Endpoints
+  RewriteRule ^api/subscription/card-checkout/?$ api/stripe-checkout.php [L,QSA]
+  RewriteRule ^api/webhooks/subscription-payment/?$ api/stripe-webhook.php [L,QSA]
+  RewriteRule ^api/stripe-checkout/?$ api/stripe-checkout.php [L,QSA]
+  RewriteRule ^api/stripe-webhook/?$ api/stripe-webhook.php [L,QSA]
+  RewriteRule ^portal/api/subscription/card-checkout/?$ portal/api/stripe-checkout.php [L,QSA]
+  RewriteRule ^portal/api/webhooks/subscription-payment/?$ portal/api/stripe-webhook.php [L,QSA]
 
   # Redirect /index.html to /
   RewriteCond %{THE_REQUEST} ^[A-Z]{3,9}\ /.*index\.html\ HTTP/ [NC]
@@ -32,8 +37,8 @@ ErrorDocument 404 /404.html
 </IfModule>
 
 <IfModule mod_headers.c>
-  # Disable caching on HTML so browser always displays latest live updates
-  <FilesMatch "\.(html|htm)$">
+  # Disable caching on HTML, JS, CSS, and JSON manifests so installed PWAs and browsers always fetch live updates
+  <FilesMatch "\.(html|htm|js|css|json)$">
     Header set Cache-Control "no-cache, no-store, must-revalidate, max-age=0, proxy-revalidate"
     Header set Pragma "no-cache"
     Header set Expires "-1"
@@ -51,8 +56,9 @@ ErrorDocument 404 /404.html
   ExpiresActive On
   ExpiresDefault "access plus 1 hour"
   ExpiresByType text/html "access plus 0 seconds"
-  ExpiresByType text/css "access plus 1 month"
-  ExpiresByType application/javascript "access plus 1 month"
+  ExpiresByType text/css "access plus 0 seconds"
+  ExpiresByType application/javascript "access plus 0 seconds"
+  ExpiresByType application/json "access plus 0 seconds"
   ExpiresByType image/png "access plus 1 year"
   ExpiresByType image/jpg "access plus 1 year"
   ExpiresByType image/jpeg "access plus 1 year"
@@ -61,3 +67,5 @@ ErrorDocument 404 /404.html
 </IfModule>
 
 AddDefaultCharset UTF-8
+AddType application/vnd.android.package-archive .apk
+AddType application/x-msdos-program .bat

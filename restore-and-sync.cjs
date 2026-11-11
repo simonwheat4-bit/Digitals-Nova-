@@ -38,6 +38,12 @@ if (fs.existsSync('netlify-live.html')) {
   console.log('✓ Restored root index.html from agency-home.html');
 }
 
+// Keep root and portal PHP sync engines identical before copying
+if (fs.existsSync('api/sync.php') && fs.existsSync('portal/api')) {
+  fs.copyFileSync('api/sync.php', 'portal/api/sync.php');
+  console.log('✓ Mirrored api/sync.php -> portal/api/sync.php');
+}
+
 console.log('--- 2. Synchronizing to digitalsnove-hostinger-cpanel, public, and dist ---');
 const targetDirectories = ['digitalsnove-hostinger-cpanel', 'public', 'dist'];
 
@@ -243,8 +249,8 @@ ErrorDocument 404 /404.html
 </IfModule>
 
 <IfModule mod_headers.c>
-  # Disable caching on HTML so browser always displays latest live updates
-  <FilesMatch "\\.(html|htm|js|json)$">
+  # Disable caching on HTML, JS, CSS, and JSON manifests so installed PWAs and browsers always fetch live updates
+  <FilesMatch "\\.(html|htm|js|css|json)$">
     Header set Cache-Control "no-cache, no-store, must-revalidate, max-age=0, proxy-revalidate"
     Header set Pragma "no-cache"
     Header set Expires "-1"
@@ -262,7 +268,7 @@ ErrorDocument 404 /404.html
   ExpiresActive On
   ExpiresDefault "access plus 1 hour"
   ExpiresByType text/html "access plus 0 seconds"
-  ExpiresByType text/css "access plus 1 month"
+  ExpiresByType text/css "access plus 0 seconds"
   ExpiresByType application/javascript "access plus 0 seconds"
   ExpiresByType application/json "access plus 0 seconds"
   ExpiresByType image/png "access plus 1 year"
@@ -278,8 +284,9 @@ AddType application/x-msdos-program .bat
 `;
 
 fs.writeFileSync('.htaccess', htaccessRules, 'utf8');
+fs.writeFileSync('public/.htaccess', htaccessRules, 'utf8');
 fs.writeFileSync('dist/.htaccess', htaccessRules, 'utf8');
 fs.writeFileSync('digitalsnove-hostinger-cpanel/.htaccess', htaccessRules, 'utf8');
-console.log('✓ Wrote .htaccess to root, dist/, and digitalsnove-hostinger-cpanel/');
+console.log('✓ Wrote .htaccess to root, public/, dist/, and digitalsnove-hostinger-cpanel/');
 
 console.log('--- RESTORE & SYNC FINISHED SUCCESSFULLY! ---');
