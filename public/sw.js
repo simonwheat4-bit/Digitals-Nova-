@@ -1,5 +1,5 @@
-// DigitalsNova Enterprise POS Offline Service Worker & PWA Cache (Mirror)
-const CACHE_NAME = 'digitalsnova-pos-v18-offline';
+// DigitalsNova Enterprise POS Offline Service Worker & PWA Cache (Root Scope)
+const CACHE_NAME = 'digitalsnova-pos-v19-offline';
 const PRECACHE_ASSETS = [
   './portal/',
   './portal/index.html',
@@ -9,9 +9,9 @@ const PRECACHE_ASSETS = [
   './portal/icon-512.png',
   './portal/icon-maskable-512.png',
   './assets/index-DNv15Live.js',
-  './assets/index-DNv15Live.js?v=20261110v18',
+  './assets/index-DNv15Live.js?v=20261111v19',
   './assets/index-Db2yxC1M.css',
-  './assets/index-Db2yxC1M.css?v=20261110v18'
+  './assets/index-Db2yxC1M.css?v=20261111v19'
 ];
 
 self.addEventListener('install', (event) => {
@@ -67,6 +67,29 @@ self.addEventListener('fetch', (event) => {
         }),
         { status: 200, headers: { 'Content-Type': 'application/json' } }
       ))
+    );
+    return;
+  }
+
+  // Network-First for HTML pages, navigations, and manifests so updates appear immediately when online
+  const isDocumentOrManifest =
+    req.mode === 'navigate' ||
+    url.pathname === '/' ||
+    url.pathname.endsWith('/') ||
+    url.pathname.endsWith('.html') ||
+    url.pathname.endsWith('manifest.json');
+
+  if (isDocumentOrManifest) {
+    event.respondWith(
+      fetch(req).then((networkResponse) => {
+        if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
+          const clone = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(req, clone));
+        }
+        return networkResponse;
+      }).catch(() =>
+        caches.match(req).then((m) => m || caches.match(req, { ignoreSearch: true }))
+      )
     );
     return;
   }

@@ -13,7 +13,10 @@
   <meta property="og:url" content="https://digitalsnova.com/retail.html">
   <meta property="og:title" content="Retail Marts & General Stores — DigitalsNova Enterprise Cloud Retail POS">
   <meta property="og:description" content="Power high-volume supermarket & retail checkout with DigitalsNova. Multi-customer Hold Bill buffer, 1-click Z-Report cash drawer balancing, SKU inventory control, and thermal printer engine.">
-  <link rel="manifest" href="/portal/manifest.json">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/svg+xml" href="/icon.svg">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
+  <link rel="apple-touch-icon" sizes="192x192" href="/icon-192.png">
 
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -805,47 +808,49 @@
   </footer>
 
   <!-- ============================================================================== -->
-  <!-- MODAL 1: DOWNLOAD APP & APK MODAL (AUTO DOWNLOADS + 3 CLEAR OPTIONS)          -->
+  <!-- MODAL 1: INSTALL & DOWNLOAD SOFTWARE MODAL (NO BROKEN .APK, INSTANT LAUNCH)    -->
   <!-- ============================================================================== -->
   <div class="saas-modal-backdrop" id="downloadAppModal">
     <div class="saas-modal-window">
       <button class="modal-close-btn" onclick="closeDownloadAppModal()">&times;</button>
       
-      <div style="text-align: center; margin-bottom: 20px;">
+      <div style="text-align: center; margin-bottom: 16px;">
         <span class="billing-discount-badge" style="background: rgba(0, 229, 255, 0.2); color: #00e5ff; border: 1px solid rgba(0, 229, 255, 0.4); margin-bottom: 8px; display: inline-block;">
-          v2.6.0 STABLE &bull; OFFLINE CAPABLE SOFTWARE
+          v2.7.0 STABLE &bull; WINDOWS, MAC &amp; ANDROID READY
         </span>
         <h3 style="font-size: 22px; font-weight: 900; color: #fff; margin: 8px 0 6px;">
-          Download Retail Mart / General Store Software
+          Install / Open Retail Mart / General Store Software
         </h3>
         <p style="font-size: 13px; color: #94a3b8; margin: 0;">
-          Run in standalone application mode with local IndexedDB offline storage &amp; instant printer support.
+          Opens directly in standalone App Mode with local offline database &amp; thermal receipt printer support.
         </p>
       </div>
 
+      <div id="downloadStatusBanner" style="display: none; background: rgba(16, 185, 129, 0.14); border: 1px solid rgba(16, 185, 129, 0.45); color: #6ee7b7; border-radius: 12px; padding: 12px 14px; font-size: 12px; line-height: 1.5; margin-bottom: 14px;"></div>
+
       <div class="download-grid">
-        <!-- Option 1: Mobile & Tablet Native App (Android Chrome WebAPK / iOS) -->
-        <a href="/portal/?sector=RETAIL_MART&action=install" class="download-card-opt" onclick="trackDownload('MOBILE_APP')">
+        <!-- Option 1: 1-Click Instant App Install (Desktop & Mobile Native App) -->
+        <div class="download-card-opt" style="cursor: pointer; border-color: rgba(0, 229, 255, 0.6); background: linear-gradient(145deg, #0d2454, #081838);" onclick="triggerPwaPrompt()">
           <div>
-            <div style="font-size: 24px; margin-bottom: 8px;">📱</div>
-            <h4 style="color: #fff; font-size: 15px; font-weight: 800; margin: 0 0 4px;">Android &amp; Tablet App</h4>
-            <p style="color: #94a3b8; font-size: 11px; margin: 0; line-height: 1.4;">
-              Install directly onto Android Home Screen &amp; App Drawer via Chrome (100% offline WebAPK, zero Play Store needed).
+            <div style="font-size: 24px; margin-bottom: 8px;">⚡</div>
+            <h4 style="color: #fff; font-size: 15px; font-weight: 800; margin: 0 0 4px;">1-Click Install App (Auto-Opens)</h4>
+            <p style="color: #cbd5e1; font-size: 11px; margin: 0; line-height: 1.4;">
+              Installs straight from Chrome / Edge onto Windows Desktop or Mobile &amp; <strong>opens software automatically</strong>.
             </p>
           </div>
-          <div style="margin-top: 14px; font-size: 11px; font-weight: 800; color: #10b981; display: flex; align-items: center; justify-content: space-between;">
-            <span>Mobile App Install</span>
-            <span style="background: rgba(16,185,129,0.2); padding: 2px 8px; border-radius: 9999px;">📲 Install</span>
+          <div style="margin-top: 14px; font-size: 11px; font-weight: 800; color: #00e5ff; display: flex; align-items: center; justify-content: space-between;">
+            <span>Recommended (PC &amp; Phone)</span>
+            <span style="background: rgba(0,229,255,0.22); padding: 2px 8px; border-radius: 9999px;">📲 Install &amp; Open</span>
           </div>
-        </a>
+        </div>
 
-        <!-- Option 2: Windows PC Software Launcher -->
-        <a href="/downloads/DigitalsNova-Retail-POS-Windows-Setup.bat" download="DigitalsNova-Retail-POS-Windows-Setup.bat" class="download-card-opt" onclick="trackDownload('WINDOWS')">
+        <!-- Option 2: Windows PC Software Launcher (.bat) -->
+        <a href="/downloads/DigitalsNova-Retail-POS-Windows-Setup.bat" download="DigitalsNova-Retail-POS-Windows-Setup.bat" class="download-card-opt" onclick="handleWindowsBatDownload('DigitalsNova-Retail-POS-Windows-Setup.bat')">
           <div>
             <div style="font-size: 24px; margin-bottom: 8px;">💻</div>
-            <h4 style="color: #fff; font-size: 15px; font-weight: 800; margin: 0 0 4px;">Windows PC Software</h4>
+            <h4 style="color: #fff; font-size: 15px; font-weight: 800; margin: 0 0 4px;">Windows PC Software (.bat)</h4>
             <p style="color: #94a3b8; font-size: 11px; margin: 0; line-height: 1.4;">
-              Creates a permanent Desktop icon &amp; opens standalone borderless POS window with Chrome/Edge.
+              Downloads a lightweight launcher. Open it once to add Desktop &amp; Start Menu icons &amp; launch standalone App Mode.
             </p>
           </div>
           <div style="margin-top: 14px; font-size: 11px; font-weight: 800; color: #38bdf8; display: flex; align-items: center; justify-content: space-between;">
@@ -854,39 +859,39 @@
           </div>
         </a>
 
-        <!-- Option 3: 1-Click PWA App Install -->
-        <div class="download-card-opt" style="cursor: pointer;" onclick="triggerPwaPrompt()">
-          <div>
-            <div style="font-size: 24px; margin-bottom: 8px;">⚡</div>
-            <h4 style="color: #fff; font-size: 15px; font-weight: 800; margin: 0 0 4px;">1-Click Browser App (PWA)</h4>
-            <p style="color: #94a3b8; font-size: 11px; margin: 0; line-height: 1.4;">
-              Install straight from Chrome / Edge on Windows, Mac, or Android with instant offline sync.
-            </p>
-          </div>
-          <div style="margin-top: 14px; font-size: 11px; font-weight: 800; color: #00e5ff; display: flex; align-items: center; justify-content: space-between;">
-            <span>Native Browser App</span>
-            <span style="background: rgba(0,229,255,0.2); padding: 2px 8px; border-radius: 9999px;">📲 Install Now</span>
-          </div>
-        </div>
-
-        <!-- Option 4: Open Online Web Cloud Portal -->
+        <!-- Option 3: Open Online/Offline Software Directly -->
         <a href="/portal/?sector=RETAIL_MART" class="download-card-opt">
           <div>
             <div style="font-size: 24px; margin-bottom: 8px;">🌐</div>
-            <h4 style="color: #fff; font-size: 15px; font-weight: 800; margin: 0 0 4px;">Launch Cloud Portal</h4>
+            <h4 style="color: #fff; font-size: 15px; font-weight: 800; margin: 0 0 4px;">Open Software Right Now</h4>
             <p style="color: #94a3b8; font-size: 11px; margin: 0; line-height: 1.4;">
-              Open full software in your browser without installing anything.
+              Launch full offline-ready Retail Mart / General Store software immediately without waiting for any setup.
             </p>
           </div>
           <div style="margin-top: 14px; font-size: 11px; font-weight: 800; color: #a855f7; display: flex; align-items: center; justify-content: space-between;">
-            <span>Instant Web Access</span>
-            <span style="background: rgba(168,85,247,0.2); padding: 2px 8px; border-radius: 9999px;">Open &rarr;</span>
+            <span>Instant Access</span>
+            <span style="background: rgba(168,85,247,0.2); padding: 2px 8px; border-radius: 9999px;">Launch &rarr;</span>
+          </div>
+        </a>
+
+        <!-- Option 4: Mobile & Tablet App (Android Chrome WebAPK / iPhone Safari) -->
+        <a href="/portal/?sector=RETAIL_MART&action=install" class="download-card-opt" onclick="trackDownload('MOBILE_APP')">
+          <div>
+            <div style="font-size: 24px; margin-bottom: 8px;">📱</div>
+            <h4 style="color: #fff; font-size: 15px; font-weight: 800; margin: 0 0 4px;">Android &amp; iPhone App</h4>
+            <p style="color: #94a3b8; font-size: 11px; margin: 0; line-height: 1.4;">
+              On Android Chrome, tap <strong>Menu &#8942; &rarr; Install app</strong> (genuine WebAPK, zero broken .apk file needed).
+            </p>
+          </div>
+          <div style="margin-top: 14px; font-size: 11px; font-weight: 800; color: #10b981; display: flex; align-items: center; justify-content: space-between;">
+            <span>Mobile WebAPK Guide</span>
+            <span style="background: rgba(16,185,129,0.2); padding: 2px 8px; border-radius: 9999px;">📲 Mobile Setup</span>
           </div>
         </a>
       </div>
 
       <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 12px; font-size: 11px; color: #94a3b8; text-align: center;">
-        💡 <strong>Offline Guarantee:</strong> Once launched, your software functions 100% offline. Cash sales and transactions queue in local memory and automatically sync when connected.
+        💡 <strong>Note for Windows PC:</strong> Do not look for <code>.apk</code> files on Windows (those only run on Android phones). Click <strong>1-Click Install App</strong> above or run the <strong>Windows PC Software (.bat)</strong> to open the app directly!
       </div>
     </div>
   </div>
@@ -978,6 +983,16 @@
       localStorage.setItem('digitalsnova_active_sector', 'RETAIL_MART');
     } catch(e) {}
 
+    // Register Root Service Worker so 1-Click PWA Install Prompt works directly from sector pages
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').then((reg) => {
+          if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+          reg.update().catch(() => {});
+        }).catch(() => {});
+      });
+    }
+
     // PWA Prompt Storage
     let deferredPwaInstallPrompt = null;
     window.addEventListener('beforeinstallprompt', (e) => {
@@ -986,11 +1001,25 @@
       window.deferredPwaPrompt = e;
       window._deferredPwaPrompt = e;
     });
+    window.addEventListener('appinstalled', () => {
+      deferredPwaInstallPrompt = null;
+      showDownloadBanner('✅ Software installed! Launching standalone DigitalsNova Desktop App & creating Desktop shortcut.');
+    });
+
+    function showDownloadBanner(htmlMsg) {
+      const b = document.getElementById('downloadStatusBanner');
+      if (b) {
+        b.innerHTML = htmlMsg;
+        b.style.display = 'block';
+      }
+    }
 
     // Open Download Modal
     function openDownloadAppModal() {
       const modal = document.getElementById('downloadAppModal');
       if (modal) modal.classList.add('open');
+      const b = document.getElementById('downloadStatusBanner');
+      if (b) b.style.display = 'none';
     }
 
     function closeDownloadAppModal() {
@@ -998,13 +1027,24 @@
       if (modal) modal.classList.remove('open');
     }
 
-    function triggerPwaPrompt() {
+    async function triggerPwaPrompt() {
       if (deferredPwaInstallPrompt) {
-        deferredPwaInstallPrompt.prompt();
-        deferredPwaInstallPrompt = null;
-      } else {
-        window.location.href = '/portal/?sector=RETAIL_MART&action=install';
+        try {
+          deferredPwaInstallPrompt.prompt();
+          const choice = await deferredPwaInstallPrompt.userChoice;
+          deferredPwaInstallPrompt = null;
+          if (choice && choice.outcome === 'accepted') {
+            showDownloadBanner('✅ Installing software now! Chrome will open your standalone DigitalsNova App window & add a Desktop icon automatically.');
+            return;
+          }
+        } catch(e) {}
       }
+      window.location.href = '/portal/?sector=RETAIL_MART&action=install';
+    }
+
+    function handleWindowsBatDownload(fileName) {
+      trackDownload('WINDOWS_BAT');
+      showDownloadBanner('⬇️ Downloading <strong>' + fileName + '</strong>! Click the downloaded file in Chrome Downloads to <strong>open the software automatically</strong> &amp; add a Desktop icon. (If Windows SmartScreen appears, click <em>More info &rarr; Run anyway</em>.)');
     }
 
     function trackDownload(type) {
