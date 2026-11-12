@@ -13,6 +13,7 @@
     <meta name="apple-mobile-web-app-title" content="DigitalsNova POS" />
     <meta name="description" content="Digitalsnova White-Label Multi-Tenant SaaS Cloud POS & ERP (Retail Mart, Pharmacy, Restaurant, Clinic & Hospital Management)" />
     <link rel="manifest" href="./manifest.json" />
+    <link rel="icon" href="./favicon.ico" sizes="any" />
     <link rel="icon" type="image/svg+xml" href="./icon.svg" />
     <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png" />
     <link rel="apple-touch-icon" sizes="192x192" href="./icon-192.png" />
@@ -36,8 +37,8 @@
         }
       } catch (e) {}
     </script>
-    <script type="module" crossorigin src="./assets/index-DNv15Live.js?v=20261111v20"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-Db2yxC1M.css?v=20261111v20">
+    <script type="module" crossorigin src="./assets/index-DNv15Live.js?v=20261111v21"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-Db2yxC1M.css?v=20261111v21">
   </head>
   <body class="bg-ice text-slate-900 antialiased selection:bg-gold selection:text-navy">
     <div id="root"></div>
@@ -46,9 +47,12 @@
       if ('serviceWorker' in navigator) {
         window._dnHadSwController = Boolean(navigator.serviceWorker.controller);
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' }).then((reg) => {
+          const isPortalPath = window.location.pathname.startsWith('/portal');
+          const swUrl = isPortalPath ? './sw.js' : '/sw.js';
+          const swOpts = isPortalPath ? { updateViaCache: 'none' } : { scope: '/', updateViaCache: 'none' };
+          navigator.serviceWorker.register(swUrl, swOpts).then((reg) => {
             window._dnSwReg = reg;
-            console.log('[PWA] Service Worker v20 registered:', reg.scope);
+            console.log('[PWA] Service Worker v21 registered:', reg.scope);
             if (reg.waiting) {
               reg.waiting.postMessage({ type: 'SKIP_WAITING' });
             }
@@ -58,7 +62,7 @@
               nw.addEventListener('statechange', () => {
                 if (nw.state === 'installed' && navigator.serviceWorker.controller) {
                   nw.postMessage({ type: 'SKIP_WAITING' });
-                  window.dispatchEvent(new CustomEvent('dn-sw-updated', { detail: { version: 'v20' } }));
+                  window.dispatchEvent(new CustomEvent('dn-sw-updated', { detail: { version: 'v21' } }));
                 }
               });
             });
@@ -69,7 +73,7 @@
         });
         navigator.serviceWorker.addEventListener('controllerchange', () => {
           if (window._dnHadSwController) {
-            window.dispatchEvent(new CustomEvent('dn-sw-updated', { detail: { version: 'v20' } }));
+            window.dispatchEvent(new CustomEvent('dn-sw-updated', { detail: { version: 'v21' } }));
           }
           window._dnHadSwController = true;
         });

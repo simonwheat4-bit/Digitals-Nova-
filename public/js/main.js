@@ -246,61 +246,149 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 
   // =========================================================================
-  // 8. Contact Form Handler (Hostinger / cPanel Ready)
+  // 8. Contact Form Handler (Live PHP Cloud Sync)
   // =========================================================================
   const contactForm = document.getElementById('contact-form');
   if (contactForm) {
-    contactForm.addEventListener('submit', function (e) {
+    contactForm.addEventListener('submit', async function (e) {
       e.preventDefault();
       const submitBtn = contactForm.querySelector('button[type="submit"]');
       const alertBox = document.getElementById('form-alert-success');
-      
+      const nameEl = document.getElementById('full-name');
+      const emailEl = document.getElementById('email');
+      const phoneEl = document.getElementById('phone');
+      const serviceEl = document.getElementById('service-select');
+      const msgEl = document.getElementById('message');
+
+      const origBtnHtml = submitBtn ? submitBtn.innerHTML : 'Send Message &rarr;';
       if (submitBtn) {
         submitBtn.disabled = true;
         submitBtn.innerHTML = 'Sending message...';
       }
+      if (alertBox) {
+        alertBox.style.display = 'none';
+      }
 
-      // Simulate sending / Ready for PHP mailer backend
-      setTimeout(() => {
-        if (submitBtn) {
-          submitBtn.disabled = false;
-          submitBtn.innerHTML = 'Send Message';
+      const payload = {
+        source: 'CONTACT_FORM',
+        name: nameEl ? nameEl.value.trim() : '',
+        email: emailEl ? emailEl.value.trim() : '',
+        phone: phoneEl ? phoneEl.value.trim() : '',
+        service: serviceEl ? serviceEl.value : '',
+        message: msgEl ? msgEl.value.trim() : ''
+      };
+
+      try {
+        const res = await fetch('/api/sync.php?action=submit_lead', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json().catch(() => null);
+        if (!res.ok || !data || !data.success) {
+          throw new Error((data && data.error) || 'Failed to send message. Please check your details and try again.');
         }
         if (alertBox) {
+          alertBox.className = 'alert-box alert-success';
+          alertBox.style.background = '';
+          alertBox.style.border = '';
+          alertBox.style.color = '';
           alertBox.style.display = 'flex';
-          alertBox.innerHTML = '&#10003; Thank you! Your message has been sent successfully. We will contact you within 24 hours.';
+          alertBox.innerHTML = '&#10003; ' + (data.message || 'Thank you! Your message has been sent successfully. We will contact you within 24 hours.');
         }
         contactForm.reset();
-      }, 1000);
+      } catch (err) {
+        if (alertBox) {
+          alertBox.className = 'alert-box';
+          alertBox.style.background = 'rgba(239, 68, 68, 0.15)';
+          alertBox.style.border = '1px solid rgba(239, 68, 68, 0.5)';
+          alertBox.style.color = '#fca5a5';
+          alertBox.style.display = 'flex';
+          alertBox.innerHTML = '&#9888; ' + ((err && err.message) || 'Network error while sending message. Please try again.');
+        }
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = origBtnHtml;
+        }
+      }
     });
   }
 
   // =========================================================================
-  // 9. Get a Quote Form Handler
+  // 9. Get a Quote Form Handler (Live PHP Cloud Sync)
   // =========================================================================
   const quoteForm = document.getElementById('quote-form');
   if (quoteForm) {
-    quoteForm.addEventListener('submit', function (e) {
+    quoteForm.addEventListener('submit', async function (e) {
       e.preventDefault();
       const submitBtn = quoteForm.querySelector('button[type="submit"]');
       const alertBox = document.getElementById('quote-alert-success');
+      const origBtnHtml = submitBtn ? submitBtn.innerHTML : 'Submit Quote Request &rarr;';
+
+      const selectedServices = Array.from(quoteForm.querySelectorAll('input[name="services"]:checked')).map((el) => el.value);
+      const budgetEl = quoteForm.querySelector('input[name="budget"]:checked');
+      const timelineEl = quoteForm.querySelector('input[name="timeline"]:checked');
+      const nameEl = document.getElementById('quote-name');
+      const emailEl = document.getElementById('quote-email');
+      const phoneEl = document.getElementById('quote-phone');
+      const companyEl = document.getElementById('quote-company');
+      const notesEl = document.getElementById('quote-notes');
 
       if (submitBtn) {
         submitBtn.disabled = true;
-        submitBtn.innerHTML = 'Preparing your quote request...';
+        submitBtn.innerHTML = 'Submitting quote request...';
+      }
+      if (alertBox) {
+        alertBox.style.display = 'none';
       }
 
-      setTimeout(() => {
-        if (submitBtn) {
-          submitBtn.disabled = false;
-          submitBtn.innerHTML = 'Submit Quote Request';
+      const payload = {
+        source: 'QUOTE_FORM',
+        services: selectedServices,
+        budget: budgetEl ? budgetEl.value : '',
+        timeline: timelineEl ? timelineEl.value : '',
+        name: nameEl ? nameEl.value.trim() : '',
+        email: emailEl ? emailEl.value.trim() : '',
+        phone: phoneEl ? phoneEl.value.trim() : '',
+        company: companyEl ? companyEl.value.trim() : '',
+        notes: notesEl ? notesEl.value.trim() : ''
+      };
+
+      try {
+        const res = await fetch('/api/sync.php?action=submit_lead', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json().catch(() => null);
+        if (!res.ok || !data || !data.success) {
+          throw new Error((data && data.error) || 'Failed to submit quote request. Please check your details and try again.');
         }
         if (alertBox) {
+          alertBox.className = 'alert-box alert-success';
+          alertBox.style.background = '';
+          alertBox.style.border = '';
+          alertBox.style.color = '';
           alertBox.style.display = 'flex';
-          alertBox.innerHTML = '&#10003; Quote inquiry received! Our senior strategy team will review your requirements and provide a customized proposal shortly.';
+          alertBox.innerHTML = '&#10003; ' + (data.message || 'Quote inquiry received! Our senior strategy team will review your requirements and provide a customized proposal shortly.');
         }
         quoteForm.reset();
-      }, 1000);
+      } catch (err) {
+        if (alertBox) {
+          alertBox.className = 'alert-box';
+          alertBox.style.background = 'rgba(239, 68, 68, 0.15)';
+          alertBox.style.border = '1px solid rgba(239, 68, 68, 0.5)';
+          alertBox.style.color = '#fca5a5';
+          alertBox.style.display = 'flex';
+          alertBox.innerHTML = '&#9888; ' + ((err && err.message) || 'Network error while submitting quote request. Please try again.');
+        }
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = origBtnHtml;
+        }
+      }
     });
   }
 

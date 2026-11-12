@@ -6,7 +6,7 @@ echo   DIGITALSNOVA PHARMACY CLOUD POS
 echo   Windows Desktop App Shortcut Installer ^& Standalone POS Launcher
 echo ==============================================================================
 echo.
-set "DN_URL=https://digitalsnova.com/portal/?sector=PHARMACY"
+set "DN_URL=https://digitalsnova.com/portal/?store=pharmacy&sector=PHARMACY&desktop=1"
 set "DN_LINK_NAME=Pharmacy POS - DigitalsNova POS.lnk"
 set "DN_DESC=Batch & Expiry Date Tracking, Laser Barcode Scanning, Strips & Loose Dispenser."
 set "DN_BROWSER="

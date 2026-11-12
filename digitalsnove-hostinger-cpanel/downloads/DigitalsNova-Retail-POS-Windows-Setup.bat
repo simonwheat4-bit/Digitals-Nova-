@@ -6,7 +6,7 @@ echo   DIGITALSNOVA RETAIL MART ^& GENERAL STORE
 echo   Windows Desktop App Shortcut Installer ^& Standalone POS Launcher
 echo ==============================================================================
 echo.
-set "DN_URL=https://digitalsnova.com/portal/?sector=RETAIL_MART"
+set "DN_URL=https://digitalsnova.com/portal/?store=huzaifacondomstore&sector=RETAIL_MART&desktop=1"
 set "DN_LINK_NAME=Retail Mart POS - DigitalsNova POS.lnk"
 set "DN_DESC=High-speed Barcode Scanner Checkout, Hold Bill F4, 1-Click Z-Report Closing."
 set "DN_BROWSER="

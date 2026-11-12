@@ -6,7 +6,7 @@ echo   DIGITALSNOVA RESTAURANT ^& CAFE POS
 echo   Windows Desktop App Shortcut Installer ^& Standalone POS Launcher
 echo ==============================================================================
 echo.
-set "DN_URL=https://digitalsnova.com/portal/?sector=RESTAURANT"
+set "DN_URL=https://digitalsnova.com/portal/?store=naveedresturent&sector=RESTAURANT&desktop=1"
 set "DN_LINK_NAME=Restaurant POS - DigitalsNova POS.lnk"
 set "DN_DESC=Instant KOT, Dining Table Floor T1-T12, Waiter Tracking, Recipe Inventory."
 set "DN_BROWSER="

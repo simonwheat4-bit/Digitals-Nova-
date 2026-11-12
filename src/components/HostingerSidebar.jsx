@@ -81,7 +81,7 @@ export default function HostingerSidebar({
     <aside
       className={`${
         collapsed ? 'w-20' : 'w-64'
-      } bg-[#0B0F19] text-slate-300 border-r border-slate-800/80 h-screen sticky top-0 flex flex-col justify-between transition-all duration-300 ease-in-out select-none z-40 shrink-0 shadow-2xl`}
+      } bg-[#0B0F19] text-slate-300 border-r border-slate-800/80 h-screen sticky top-0 hidden md:flex flex-col justify-between transition-all duration-300 ease-in-out select-none z-40 shrink-0 shadow-2xl`}
     >
       {/* 1. TOP BRAND & CLINIC IDENTITY */}
       <div className="flex flex-col border-b border-slate-800/70 p-3.5">

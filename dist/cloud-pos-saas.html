@@ -7,6 +7,10 @@
   <meta name="description" content="Pakistan's premier enterprise cloud POS, Hospital Management System (HMS), and Pharmacy ERP platform. Experience 1.8-second barcode billing, automated Z-report cash reconciliation, multi-session treatment ledgers, and strict anti-fraud discount controls.">
   <meta name="keywords" content="cloud pos software, clinic management system, hospital pos system pakistan, pharmacy billing software, retail pos system, automated z report, multi-session treatment ledgers, digitalsnova portal">
   <link rel="canonical" href="https://digitalsnova.com/cloud-pos-saas">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" href="/favicon.ico" sizes="any">
+  <link rel="icon" type="image/svg+xml" href="/icon.svg">
+  <link rel="icon" type="image/png" href="assets/logo.png">
 
   <!-- OpenGraph & Social Cards -->
   <meta property="og:type" content="website">
@@ -1191,11 +1195,11 @@
       </nav>
     </div>
     <div style="padding: 20px 0; display: flex; flex-direction: column; gap: 10px;">
-      <button class="btn-saas-login" onclick="openLoginModal(); document.querySelector('.mobile-overlay').classList.remove('open'); document.querySelector('.mobile-nav-drawer').classList.remove('open');" style="width: 100%; justify-content: center; padding: 12px; background: rgba(0, 229, 255, 0.1); border: 1px solid #00e5ff; color: #00e5ff; border-radius: 10px; font-weight: 700; display: flex; align-items: center; gap: 8px; font-size: 14px;">
+      <button class="btn-saas-login" onclick="openLoginModal(); document.querySelector('.mobile-overlay').classList.remove('active'); document.querySelector('.mobile-nav-drawer').classList.remove('open');" style="width: 100%; justify-content: center; padding: 12px; background: rgba(0, 229, 255, 0.1); border: 1px solid #00e5ff; color: #00e5ff; border-radius: 10px; font-weight: 700; display: flex; align-items: center; gap: 8px; font-size: 14px;">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
         Login to My Portal
       </button>
-      <button class="btn-saas-primary" onclick="openTrialModal('', 'TRIAL_3_DAYS'); document.querySelector('.mobile-overlay').classList.remove('open'); document.querySelector('.mobile-nav-drawer').classList.remove('open');" style="width: 100%; justify-content: center;">
+      <button class="btn-saas-primary" onclick="openTrialModal('', 'TRIAL_3_DAYS'); document.querySelector('.mobile-overlay').classList.remove('active'); document.querySelector('.mobile-nav-drawer').classList.remove('open');" style="width: 100%; justify-content: center;">
         Start 3-Day Free Trial &rarr;
       </button>
     </div>
@@ -2185,7 +2189,6 @@
     }
     window.addEventListener('DOMContentLoaded', () => {
       handleHashRoute();
-      syncLandingPagePricing();
       setBillingCycle('MONTHLY');
       try {
         const demoSubs = ['alshifa', 'citymed', 'lifecare', 'altahirclinics'];
@@ -2425,6 +2428,12 @@
       document.getElementById('modalFormView').style.display = 'block';
       document.getElementById('modalLoadingView').style.display = 'none';
       document.getElementById('modalSuccessView').style.display = 'none';
+      const errBox = document.getElementById('obErrorMsg');
+      if (errBox) { errBox.style.display = 'none'; errBox.innerText = ''; }
+      ['pstep2', 'pstep3', 'pstep4'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.opacity = '0.4';
+      });
       const typeSelect = document.getElementById('obType');
       const billingSelect = document.getElementById('obBillingCycle');
       if (preferredPlan) {
@@ -2445,7 +2454,26 @@
       document.getElementById('trialModal').classList.remove('open');
     }
 
+    function showLoginError(msg) {
+      const box = document.getElementById('loginErrorMsg');
+      if (box) {
+        box.innerText = msg || 'Invalid credentials.';
+        box.style.display = 'block';
+      } else {
+        alert(msg || 'Login failed.');
+      }
+    }
+
+    function clearLoginError() {
+      const box = document.getElementById('loginErrorMsg');
+      if (box) {
+        box.style.display = 'none';
+        box.innerText = '';
+      }
+    }
+
     function openLoginModal() {
+      clearLoginError();
       checkOwnerSuperAdminAccess();
       const modal = document.getElementById('loginModal');
       if (modal) modal.classList.add('open');
@@ -2549,15 +2577,51 @@
 
       let authenticatedUser = null;
       let targetSubdomain = subdomain;
+      let targetSector = '';
+      let isOfflineNetwork = false;
 
-      // 1. Super Admin authentication (Owner: Ubaid)
-      if (cleanU === 'superadmin' || cleanU === 'ubaid') {
-        if (cleanP !== '2200230' && cleanP !== '123' && cleanP !== 'admin123') {
-          showLoginError('⚠️ Invalid password for Master Super Admin.');
+      // 1. Central Cloud Backend Authentication FIRST (Super Admin, Tenant Admin, Staff)
+      try {
+        const apiRes = await fetch('/api/sync.php?action=login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ identifier: cleanU, password: cleanP })
+        });
+        const apiData = await apiRes.json().catch(() => null);
+        if (apiRes.ok && apiData && apiData.success && apiData.user) {
+          authenticatedUser = apiData.user;
+          if (authenticatedUser.role === 'SUPER_ADMIN') {
+            targetSubdomain = 'hq';
+            authenticatedUser.subdomain = 'hq';
+            authenticatedUser.tenantId = 'GLOBAL';
+            authenticatedUser.tenantName = 'Digital Snove SaaS Headquarters';
+            authenticatedUser.clinicName = 'Digital Snove SaaS Headquarters';
+          } else if (apiData.tenant && apiData.tenant.subdomain) {
+            targetSubdomain = apiData.tenant.subdomain;
+            authenticatedUser.subdomain = apiData.tenant.subdomain;
+            authenticatedUser.tenantName = apiData.tenant.name;
+            authenticatedUser.clinicName = apiData.tenant.name;
+            targetSector = (apiData.tenant.vertical || apiData.tenant.sector || apiData.tenant.storeType || '').toUpperCase();
+            authenticatedUser.vertical = targetSector || authenticatedUser.vertical;
+            if (!authenticatedUser.role) {
+              authenticatedUser.role = targetSector === 'CLINIC_HMS' ? 'CLINIC_ADMIN' : 'STORE_ADMIN';
+            }
+            authenticatedUser.tenantForceLogoutAt = Number(apiData.tenant.forceLogoutAt || 0);
+          }
+        } else if (apiRes.status === 401 || apiRes.status === 403) {
+          showLoginError('⚠️ ' + ((apiData && apiData.error) || 'Invalid credentials or account suspended by administrator.'));
           return;
         }
+      } catch (netErr) {
+        isOfflineNetwork = true;
+        console.warn('Central API login check error, falling back to local cache:', netErr);
+      }
+
+      // 2. Offline-only Super Admin fallback (never overrides persisted server password when online)
+      if (!authenticatedUser && isOfflineNetwork && (cleanU === 'superadmin' || cleanU === 'ubaid') && cleanP === '2200230') {
         authenticatedUser = {
-          username: 'superadmin',
+          id: 'u_ubaid',
+          username: 'ubaid',
           name: 'Ubaid Ur Rehman (Platform Owner)',
           role: 'SUPER_ADMIN',
           tenantId: 'GLOBAL',
@@ -2568,41 +2632,6 @@
         targetSubdomain = 'hq';
       }
 
-      let targetSector = '';
-
-      // 2. Central Cloud Backend Authentication (Multi-Device SaaS Sync)
-      if (!authenticatedUser) {
-        try {
-          const apiRes = await fetch('/api/sync.php?action=login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ identifier: cleanU, password: cleanP })
-          });
-          const apiData = await apiRes.json().catch(() => null);
-          if (apiRes.ok) {
-            if (apiData && apiData.success && apiData.user) {
-              authenticatedUser = apiData.user;
-              if (apiData.tenant && apiData.tenant.subdomain) {
-                targetSubdomain = apiData.tenant.subdomain;
-                authenticatedUser.subdomain = apiData.tenant.subdomain;
-                authenticatedUser.tenantName = apiData.tenant.name;
-                authenticatedUser.clinicName = apiData.tenant.name;
-                targetSector = (apiData.tenant.vertical || apiData.tenant.sector || apiData.tenant.storeType || '').toUpperCase();
-                authenticatedUser.vertical = targetSector || authenticatedUser.vertical;
-                if (!authenticatedUser.role) {
-                  authenticatedUser.role = targetSector === 'CLINIC_HMS' ? 'CLINIC_ADMIN' : 'STORE_ADMIN';
-                }
-              }
-            }
-          } else if (apiRes.status === 401 || apiRes.status === 403) {
-            showLoginError('?? ' + ((apiData && apiData.error) || 'Invalid credentials or account suspended by administrator.'));
-            return;
-          }
-        } catch (netErr) {
-          console.warn('Central API login check error, falling back to local cache:', netErr);
-        }
-      }
-
       // 3. Custom staff authentication
       if (!authenticatedUser) {
         let staffList = [];
@@ -2610,11 +2639,11 @@
         const matchedStaff = staffList.find(s => s.username.toLowerCase() === cleanU);
         if (matchedStaff) {
           if ((matchedStaff.password || '123') !== cleanP) {
-            showLoginError('?? Invalid username or password.');
+            showLoginError('⚠️ Invalid username or password.');
             return;
           }
           if (matchedStaff.active === false) {
-            showLoginError('?? This staff account is deactivated. Contact your Store Admin.');
+            showLoginError('⚠️ This staff account is deactivated. Contact your Store Admin.');
             return;
           }
           authenticatedUser = {
@@ -2642,11 +2671,11 @@
         if (matchedTenant) {
           const expectedPass = matchedTenant.adminUser?.password || matchedTenant.adminPassword || '123';
           if (expectedPass !== cleanP) {
-            showLoginError('?? Invalid username or password.');
+            showLoginError('⚠️ Invalid username or password.');
             return;
           }
           if (matchedTenant.manualBlocked === true || String(matchedTenant.status || '').toUpperCase() === 'BLOCKED') {
-            showLoginError('?? This store account has been suspended by administrator.');
+            showLoginError('⚠️ This store account has been suspended by administrator.');
             return;
           }
           const tBt = String(matchedTenant.vertical || matchedTenant.sector || matchedTenant.storeType || matchedTenant.businessType || matchedTenant.name || '').toLowerCase();
@@ -2663,14 +2692,15 @@
             tenantName: matchedTenant.name,
             clinicName: matchedTenant.name,
             subdomain: matchedTenant.subdomain,
-            vertical: targetSector
+            vertical: targetSector,
+            tenantForceLogoutAt: Number(matchedTenant.forceLogoutAt || 0)
           };
           targetSubdomain = matchedTenant.subdomain;
         }
       }
 
       if (!authenticatedUser) {
-        showLoginError('?? Invalid username or password. Please verify your credentials or register a new account.');
+        showLoginError('⚠️ Invalid username or password. Please verify your credentials or register a new account.');
         return;
       }
 
@@ -2744,10 +2774,36 @@
       const cleanEmail = email.toLowerCase().trim();
       const cleanSlug = business.toLowerCase().replace(/[^a-z0-9]/g, '') || 'clinic';
 
-      let regTenants = [];
+      function showObError(msg) {
+        document.getElementById('modalLoadingView').style.display = 'none';
+        document.getElementById('modalFormView').style.display = 'block';
+        ['pstep2', 'pstep3', 'pstep4'].forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.style.opacity = '0.4';
+        });
+        let errBox = document.getElementById('obErrorMsg');
+        if (!errBox) {
+          errBox = document.createElement('div');
+          errBox.id = 'obErrorMsg';
+          errBox.style.cssText = 'background: rgba(239,68,68,0.15); border: 1px solid #ef4444; color: #fca5a5; font-size: 12px; font-weight: 700; padding: 10px 14px; border-radius: 8px; margin-bottom: 14px; text-align: center; animation: modalPop 0.25s ease;';
+          const form = document.getElementById('onboardingForm');
+          form.insertBefore(errBox, form.firstChild);
+        }
+        errBox.style.display = 'block';
+        errBox.innerText = msg;
+      }
+
+      const prevErr = document.getElementById('obErrorMsg');
+      if (prevErr) { prevErr.style.display = 'none'; prevErr.innerText = ''; }
+
+      let regTenants = [], deletedTenantIds = [];
       try {
         regTenants = JSON.parse(localStorage.getItem('digitalsnova_registered_tenants') || '[]');
       } catch { regTenants = []; }
+      try {
+        deletedTenantIds = JSON.parse(localStorage.getItem('digitalsnova_deleted_tenant_ids') || '[]');
+      } catch { deletedTenantIds = []; }
+      regTenants = regTenants.filter(t => !deletedTenantIds.includes(t.id) && !deletedTenantIds.includes((t.subdomain || '').toLowerCase()));
 
       const isDuplicate = regTenants.some(t => {
         const tP = (t.phone || '').replace(/[^0-9]/g, '');
@@ -2759,16 +2815,7 @@
       });
 
       if (isDuplicate) {
-        let errBox = document.getElementById('obErrorMsg');
-        if (!errBox) {
-          errBox = document.createElement('div');
-          errBox.id = 'obErrorMsg';
-          errBox.style.cssText = 'background: rgba(239,68,68,0.15); border: 1px solid #ef4444; color: #fca5a5; font-size: 12px; font-weight: 700; padding: 10px 14px; border-radius: 8px; margin-bottom: 14px; text-align: center; animation: modalPop 0.25s ease;';
-          const form = document.getElementById('onboardingForm');
-          form.insertBefore(errBox, form.firstChild);
-        }
-        errBox.style.display = 'block';
-        errBox.innerText = 'An account with this email/phone already exists.';
+        showObError('An account with this email/phone already exists.');
         return;
       }
 
@@ -2895,51 +2942,80 @@
         }
       };
 
-      // Animation steps with async wait
-      await new Promise(r => setTimeout(r, 600));
+      // Server-first duplicate/reserved validation BEFORE persisting localStorage
+      await new Promise(r => setTimeout(r, 400));
       document.getElementById('pstep2').style.opacity = '1';
       document.getElementById('pstep2').innerHTML = '<span style="color: #00e5ff;">&#10003;</span> Generating 16-Character Master License API Key...';
 
-      await new Promise(r => setTimeout(r, 700));
+      await new Promise(r => setTimeout(r, 400));
       document.getElementById('pstep3').style.opacity = '1';
-      document.getElementById('pstep3').innerHTML = '<span style="color: #00e5ff;">&#10003;</span> Allocating Dedicated Subdomain (' + slug + '.digitalsnova.com)...';
+      document.getElementById('pstep3').innerHTML = '<span style="color: #00e5ff;">&#10003;</span> Validating Subdomain & Provisioning Cloud Store...';
 
-      await new Promise(r => setTimeout(r, 600));
       document.getElementById('pstep4').style.opacity = '1';
-      document.getElementById('pstep4').innerHTML = '<span style="color: #f59e0b;">⏳</span> Sending Welcome Credentials Email via Gmail SMTP...';
+      document.getElementById('pstep4').innerHTML = '<span style="color: #f59e0b;">⏳</span> Syncing Cloud Database & Welcome Email...';
 
-      // Save to localStorage
+      let srvSavedTenant = null;
       try {
-        // Guarantee 100% fresh account: zero demo products, zero dummy sales, zero past dues
+        let srvRes = await fetch('/api/sync.php?action=register_tenant', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newTenantRecord)
+        });
+        if (srvRes.status === 404) {
+          srvRes = await fetch('./api/sync.php?action=register_tenant', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(newTenantRecord)
+          });
+        }
+        const srvJson = await srvRes.json().catch(() => null);
+        if (!srvRes.ok || !srvJson || srvJson.success === false) {
+          showObError((srvJson && srvJson.error) || 'Account registration rejected (HTTP ' + srvRes.status + '). Please verify your details.');
+          return;
+        }
+        if (srvJson.tenant) srvSavedTenant = srvJson.tenant;
+      } catch (netErr) {
+        console.warn('Offline fallback registration:', netErr);
+      }
+
+      const finalTenant = srvSavedTenant || newTenantRecord;
+      const finalSlug = (finalTenant.subdomain || slug).toLowerCase();
+
+      // Persist validated registration into localStorage only after server acceptance
+      try {
         try {
-          localStorage.removeItem('digitalsnova_treatment_catalog_' + slug);
-          localStorage.removeItem('digitalsnova_sales_' + slug);
-          localStorage.removeItem('digitalsnova_active_shift_' + slug);
-          localStorage.removeItem('digitalsnova_closed_shifts_' + slug);
-          localStorage.removeItem('digitalsnova_parked_sales_' + slug);
-          localStorage.removeItem('digitalsnova_cache_' + slug);
+          localStorage.removeItem('digitalsnova_treatment_catalog_' + finalSlug);
+          localStorage.removeItem('digitalsnova_sales_' + finalSlug);
+          localStorage.removeItem('digitalsnova_active_shift_' + finalSlug);
+          localStorage.removeItem('digitalsnova_closed_shifts_' + finalSlug);
+          localStorage.removeItem('digitalsnova_parked_sales_' + finalSlug);
+          localStorage.removeItem('digitalsnova_cache_' + finalSlug);
           let customInv = JSON.parse(localStorage.getItem('digitalsnova_custom_inventory') || '[]');
-          customInv = customInv.filter(item => item.subdomain && item.subdomain.toLowerCase() !== slug && !['alshifa', 'citymed', 'lifecare', 'altahirclinics', 'default', 'store'].includes(item.subdomain.toLowerCase()));
+          customInv = customInv.filter(item => item.subdomain && item.subdomain.toLowerCase() !== finalSlug && !['alshifa', 'citymed', 'lifecare', 'altahirclinics', 'default', 'store'].includes(item.subdomain.toLowerCase()));
           localStorage.setItem('digitalsnova_custom_inventory', JSON.stringify(customInv));
         } catch(e) {}
-        localStorage.setItem('digitalsnova_subdomain', slug);
+        localStorage.setItem('digitalsnova_subdomain', finalSlug);
         localStorage.setItem('digitalsnova_active_sector', sectorCode);
         localStorage.setItem('digitalsnova_auth_user', JSON.stringify({
-          username: 'admin.' + slug,
+          id: 'u_' + finalSlug,
+          username: (finalTenant.adminUsername || ('admin.' + finalSlug)),
           name: name,
           tenantName: business,
           clinicName: business,
           role: sectorCode === 'CLINIC_HMS' ? 'CLINIC_ADMIN' : 'STORE_ADMIN',
-          tenantId: 'tenant_' + slug,
+          tenantId: finalTenant.id,
+          subdomain: finalSlug,
           licenseKey: licenseKey,
           businessType: bType,
           business_type: bType,
-          vertical: sectorCode
+          vertical: sectorCode,
+          loggedInAt: Date.now(),
+          tenantForceLogoutAt: Number(finalTenant.forceLogoutAt || 0)
         }));
 
         let regTenants = JSON.parse(localStorage.getItem('digitalsnova_registered_tenants') || '[]');
-        regTenants = regTenants.filter(t => t.id !== newTenantRecord.id && t.subdomain !== slug);
-        regTenants.push(newTenantRecord);
+        regTenants = regTenants.filter(t => t.id !== finalTenant.id && (t.subdomain || '').toLowerCase() !== finalSlug);
+        regTenants.push(finalTenant);
         localStorage.setItem('digitalsnova_registered_tenants', JSON.stringify(regTenants));
 
         let notifs = JSON.parse(localStorage.getItem('digitalsnova_superadmin_notifications') || '[]');
@@ -2948,9 +3024,9 @@
           timestamp: new Date().toISOString(),
           type: 'NEW_REGISTRATION',
           title: '🎉 New Store Registered (Website)',
-          message: `Store "${business}" (${slug}.digitalsnova.com) registered on ${planName}! Owner: ${name} • Phone: ${phone} • Email: ${email}`,
+          message: `Store "${business}" (${finalSlug}.digitalsnova.com) registered on ${planName}! Owner: ${name} • Phone: ${phone} • Email: ${email}`,
           tenantName: business,
-          subdomain: slug,
+          subdomain: finalSlug,
           phone: phone,
           email: email,
           plan: planName,
@@ -2959,42 +3035,12 @@
           businessType: bType,
           vertical: sectorCode,
           monthlyFee: sectorMonthlyFee,
-          adminUser: 'admin.' + slug,
+          adminUser: finalTenant.adminUsername || ('admin.' + finalSlug),
           unread: true
         });
         localStorage.setItem('digitalsnova_superadmin_notifications', JSON.stringify(notifs.slice(0, 50)));
       } catch (e) {
         console.warn('Local save warning:', e);
-      }
-
-      // Synchronous Cloud Sync & Email Dispatch with keepalive
-      try {
-        const syncPromise = (async () => {
-          let res = null;
-          try {
-            res = await fetch('/api/sync.php?action=register_tenant', {
-              method: 'POST',
-              keepalive: true,
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(newTenantRecord)
-            });
-          } catch(e) {}
-          if (!res || !res.ok) {
-            try {
-              res = await fetch('./api/sync.php?action=register_tenant', {
-                method: 'POST',
-                keepalive: true,
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(newTenantRecord)
-              });
-            } catch(e) {}
-          }
-          return res;
-        })();
-        const timeoutPromise = new Promise(r => setTimeout(r, 6000));
-        await Promise.race([syncPromise, timeoutPromise]);
-      } catch (err) {
-        console.warn('Sync error:', err);
       }
 
       document.getElementById('pstep4').innerHTML = '<span style="color: #10b981;">&#10003;</span> ' + planName + ' Active &amp; Credentials Emailed!';
@@ -3018,7 +3064,7 @@
       // Wire up Launch Web App button
       const launchWebAppBtn = document.getElementById('btnLaunchWebApp');
       if (launchWebAppBtn) {
-        launchWebAppBtn.href = `/portal/?store=${encodeURIComponent(slug)}&sector=${encodeURIComponent(sectorCode)}`;
+        launchWebAppBtn.href = `/portal/?store=${encodeURIComponent(finalSlug)}&sector=${encodeURIComponent(sectorCode)}`;
       }
 
       // Setup WhatsApp save link
@@ -3052,21 +3098,21 @@
     if (mobileToggle) {
       mobileToggle.addEventListener('click', () => {
         drawer.classList.add('open');
-        overlay.classList.add('open');
+        overlay.classList.add('active');
       });
     }
 
     if (closeBtn) {
       closeBtn.addEventListener('click', () => {
         drawer.classList.remove('open');
-        overlay.classList.remove('open');
+        overlay.classList.remove('active');
       });
     }
 
     if (overlay) {
       overlay.addEventListener('click', () => {
         drawer.classList.remove('open');
-        overlay.classList.remove('open');
+        overlay.classList.remove('active');
       });
     }
 

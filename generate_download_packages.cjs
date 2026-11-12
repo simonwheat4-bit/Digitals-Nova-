@@ -4,6 +4,7 @@ const path = require('path');
 const sectors = [
   {
     key: 'CLINIC_HMS',
+    store: 'clinic',
     title: 'DigitalsNova Clinic & Hospital HMS',
     shortName: 'Clinic HMS',
     fileName: 'DigitalsNova-Clinic-HMS',
@@ -11,6 +12,7 @@ const sectors = [
   },
   {
     key: 'RESTAURANT',
+    store: 'naveedresturent',
     title: 'DigitalsNova Restaurant & Cafe POS',
     shortName: 'Restaurant POS',
     fileName: 'DigitalsNova-Restaurant-POS',
@@ -18,6 +20,7 @@ const sectors = [
   },
   {
     key: 'PHARMACY',
+    store: 'pharmacy',
     title: 'DigitalsNova Pharmacy Cloud POS',
     shortName: 'Pharmacy POS',
     fileName: 'DigitalsNova-Pharmacy-POS',
@@ -25,6 +28,7 @@ const sectors = [
   },
   {
     key: 'RETAIL_MART',
+    store: 'huzaifacondomstore',
     title: 'DigitalsNova Retail Mart & General Store',
     shortName: 'Retail Mart POS',
     fileName: 'DigitalsNova-Retail-POS',
@@ -129,7 +133,7 @@ function buildWindowsSetupBat({ url, title, shortName, desc }) {
 }
 
 sectors.forEach(sec => {
-  const url = `https://digitalsnova.com/portal/?sector=${sec.key}`;
+  const url = `https://digitalsnova.com/portal/?store=${sec.store}&sector=${sec.key}&desktop=1`;
   const batScript = buildWindowsSetupBat({
     url,
     title: sec.title,

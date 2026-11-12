@@ -1,41 +1,15 @@
 <?php
 // ==============================================================================
-// DigitalsNova Cloud SaaS Sync & Email Automation Backend
+// DigitalsNova Cloud SaaS Sync, Multi-Tenant ERP & Email Automation Backend
 // Hostinger Shared Hosting Native PHP API
 // ==============================================================================
 
-// Set CORS headers so API can be called from any subdomain or client PC
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
-header('Content-Type: application/json; charset=utf-8');
+require_once __DIR__ . '/bootstrap.php';
 
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code(200);
-    exit();
-}
+dnSendApiHeaders();
+dnHandleCorsPreflight();
 
-// Determine shared data directory across both root and /portal/ deployments
-$candidates = [
-    dirname(__DIR__) . '/api/data',
-    __DIR__ . '/data',
-    dirname(dirname(__DIR__)) . '/api/data',
-    __DIR__ . '/../portal/api/data'
-];
-
-$dataDir = null;
-foreach ($candidates as $cand) {
-    if (is_dir($cand) && is_writable($cand)) {
-        $dataDir = realpath($cand);
-        break;
-    }
-}
-if (!$dataDir) {
-    $dataDir = __DIR__ . '/data';
-    if (!is_dir($dataDir)) {
-        @mkdir($dataDir, 0777, true);
-    }
-}
+$dataDir = dnResolveDataDir();
 
 $tenantsFile = $dataDir . '/tenants.json';
 $notifsFile = $dataDir . '/notifications.json';
@@ -49,1015 +23,348 @@ $platformBrandFile = $dataDir . '/platform_brand.json';
 $remoteConfigFile = $dataDir . '/remote_config.json';
 $passwordResetsFile = $dataDir . '/password_resets.json';
 $cronLogsFile = $dataDir . '/cron_logs.json';
+$otpTokensFile = $dataDir . '/otp_tokens.json';
+$leadsFile = $dataDir . '/leads.json';
 
-function readUnifiedJson($primaryPath, $filename, $default = []) {
-    if (file_exists($primaryPath)) {
-        return readJsonFile($primaryPath, $default);
-    }
-    $candidates = [
-        dirname(__DIR__) . '/api/data/' . $filename,
-        dirname(__DIR__) . '/portal/api/data/' . $filename,
-        dirname(dirname(__DIR__)) . '/api/data/' . $filename,
-        __DIR__ . '/data/' . $filename,
-        __DIR__ . '/../portal/api/data/' . $filename
-    ];
-    foreach ($candidates as $cand) {
-        if ($cand !== $primaryPath && file_exists($cand)) {
-            return readJsonFile($cand, $default);
-        }
-    }
-    return $default;
-}
-
-// Sync across secondary paths if they exist
 function syncToSecondaryDataDirs($filename, $data) {
-    $secondaries = [
-        dirname(__DIR__) . '/portal/api/data/' . $filename,
-        dirname(__DIR__) . '/api/data/' . $filename,
-        dirname(dirname(__DIR__)) . '/api/data/' . $filename,
-        __DIR__ . '/data/' . $filename
-    ];
-    foreach ($secondaries as $sec) {
-        $secDir = dirname($sec);
-        if (is_dir($secDir) && is_writable($secDir)) {
-            @file_put_contents($sec, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE), LOCK_EX);
-        }
-    }
+    global $dataDir;
+    dnSyncToSecondaryDataDirs($filename, $data, $dataDir);
 }
 
-// Unified multi-path loader to never miss a client registration
-function getUnifiedTenants($primaryPath) {
-    $tenants = readJsonFile($primaryPath);
-    $otherPaths = [
-        dirname(__DIR__) . '/api/data/tenants.json',
-        dirname(__DIR__) . '/portal/api/data/tenants.json',
-        __DIR__ . '/data/tenants.json',
-        __DIR__ . '/../portal/api/data/tenants.json'
-    ];
-    $dirty = false;
-    foreach ($otherPaths as $op) {
-        if ($op !== $primaryPath && file_exists($op)) {
-            $other = readJsonFile($op);
-            foreach ($other as $ot) {
-                $oSub = strtolower($ot['subdomain'] ?? '');
-                $oId = $ot['id'] ?? '';
-                $exists = false;
-                foreach ($tenants as $t) {
-                    if ((!empty($oSub) && strtolower($t['subdomain'] ?? '') === $oSub) || (!empty($oId) && ($t['id'] ?? '') === $oId)) {
-                        $exists = true;
-                        break;
+function sendDigitalsNovaEmail($toEmail, $subject, $htmlContent, $senderName = 'DigitalsNova Team') {
+    return dnSendGmailSmtp($toEmail, $subject, $htmlContent, $senderName);
+}
+
+function getUnifiedNotifications($dataDir) {
+    $primaryPath = $dataDir . '/notifications.json';
+    $notifs = dnReadJsonFile($primaryPath, []);
+    $seededFlag = $dataDir . '/.notifs_seeded.flag';
+
+    // Only import docroot seed notifications ONCE on a brand-new installation
+    if (!file_exists($seededFlag) && empty($notifs)) {
+        $otherPaths = [
+            __DIR__ . '/data/notifications.json',
+            dirname(__DIR__) . '/portal/api/data/notifications.json'
+        ];
+        $seen = [];
+        foreach ($otherPaths as $op) {
+            if (file_exists($op)) {
+                foreach (dnReadJsonFile($op, []) as $on) {
+                    if (!empty($on['id']) && empty($seen[$on['id']])) {
+                        $notifs[] = $on;
+                        $seen[$on['id']] = true;
                     }
                 }
-                if (!$exists) {
-                    $tenants[] = $ot;
-                    $dirty = true;
-                }
             }
         }
+        if (!empty($notifs)) {
+            usort($notifs, function($a, $b) {
+                return strtotime($b['timestamp'] ?? '0') - strtotime($a['timestamp'] ?? '0');
+            });
+            dnWriteJsonFile($primaryPath, $notifs);
+            dnSyncToSecondaryDataDirs('notifications.json', $notifs, $dataDir);
+        }
+        @file_put_contents($seededFlag, date('c'));
     }
-    
-    $defaultSeedTenants = [
-        [
-            'id' => 'tenant_naveedresturent',
-            'name' => 'NAVEED RESTURENT',
-            'subdomain' => 'naveedresturent',
-            'domain' => 'digitalsnova.com/portal/?store=naveedresturent',
-            'portalUrl' => 'https://digitalsnova.com/portal/?store=naveedresturent',
-            'phone' => '03012200230',
-            'email' => '',
-            'businessType' => 'Restaurants, Cafes & Food Outlets',
-            'business_type' => 'Restaurants, Cafes & Food Outlets',
-            'vertical' => 'RESTAURANT',
-            'sector' => 'RESTAURANT',
-            'storeType' => 'RESTAURANT',
-            'planType' => 'MONTHLY',
-            'planName' => 'Restaurant & Cafe POS (Monthly)',
-            'monthlyFee' => 6999,
-            'monthly_fee' => 6999,
-            'createdAt' => '2026-11-05T05:50:00.000Z',
-            'adminName' => 'NAVEED',
-            'adminUsername' => 'admin.naveedresturent',
-            'adminPassword' => '123',
-            'adminPin' => '1234',
-            'status' => 'ACTIVE',
-            'enabledModules' => [
-                'pos' => true,
-                'inventory' => true,
-                'tableManagement' => true,
-                'patientsLedger' => false
-            ],
-            'subscription' => [
-                'state' => 'ACTIVE',
-                'plan' => 'MONTHLY',
-                'planName' => 'Restaurant & Cafe POS (Monthly)',
-                'billingCycleDay' => 1,
-                'graceDaysRemaining' => 3,
-                'monthlyFee' => 6999
-            ],
-            'adminUser' => [
-                'name' => 'NAVEED',
-                'username' => 'admin.naveedresturent',
-                'password' => '123',
-                'phone' => '03012200230',
-                'role' => 'STORE_ADMIN'
-            ]
-        ],
-        [
-            'id' => 'tenant_huzaifacondomstore',
-            'name' => 'Huzaifa Condom store',
-            'subdomain' => 'huzaifacondomstore',
-            'domain' => 'digitalsnova.com/portal/?store=huzaifacondomstore',
-            'portalUrl' => 'https://digitalsnova.com/portal/?store=huzaifacondomstore',
-            'phone' => '03153527736',
-            'email' => '',
-            'businessType' => 'Retail Mart / General Store',
-            'business_type' => 'Retail Mart / General Store',
-            'vertical' => 'RETAIL_MART',
-            'sector' => 'RETAIL_MART',
-            'storeType' => 'RETAIL_MART',
-            'planType' => 'MONTHLY',
-            'planName' => 'Retail Mart POS (Monthly)',
-            'monthlyFee' => 4999,
-            'monthly_fee' => 4999,
-            'createdAt' => '2026-11-05T05:26:00.000Z',
-            'adminName' => 'Huzaifa shykh',
-            'adminUsername' => 'admin.huzaifacondomstore',
-            'adminPassword' => '123',
-            'adminPin' => '1234',
-            'status' => 'ACTIVE',
-            'enabledModules' => [
-                'pos' => true,
-                'inventory' => true,
-                'patientsLedger' => false
-            ],
-            'subscription' => [
-                'state' => 'ACTIVE',
-                'plan' => 'MONTHLY',
-                'planName' => 'Retail Mart POS (Monthly)',
-                'billingCycleDay' => 1,
-                'graceDaysRemaining' => 3,
-                'monthlyFee' => 4999
-            ],
-            'adminUser' => [
-                'name' => 'Huzaifa shykh',
-                'username' => 'admin.huzaifacondomstore',
-                'password' => '123',
-                'phone' => '03153527736',
-                'role' => 'STORE_ADMIN'
-            ]
-        ],
-        [
-            'id' => 'tenant_clinic',
-            'name' => 'clinic',
-            'subdomain' => 'clinic',
-            'domain' => 'digitalsnova.com/portal/?store=clinic',
-            'portalUrl' => 'https://digitalsnova.com/portal/?store=clinic',
-            'phone' => '03012200230',
-            'email' => 'ubaid123@gmail.com',
-            'businessType' => 'Clinic / Hospital',
-            'business_type' => 'Clinic / Hospital',
-            'vertical' => 'CLINIC_HMS',
-            'sector' => 'CLINIC_HMS',
-            'storeType' => 'CLINIC_HMS',
-            'planType' => 'TRIAL_3_DAYS',
-            'planName' => '3-Day Enterprise Trial',
-            'monthlyFee' => 7999,
-            'monthly_fee' => 7999,
-            'createdAt' => '2026-11-04T10:16:00.000Z',
-            'adminName' => 'ubaid',
-            'adminUsername' => 'admin.clinic',
-            'adminPassword' => '123',
-            'adminPin' => '1234',
-            'status' => 'ACTIVE',
-            'enabledModules' => [
-                'pos' => true,
-                'inventory' => true,
-                'patientsLedger' => true
-            ],
-            'subscription' => [
-                'state' => 'ACTIVE',
-                'plan' => 'TRIAL_3_DAYS',
-                'planName' => '3-Day Enterprise Trial',
-                'billingCycleDay' => 1,
-                'graceDaysRemaining' => 3,
-                'monthlyFee' => 7999
-            ],
-            'adminUser' => [
-                'name' => 'ubaid',
-                'username' => 'admin.clinic',
-                'password' => '123',
-                'email' => 'ubaid123@gmail.com',
-                'phone' => '03012200230',
-                'role' => 'CLINIC_ADMIN'
-            ]
-        ]
+
+    return is_array($notifs) ? $notifs : [];
+}
+
+function dnFindTenantMatch($tenants, $targetId = '', $targetSub = '') {
+    $tid = trim((string)$targetId);
+    $tsub = strtolower(trim((string)$targetSub));
+    foreach ($tenants as $idx => $t) {
+        $curId = (string)($t['id'] ?? '');
+        $curSub = strtolower((string)($t['subdomain'] ?? ''));
+        if (($tid !== '' && ($curId === $tid || $curSub === strtolower($tid))) ||
+            ($tsub !== '' && $curSub === $tsub)) {
+            return $idx;
+        }
+    }
+    return -1;
+}
+
+function dnResolveWorkspaceContext($body, $tenants) {
+    $rawSub = $body['subdomain']
+        ?? ($_GET['subdomain']
+        ?? ($_GET['store']
+        ?? ($_SERVER['HTTP_X_TENANT_SUBDOMAIN'] ?? '')));
+    $rawTid = $body['tenantId'] ?? ($_GET['tenantId'] ?? '');
+    $cleanSub = dnSanitizeSubdomain($rawSub);
+
+    $idx = dnFindTenantMatch($tenants, $rawTid, $cleanSub);
+    $tenant = ($idx !== -1) ? $tenants[$idx] : null;
+    if ($tenant && !empty($tenant['subdomain'])) {
+        $cleanSub = dnSanitizeSubdomain($tenant['subdomain']);
+    }
+    if ($cleanSub === '' && $rawTid !== '') {
+        $cleanSub = dnSanitizeSubdomain($rawTid);
+    }
+    return [
+        'subdomain' => $cleanSub,
+        'tenantId' => $tenant ? ($tenant['id'] ?? $rawTid) : $rawTid,
+        'tenant' => $tenant,
+        'index' => $idx
     ];
-    $deletedLookup = [];
-    $deletedPath = dirname($primaryPath) . '/deleted_tenants.json';
-    foreach (readUnifiedJson($deletedPath, 'deleted_tenants.json', []) as $dt) {
-        if (!empty($dt['id'])) $deletedLookup[strtolower($dt['id'])] = true;
-        if (!empty($dt['subdomain'])) $deletedLookup[strtolower($dt['subdomain'])] = true;
-    }
-
-    foreach ($defaultSeedTenants as $st) {
-        $stSub = strtolower($st['subdomain'] ?? '');
-        $stId = strtolower($st['id'] ?? '');
-        if ((!empty($stSub) && isset($deletedLookup[$stSub])) || (!empty($stId) && isset($deletedLookup[$stId]))) {
-            continue;
-        }
-        $exists = false;
-        foreach ($tenants as $t) {
-            $tSub = strtolower($t['subdomain'] ?? '');
-            if ($tSub === $stSub || str_replace('-', '', $tSub) === str_replace('-', '', $stSub)) {
-                $exists = true;
-                break;
-            }
-        }
-        if (!$exists) {
-            $tenants[] = $st;
-            $dirty = true;
-        }
-    }
-    if ($dirty) {
-        writeJsonFile($primaryPath, $tenants);
-        syncToSecondaryDataDirs('tenants.json', $tenants);
-    }
-    return $tenants;
 }
 
-function getUnifiedNotifications($primaryPath) {
-    $notifs = readJsonFile($primaryPath);
-    $otherPaths = [
-        dirname(__DIR__) . '/api/data/notifications.json',
-        dirname(__DIR__) . '/portal/api/data/notifications.json',
-        __DIR__ . '/data/notifications.json',
-        __DIR__ . '/../portal/api/data/notifications.json'
-    ];
-    $dirty = false;
-    $seen = [];
-    foreach ($notifs as $n) {
-        if (!empty($n['id'])) $seen[$n['id']] = true;
-    }
-    foreach ($otherPaths as $op) {
-        if ($op !== $primaryPath && file_exists($op)) {
-            $other = readJsonFile($op);
-            foreach ($other as $on) {
-                if (!empty($on['id']) && empty($seen[$on['id']])) {
-                    $notifs[] = $on;
-                    $seen[$on['id']] = true;
-                    $dirty = true;
-                }
-            }
-        }
-    }
-    
-    $defaultSeedNotifs = [
-        [
-            'id' => 'notif_naveed_01',
-            'timestamp' => '2026-11-05T05:50:00.000Z',
-            'type' => 'NEW_REGISTRATION',
-            'title' => '🎉 New Store Registered (Cloud Sync)',
-            'tenantName' => 'NAVEED RESTURENT',
-            'subdomain' => 'naveedresturent',
-            'ownerName' => 'NAVEED',
-            'phone' => '03012200230',
-            'email' => '',
-            'planType' => 'MONTHLY',
-            'planName' => 'Restaurant & Cafe POS (Monthly)',
-            'businessType' => 'Restaurants, Cafes & Food Outlets',
-            'vertical' => 'RESTAURANT',
-            'monthlyFee' => 6999,
-            'adminUsername' => 'admin.naveedresturent',
-            'adminPassword' => '123',
-            'portalUrl' => 'https://digitalsnova.com/portal/?store=naveedresturent',
-            'message' => "Store 'NAVEED RESTURENT' registered on Restaurant & Cafe POS (Monthly)! Owner: NAVEED (03012200230).",
-            'unread' => false
-        ],
-        [
-            'id' => 'notif_clinic_02',
-            'timestamp' => '2026-11-04T10:16:00.000Z',
-            'type' => 'NEW_REGISTRATION',
-            'title' => '🎉 New Store Registered (Website)',
-            'tenantName' => 'clinic',
-            'subdomain' => 'clinic',
-            'ownerName' => 'ubaid',
-            'phone' => '03012200230',
-            'email' => 'ubaid123@gmail.com',
-            'planType' => 'TRIAL_3_DAYS',
-            'planName' => '3-Day Enterprise Trial',
-            'businessType' => 'Clinic / Hospital',
-            'vertical' => 'CLINIC_HMS',
-            'monthlyFee' => 7999,
-            'adminUsername' => 'admin.clinic',
-            'adminPassword' => '123',
-            'portalUrl' => 'https://digitalsnova.com/portal/?store=clinic',
-            'message' => "Store 'clinic' (clinic.digitalsnova.com) registered! Owner: ubaid • Phone: 03012200230 • Email: ubaid123@gmail.com",
-            'unread' => false
-        ],
-        [
-            'id' => 'notif_huzaifa_03',
-            'timestamp' => '2026-11-05T05:26:00.000Z',
-            'type' => 'NEW_REGISTRATION',
-            'title' => '🎉 New Store Registered (Cloud Sync)',
-            'tenantName' => 'Huzaifa Condom store',
-            'subdomain' => 'huzaifacondomstore',
-            'ownerName' => 'Huzaifa shykh',
-            'phone' => '03153527736',
-            'email' => '',
-            'planType' => 'MONTHLY',
-            'planName' => 'Retail Mart POS (Monthly)',
-            'businessType' => 'Retail Mart / General Store',
-            'vertical' => 'RETAIL_MART',
-            'monthlyFee' => 4999,
-            'adminUsername' => 'admin.huzaifacondomstore',
-            'adminPassword' => '123',
-            'portalUrl' => 'https://digitalsnova.com/portal/?store=huzaifacondomstore',
-            'message' => "Store 'Huzaifa Condom store' registered on Retail Mart POS (Monthly)! Owner: Huzaifa shykh (03153527736).",
-            'unread' => false
-        ]
-    ];
-    foreach ($defaultSeedNotifs as $sn) {
-        $snId = $sn['id'] ?? '';
-        $snSub = strtolower($sn['subdomain'] ?? '');
-        $exists = false;
-        foreach ($notifs as $n) {
-            $nSub = strtolower($n['subdomain'] ?? '');
-            if (($n['id'] ?? '') === $snId || (!empty($snSub) && ($nSub === $snSub || str_replace('-', '', $nSub) === str_replace('-', '', $snSub)))) {
-                $exists = true;
-                break;
-            }
-        }
-        if (!$exists) {
-            $notifs[] = $sn;
-            $dirty = true;
-        }
-    }
-    if ($dirty) {
-        usort($notifs, function($a, $b) {
-            return strtotime($b['timestamp'] ?? 0) - strtotime($a['timestamp'] ?? 0);
-        });
-        writeJsonFile($primaryPath, $notifs);
-        syncToSecondaryDataDirs('notifications.json', $notifs);
-    }
-    return $notifs;
-}
-
-// Helper to read JSON file safely
-function readJsonFile($path, $default = []) {
-    if (!file_exists($path)) {
-        return $default;
-    }
-    $content = @file_get_contents($path);
-    if (!$content) {
-        return $default;
-    }
-    $decoded = json_decode($content, true);
-    return is_array($decoded) ? $decoded : $default;
-}
-
-// Helper to write JSON file safely
-function writeJsonFile($path, $data) {
-    @file_put_contents($path, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE), LOCK_EX);
-}
-
-// ==============================================================================
-// GMAIL SMTP AUTHENTICATED MAILER ENGINE (smtp.gmail.com:465 SSL)
-// ==============================================================================
-function sendGmailSmtp($toEmail, $subject, $htmlBody) {
-    $smtpHost = 'ssl://smtp.gmail.com';
-    $smtpPort = 465;
-    $smtpUser = 'digitalsnovaofficial@gmail.com';
-    $smtpPass = 'rfnygyzvohahoqde';
-    $senderName = 'DigitalsNova Team';
-
-    $context = stream_context_create([
-        'ssl' => [
-            'verify_peer' => false,
-            'verify_peer_name' => false,
-            'allow_self_signed' => true
-        ]
-    ]);
-
-    $socket = @stream_socket_client($smtpHost . ':' . $smtpPort, $errno, $errstr, 15, STREAM_CLIENT_CONNECT, $context);
-    if (!$socket) {
-        // Fallback to PHP native mail() if socket is restricted
-        $headers = [];
-        $headers[] = 'MIME-Version: 1.0';
-        $headers[] = 'Content-type: text/html; charset=utf-8';
-        $headers[] = 'From: ' . $senderName . ' <' . $smtpUser . '>';
-        $headers[] = 'Reply-To: ' . $smtpUser;
-        return @mail($toEmail, $subject, $htmlBody, implode("\r\n", $headers));
-    }
-
-    $read = function($sock, $expectedCode) {
-        $response = '';
-        while ($line = fgets($sock, 515)) {
-            $response .= $line;
-            if (substr($line, 3, 1) === ' ') break;
-        }
-        $code = intval(substr($response, 0, 3));
-        return ($code === $expectedCode || ($expectedCode === 250 && ($code === 250 || $code === 251)));
-    };
-
-    $send = function($sock, $cmd) {
-        fputs($sock, $cmd . "\r\n");
-    };
-
-    if (!$read($socket, 220)) { fclose($socket); return false; }
-
-    $send($socket, "EHLO " . ($_SERVER['SERVER_NAME'] ?? 'digitalsnova.com'));
-    if (!$read($socket, 250)) { fclose($socket); return false; }
-
-    $send($socket, "AUTH LOGIN");
-    if (!$read($socket, 334)) { fclose($socket); return false; }
-
-    $send($socket, base64_encode($smtpUser));
-    if (!$read($socket, 334)) { fclose($socket); return false; }
-
-    $send($socket, base64_encode($smtpPass));
-    if (!$read($socket, 235)) { fclose($socket); return false; }
-
-    $send($socket, "MAIL FROM:<" . $smtpUser . ">");
-    if (!$read($socket, 250)) { fclose($socket); return false; }
-
-    $send($socket, "RCPT TO:<" . $toEmail . ">");
-    if (!$read($socket, 250)) { fclose($socket); return false; }
-
-    $send($socket, "DATA");
-    if (!$read($socket, 354)) { fclose($socket); return false; }
-
-    $encodedSubject = '=?UTF-8?B?' . base64_encode($subject) . '?=';
-    $encodedSender = '=?UTF-8?B?' . base64_encode($senderName) . '?=';
-    $messageId = '<' . time() . '.' . bin2hex(random_bytes(8)) . '@digitalsnova.com>';
-
-    $headers = [
-        "MIME-Version: 1.0",
-        "Content-Type: text/html; charset=UTF-8",
-        "Content-Transfer-Encoding: 8bit",
-        "From: " . $encodedSender . " <" . $smtpUser . ">",
-        "Reply-To: " . $smtpUser,
-        "To: <" . $toEmail . ">",
-        "Date: " . date('r'),
-        "Message-ID: " . $messageId,
-        "Subject: " . $encodedSubject,
-        "X-Mailer: DigitalsNova-Gmail-SMTP",
-        "X-Priority: 1 (Highest)"
-    ];
-
-    $payload = implode("\r\n", $headers) . "\r\n\r\n" . $htmlBody . "\r\n.";
-    $send($socket, $payload);
-    $sent = $read($socket, 250);
-
-    $send($socket, "QUIT");
-    fclose($socket);
-
-    return $sent;
-}
-
-function sendDigitalsNovaEmail($toEmail, $subject, $htmlContent) {
-    return sendGmailSmtp($toEmail, $subject, $htmlContent);
-}
-
-// Read incoming request
-$action = isset($_GET['action']) ? $_GET['action'] : '';
+// Parse request
+$action = isset($_GET['action']) ? trim((string)$_GET['action']) : '';
 $rawBody = @file_get_contents('php://input');
-$body = json_decode($rawBody, true) ?: [];
-
-if (empty($action) && isset($body['action'])) {
-    $action = $body['action'];
+$body = json_decode($rawBody, true);
+if (!is_array($body)) {
+    $body = !empty($_POST) ? $_POST : [];
 }
-
-// Helper: Canonical Live Sector Pricing Resolver
-function getCanonicalPricingDefaults() {
-    return [
-        'monthlyFee' => 7999,
-        'yearlyFee' => 79990,
-        'threeYearFee' => 229000,
-        'trialDays' => 3,
-        'currency' => 'Rs.',
-        'retailMonthly' => 4999,
-        'retailYearly' => 49990,
-        'retailThreeYear' => 139000,
-        'pharmacyMonthly' => 5999,
-        'pharmacyYearly' => 59990,
-        'pharmacyThreeYear' => 169000,
-        'restaurantMonthly' => 6999,
-        'restaurantYearly' => 69990,
-        'restaurantThreeYear' => 199000,
-        'clinicMonthly' => 7999,
-        'clinicYearly' => 79990,
-        'clinicThreeYear' => 229000,
-        'retail' => ['title' => 'Retail Marts & General Stores', 'monthly' => 4999, 'yearly' => 49990, 'threeYear' => 139000],
-        'pharmacy' => ['title' => 'Pharmacies & Medical Stores', 'monthly' => 5999, 'yearly' => 59990, 'threeYear' => 169000],
-        'restaurant' => ['title' => 'Restaurants, Cafes & Food Outlets', 'monthly' => 6999, 'yearly' => 69990, 'threeYear' => 199000],
-        'clinic' => ['title' => 'Clinics & Hospitals (HMS)', 'monthly' => 7999, 'yearly' => 79990, 'threeYear' => 229000]
-    ];
-}
-
-function getEffectivePricingPlans($dataDir) {
-    $pricingFile = $dataDir . '/pricing_plans.json';
-    $defaultPlans = getCanonicalPricingDefaults();
-    $stored = readJsonFile($pricingFile, []);
-    if (empty($stored) || !is_array($stored)) {
-        return $defaultPlans;
-    }
-    if (empty($stored['pricingVersion'])) {
-        if (isset($stored['yearlyFee']) && intval($stored['yearlyFee']) === 76790) $stored['yearlyFee'] = 79990;
-        if (isset($stored['retailThreeYear']) && intval($stored['retailThreeYear']) === 129000) $stored['retailThreeYear'] = 139000;
-        if (isset($stored['pharmacyThreeYear']) && intval($stored['pharmacyThreeYear']) === 159000) $stored['pharmacyThreeYear'] = 169000;
-        if (isset($stored['restaurantThreeYear']) && intval($stored['restaurantThreeYear']) === 189000) $stored['restaurantThreeYear'] = 199000;
-    }
-    $merged = array_merge($defaultPlans, $stored);
-    $merged['retail'] = ['title' => 'Retail Marts & General Stores', 'monthly' => intval($merged['retailMonthly']), 'yearly' => intval($merged['retailYearly']), 'threeYear' => intval($merged['retailThreeYear'])];
-    $merged['pharmacy'] = ['title' => 'Pharmacies & Medical Stores', 'monthly' => intval($merged['pharmacyMonthly']), 'yearly' => intval($merged['pharmacyYearly']), 'threeYear' => intval($merged['pharmacyThreeYear'])];
-    $merged['restaurant'] = ['title' => 'Restaurants, Cafes & Food Outlets', 'monthly' => intval($merged['restaurantMonthly']), 'yearly' => intval($merged['restaurantYearly']), 'threeYear' => intval($merged['restaurantThreeYear'])];
-    $merged['clinic'] = ['title' => 'Clinics & Hospitals (HMS)', 'monthly' => intval($merged['clinicMonthly']), 'yearly' => intval($merged['clinicYearly']), 'threeYear' => intval($merged['clinicThreeYear'])];
-    return $merged;
-}
-
-function resolveSectorPlanPricing($vertical, $planType, $plans) {
-    $pUpper = strtoupper(trim($planType ?: 'TRIAL_3_DAYS'));
-    $secKey = ($vertical === 'RESTAURANT') ? 'restaurant' : (($vertical === 'PHARMACY') ? 'pharmacy' : (($vertical === 'CLINIC_HMS') ? 'clinic' : 'retail'));
-    $secLabel = ($vertical === 'RESTAURANT') ? 'Restaurant & Cafe POS' : (($vertical === 'PHARMACY') ? 'Pharmacy & Medical POS' : (($vertical === 'CLINIC_HMS') ? 'Clinic & HMS Portal' : 'Retail Mart POS'));
-
-    $monthly = intval($plans[$secKey . 'Monthly'] ?? 4999);
-    $yearly = intval($plans[$secKey . 'Yearly'] ?? ($monthly * 10));
-    $threeYear = intval($plans[$secKey . 'ThreeYear'] ?? 139000);
-
-    if ($pUpper === 'TRIAL_3_DAYS' || $pUpper === 'TRIAL') {
-        return ['planType' => 'TRIAL_3_DAYS', 'fee' => 0, 'days' => 3, 'planName' => $secLabel . ' (3-Day Trial)'];
-    }
-    if ($pUpper === 'YEARLY' || $pUpper === '1_YEAR' || $pUpper === 'ANNUAL') {
-        return ['planType' => 'YEARLY', 'fee' => $yearly, 'days' => 365, 'planName' => $secLabel . ' (Annual)'];
-    }
-    if ($pUpper === '3_YEARS' || $pUpper === '3_YEAR') {
-        return ['planType' => '3_YEARS', 'fee' => $threeYear, 'days' => 1095, 'planName' => $secLabel . ' (3-Year Enterprise)'];
-    }
-    return ['planType' => 'MONTHLY', 'fee' => $monthly, 'days' => 30, 'planName' => $secLabel . ' (Monthly)'];
-}
-
-function getDefaultPlatformBrand() {
-    return [
-        'name' => 'Digital Snove Portal',
-        'logoUrl' => '',
-        'tagline' => 'Enterprise Multi-Tenant Cloud POS & SaaS Platform',
-        'address' => 'Digital Snove SaaS Headquarters',
-        'phone' => '03131094557',
-        'updatedAt' => ''
-    ];
-}
-
-function getDefaultRemoteConfig() {
-    return [
-        'appVersion' => '20261111v20',
-        'buildId' => '20261111v20',
-        'forceReloadAt' => 0,
-        'maintenanceMode' => false,
-        'maintenanceMessage' => 'Scheduled platform upgrade is underway. Please wait a few minutes and refresh.',
-        'globalNotice' => '',
-        'globalNoticeType' => 'INFO',
-        'globalNoticeActive' => false,
-        'updatedAt' => ''
-    ];
-}
-
-function normalizeTenantState(&$t, $effectivePlans) {
-    $dirty = false;
-    $tName = $t['name'] ?? '';
-    $tSub = strtolower($t['subdomain'] ?? '');
-    $explicitVert = strtoupper($t['vertical'] ?? ($t['sector'] ?? ($t['storeType'] ?? '')));
-    if (in_array($explicitVert, ['RESTAURANT', 'PHARMACY', 'CLINIC_HMS', 'RETAIL_MART'])) {
-        $vert = $explicitVert;
-    } else {
-        $isRest = (stripos($tName, 'Resturent') !== false || stripos($tName, 'Restaurant') !== false || stripos($tSub, 'resturent') !== false || stripos($tSub, 'restaurant') !== false || (isset($t['businessType']) && stripos($t['businessType'], 'Restaurant') !== false));
-        $isPharm = (stripos($tName, 'Pharmacy') !== false || stripos($tSub, 'pharmacy') !== false || (isset($t['businessType']) && stripos($t['businessType'], 'Pharmacy') !== false));
-        $isClinic = ($tSub === 'clinic' || stripos($tName, 'Clinic') !== false || stripos($tName, 'Hospital') !== false || (isset($t['businessType']) && stripos($t['businessType'], 'Clinic') !== false));
-        $vert = $isRest ? 'RESTAURANT' : ($isPharm ? 'PHARMACY' : ($isClinic ? 'CLINIC_HMS' : 'RETAIL_MART'));
-    }
-
-    $bTypeMap = [
-        'RESTAURANT' => 'Restaurants, Cafes & Food Outlets',
-        'PHARMACY' => 'Pharmacy & Medical Store',
-        'CLINIC_HMS' => 'Clinic / Hospital',
-        'RETAIL_MART' => 'Retail Mart / General Store'
-    ];
-    if (($t['vertical'] ?? '') !== $vert || ($t['businessType'] ?? '') !== $bTypeMap[$vert]) {
-        $t['vertical'] = $vert;
-        $t['sector'] = $vert;
-        $t['storeType'] = $vert;
-        $t['businessType'] = $bTypeMap[$vert];
-        $t['business_type'] = $bTypeMap[$vert];
-        $dirty = true;
-    }
-
-    $curPlanType = strtoupper($t['planType'] ?? ($t['subscription']['plan'] ?? 'MONTHLY'));
-    $resolved = resolveSectorPlanPricing($vert, $curPlanType, $effectivePlans);
-    if (empty($t['planName']) || stripos($t['planName'], 'undefined') !== false) {
-        $t['planName'] = $resolved['planName'];
-        $dirty = true;
-    }
-    if (!isset($t['cycleDays']) || !is_numeric($t['cycleDays']) || intval($t['cycleDays']) <= 0) {
-        $t['cycleDays'] = $resolved['days'];
-        $dirty = true;
-    }
-    if ($curPlanType !== 'TRIAL_3_DAYS' && (!isset($t['monthlyFee']) || !is_numeric($t['monthlyFee']) || floatval($t['monthlyFee']) <= 0)) {
-        $t['monthlyFee'] = $resolved['fee'];
-        $dirty = true;
-    } elseif (!isset($t['monthlyFee']) || !is_numeric($t['monthlyFee'])) {
-        $t['monthlyFee'] = $resolved['fee'];
-        $dirty = true;
-    }
-    $t['monthly_fee'] = $t['monthlyFee'];
-
-    if (!isset($t['enabledModules']) || !is_array($t['enabledModules'])) {
-        $t['enabledModules'] = [
-            'pos' => true,
-            'inventory' => true,
-            'patientsLedger' => ($vert === 'CLINIC_HMS'),
-            'tableManagement' => ($vert === 'RESTAURANT'),
-            'expiryBatch' => ($vert === 'PHARMACY')
-        ];
-        $dirty = true;
-    } else {
-        if (!isset($t['enabledModules']['pos'])) { $t['enabledModules']['pos'] = true; $dirty = true; }
-        if (!isset($t['enabledModules']['inventory'])) { $t['enabledModules']['inventory'] = true; $dirty = true; }
-        if (!isset($t['enabledModules']['patientsLedger'])) { $t['enabledModules']['patientsLedger'] = ($vert === 'CLINIC_HMS'); $dirty = true; }
-    }
-
-    $uName = $t['adminName'] ?? ($t['adminUser']['name'] ?? (($t['name'] ?? 'Store') . ' Admin'));
-    $uUser = $t['adminUsername'] ?? ($t['adminUser']['username'] ?? ('admin.' . $tSub));
-    $uPass = $t['adminPassword'] ?? ($t['adminUser']['password'] ?? '123');
-    $uRole = $t['adminUser']['role'] ?? ($vert === 'CLINIC_HMS' ? 'CLINIC_ADMIN' : 'STORE_ADMIN');
-    $t['adminName'] = $uName;
-    $t['adminUsername'] = $uUser;
-    $t['adminPassword'] = $uPass;
-    $t['adminPin'] = $t['adminPin'] ?? '1234';
-    if (!isset($t['adminUser']) || !is_array($t['adminUser'])) $t['adminUser'] = [];
-    $t['adminUser']['name'] = $uName;
-    $t['adminUser']['username'] = $uUser;
-    $t['adminUser']['password'] = $uPass;
-    $t['adminUser']['role'] = $uRole;
-    if (!empty($t['email'])) $t['adminUser']['email'] = $t['email'];
-    if (!empty($t['phone'])) $t['adminUser']['phone'] = $t['phone'];
-
-    $totalDays = intval($t['cycleDays']);
-    if ($totalDays <= 0) $totalDays = 30;
-    $cycleDay = intval($t['billingCycleDay'] ?? ($t['subscription']['billingCycleDay'] ?? 1));
-    if ($cycleDay < 1) $cycleDay = 1;
-
-    $isManualBlocked = !empty($t['manualBlocked']) || strtoupper($t['status'] ?? '') === 'BLOCKED';
-    if (!$isManualBlocked && $cycleDay <= $totalDays && !empty($t['subscriptionExpiry'])) {
-        $expTs = strtotime($t['subscriptionExpiry']);
-        if ($expTs !== false && time() > ($expTs + (3 * 86400))) {
-            $cycleDay = $totalDays + 4;
-            $t['billingCycleDay'] = $cycleDay;
-            $dirty = true;
-        }
-    }
-
-    if ($isManualBlocked) {
-        $subState = 'LOCKED';
-        $t['manualBlocked'] = true;
-        $t['status'] = 'BLOCKED';
-        $graceRem = 0;
-        $daysRem = 0;
-        $bannerMsg = 'Access manually suspended by DigitalsNova Super Admin.';
-    } elseif ($cycleDay > ($totalDays + 3)) {
-        $subState = 'LOCKED';
-        $t['manualBlocked'] = false;
-        $t['status'] = 'LOCKED';
-        $graceRem = 0;
-        $daysRem = 0;
-        $bannerMsg = 'Subscription expired after Day ' . ($totalDays + 3) . " (Billing Day {$cycleDay}).";
-    } elseif ($cycleDay > $totalDays) {
-        $subState = 'GRACE_PERIOD';
-        $t['manualBlocked'] = false;
-        $t['status'] = 'ACTIVE';
-        $graceRem = max(1, ($totalDays + 3) - $cycleDay + 1);
-        $daysRem = 0;
-        $bannerMsg = "Grace Period Active (Day {$cycleDay}/" . ($totalDays + 3) . "). Renew within {$graceRem} day(s).";
-    } else {
-        $subState = 'ACTIVE';
-        $t['manualBlocked'] = false;
-        $t['status'] = 'ACTIVE';
-        $graceRem = 3;
-        $daysRem = max(0, $totalDays - $cycleDay + 1);
-        $bannerMsg = '';
-    }
-
-    $t['billingCycleDay'] = $cycleDay;
-    if (!isset($t['subscription']) || !is_array($t['subscription'])) $t['subscription'] = [];
-    $t['subscription']['state'] = $subState;
-    $t['subscription']['plan'] = $curPlanType;
-    $t['subscription']['planName'] = $t['planName'];
-    $t['subscription']['billingCycleDay'] = $cycleDay;
-    $t['subscription']['totalDays'] = $totalDays;
-    $t['subscription']['graceDaysRemaining'] = $graceRem;
-    $t['subscription']['daysRemainingInCycle'] = $daysRem;
-    $t['subscription']['monthlyFee'] = floatval($t['monthlyFee']);
-    if (!empty($bannerMsg)) {
-        $t['subscription']['bannerMessage'] = $bannerMsg;
-    } else {
-        unset($t['subscription']['bannerMessage']);
-    }
-    if (empty($t['subscription']['validUntil']) && !empty($t['subscriptionExpiry'])) {
-        $t['subscription']['validUntil'] = $t['subscriptionExpiry'];
-    }
-    return $dirty;
+if ($action === '' && isset($body['action'])) {
+    $action = trim((string)$body['action']);
 }
 
 // ==============================================================================
-// Action: Get & Save Sector Pricing Plans
+// 1. PRICING PLANS
+// ==============================================================================
 if ($action === 'get_pricing_plans') {
-    $plans = getEffectivePricingPlans($dataDir);
+    $plans = dnGetEffectivePricingPlans($dataDir);
     echo json_encode(['success' => true, 'plans' => $plans]);
     exit();
 }
 
 if ($action === 'save_pricing_plans') {
     $pricingFile = $dataDir . '/pricing_plans.json';
-    $plans = isset($body['plans']) ? $body['plans'] : $body;
+    $plans = isset($body['plans']) && is_array($body['plans']) ? $body['plans'] : $body;
     if (!empty($plans) && is_array($plans)) {
         $plans['pricingVersion'] = 2;
-        $plans = array_merge(getCanonicalPricingDefaults(), $plans);
-        writeJsonFile($pricingFile, $plans);
+        $plans = array_merge(dnGetCanonicalPricingDefaults(), $plans);
+        dnWriteJsonFile($pricingFile, $plans);
         syncToSecondaryDataDirs('pricing_plans.json', $plans);
         echo json_encode(['success' => true, 'message' => 'Sector pricing plans updated and synced across SaaS.', 'plans' => $plans]);
         exit();
     }
     http_response_code(400);
-    echo json_encode(['error' => 'Invalid pricing plans payload']);
+    echo json_encode(['success' => false, 'error' => 'Invalid pricing plans payload']);
     exit();
 }
 
-// Action: Sync Offline Sales (PWA / IndexedDB Auto-Reconnect Background Sync)
-if ($action === 'sync_offline_sales') {
-    $sales = isset($body['sales']) ? $body['sales'] : [];
-    if (!empty($sales) && is_array($sales)) {
-        $payments = readJsonFile($paymentsFile);
-        $existingIds = [];
-        foreach ($payments as $p) {
-            if (!empty($p['id'])) $existingIds[$p['id']] = true;
-        }
-        $synced = 0;
-        foreach ($sales as $sale) {
-            if (!is_array($sale)) continue;
-            $saleId = !empty($sale['id']) ? $sale['id'] : ('sale_offline_' . uniqid());
-            if (isset($existingIds[$saleId])) {
-                continue;
-            }
-            $existingIds[$saleId] = true;
-            $amt = isset($sale['amountPaidToday']) ? floatval($sale['amountPaidToday'])
-                : (isset($sale['netTotal']) ? floatval($sale['netTotal'])
-                : (isset($sale['total']) ? floatval($sale['total'])
-                : (isset($sale['amount']) ? floatval($sale['amount']) : 0)));
-            $payments[] = [
-                'id' => $saleId,
-                'tenantId' => $sale['tenantId'] ?? ($sale['subdomain'] ?? 'local'),
-                'subdomain' => $sale['subdomain'] ?? '',
-                'invoiceNumber' => $sale['invoiceNumber'] ?? ('OFF-' . substr($saleId, -6)),
-                'patientName' => $sale['patientName'] ?? ($sale['customerName'] ?? 'Walk-in'),
-                'patientPhone' => $sale['patientPhone'] ?? '',
-                'tableNumber' => $sale['tableNumber'] ?? '',
-                'waiterName' => $sale['waiterName'] ?? '',
-                'orderType' => $sale['orderType'] ?? '',
-                'subtotal' => isset($sale['subtotal']) ? floatval($sale['subtotal']) : $amt,
-                'discountAmount' => isset($sale['discountAmount']) ? floatval($sale['discountAmount']) : 0,
-                'netTotal' => isset($sale['netTotal']) ? floatval($sale['netTotal']) : $amt,
-                'amountPaidToday' => $amt,
-                'remainingLedgerBalance' => isset($sale['remainingLedgerBalance']) ? floatval($sale['remainingLedgerBalance']) : 0,
-                'amount' => $amt,
-                'method' => $sale['paymentMethod'] ?? 'CASH',
-                'items' => isset($sale['items']) && is_array($sale['items']) ? $sale['items'] : [],
-                'cashierName' => $sale['cashierName'] ?? 'Offline Cashier',
-                'createdAt' => $sale['createdAt'] ?? ($sale['timestamp'] ?? date('c')),
-                'syncedFromOffline' => true,
-                'offlineTimestamp' => $sale['timestamp'] ?? ($sale['createdAt'] ?? date('c')),
-                'serverTimestamp' => date('c'),
-                'status' => 'COMPLETED'
-            ];
-            $synced++;
-        }
-        writeJsonFile($paymentsFile, $payments);
-        syncToSecondaryDataDirs('payments.json', $payments);
-        echo json_encode(['success' => true, 'synced_count' => $synced, 'message' => "Successfully synced {$synced} offline sales."]);
-        exit();
-    }
-    echo json_encode(['success' => true, 'synced_count' => 0, 'message' => 'No sales to sync.']);
-    exit();
-}
-
-// Action: Sync Offline Inventory Queue (PWA / IndexedDB Auto-Reconnect Background Sync)
-if ($action === 'sync_offline_inventory') {
-    $ops = isset($body['operations']) ? $body['operations'] : (isset($body['items']) ? $body['items'] : []);
-    if (!empty($ops) && is_array($ops)) {
-        $invSyncFile = $dataDir . '/inventory_sync.json';
-        $existingOps = readJsonFile($invSyncFile);
-        $seen = [];
-        foreach ($existingOps as $eo) {
-            if (!empty($eo['opId'])) $seen[$eo['opId']] = true;
-        }
-        $synced = 0;
-        foreach ($ops as $op) {
-            if (!is_array($op)) continue;
-            $opId = !empty($op['opId']) ? $op['opId'] : (!empty($op['id']) ? $op['id'] : ('inv_offline_' . uniqid()));
-            if (isset($seen[$opId])) continue;
-            $seen[$opId] = true;
-            $existingOps[] = [
-                'opId' => $opId,
-                'type' => $op['type'] ?? 'UPSERT',
-                'subdomain' => $op['subdomain'] ?? '',
-                'payload' => $op['payload'] ?? $op,
-                'offlineTimestamp' => $op['timestamp'] ?? date('c'),
-                'serverTimestamp' => date('c')
-            ];
-            $synced++;
-        }
-        writeJsonFile($invSyncFile, $existingOps);
-        syncToSecondaryDataDirs('inventory_sync.json', $existingOps);
-        echo json_encode(['success' => true, 'synced_count' => $synced, 'message' => "Successfully synced {$synced} offline inventory changes."]);
-        exit();
-    }
-    echo json_encode(['success' => true, 'synced_count' => 0, 'message' => 'No inventory operations to sync.']);
-    exit();
-}
-
-
-// Action: Test Email
+// ==============================================================================
+// 2. TEST EMAIL & BROADCAST
+// ==============================================================================
 if ($action === 'test_email' || $action === 'send_test_email') {
     $testTo = !empty($_GET['to']) ? $_GET['to'] : (!empty($body['to']) ? $body['to'] : 'digitalsnovaofficial@gmail.com');
-    $testSubject = '🎉 Welcome to DigitalsNova - Your Cloud POS Portal is Ready! [SMTP TEST]';
+    $testSubject = 'Welcome to DigitalsNova - Your Cloud POS Portal is Ready! [SMTP TEST]';
     $testBody = '<div style="font-family: Arial, sans-serif; background: #030712; color: #fff; padding: 20px; border-radius: 12px; border: 1px solid #00e5ff;">'
         . '<h2 style="color: #00e5ff;">DigitalsNova Gmail SMTP Test Successful</h2>'
         . '<p>Gmail SMTP (smtp.gmail.com:465 SSL) is actively working and connected!</p>'
         . '<p>Recipient: ' . htmlspecialchars($testTo) . '<br>Server time: ' . date('c') . '</p>'
         . '</div>';
-    $ok = sendGmailSmtp($testTo, $testSubject, $testBody);
+    $ok = dnSendGmailSmtp($testTo, $testSubject, $testBody);
     echo json_encode([
         'success' => $ok,
-        'message' => $ok ? "Test email successfully sent to {$testTo} via Gmail SMTP (465 SSL)!" : "Failed to send email via SMTP",
+        'message' => $ok ? "Test email successfully sent to {$testTo} via Gmail SMTP (465 SSL)!" : 'Failed to send email via SMTP',
         'recipient' => $testTo,
         'smtpHost' => 'smtp.gmail.com:465'
     ]);
     exit();
 }
 
+if ($action === 'newsletter' || $action === 'send_broadcast') {
+    $subject = !empty($body['subject']) ? $body['subject'] : 'Important Update from DigitalsNova';
+    $messageText = !empty($body['message']) ? $body['message'] : '';
+
+    if (empty($messageText)) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => 'Message cannot be empty']);
+        exit();
+    }
+
+    $tenants = dnGetUnifiedTenants($dataDir);
+    $sentCount = 0;
+
+    foreach ($tenants as $t) {
+        $email = $t['email'] ?? ($t['adminUser']['email'] ?? '');
+        if (!empty($email) && filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $broadcastHtml = '<!DOCTYPE html><html><body style="font-family: Arial, sans-serif; background-color: #030712; color: #f8fafc; padding: 20px;">'
+                . '<div style="max-width: 600px; margin: 0 auto; background: #0b132b; border: 1px solid #1e293b; border-radius: 12px; padding: 24px;">'
+                . '<h2 style="color: #00e5ff; margin-top: 0;">DigitalsNova Official Announcement</h2>'
+                . '<p style="color: #e2e8f0; font-size: 14px; line-height: 1.6;">' . nl2br(htmlspecialchars($messageText)) . '</p>'
+                . '<div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #1e293b; font-size: 12px; color: #94a3b8;">'
+                . 'Sent by DigitalsNova Official (<a href="mailto:digitalsnovaofficial@gmail.com" style="color: #00e5ff;">digitalsnovaofficial@gmail.com</a>)'
+                . '</div></div></body></html>';
+            dnSendGmailSmtp($email, $subject, $broadcastHtml);
+            $sentCount++;
+        }
+    }
+
+    echo json_encode(['success' => true, 'sentCount' => $sentCount]);
+    exit();
+}
+
 // ==============================================================================
-// 1.3 ACTION: CLEAR NOTIFICATIONS (Clear Real-Time Feed on Super Admin request)
+// 3. NOTIFICATIONS & CONTACT / QUOTE LEADS
 // ==============================================================================
 if ($action === 'clear_notifications' || $action === 'clear_feed') {
-    writeJsonFile($notifsFile, []);
+    dnWriteJsonFile($notifsFile, []);
     syncToSecondaryDataDirs('notifications.json', []);
+    @file_put_contents($dataDir . '/.notifs_seeded.flag', date('c'));
     echo json_encode([
         'success' => true,
+        'clearedAt' => round(microtime(true) * 1000),
         'message' => 'All feed notifications have been permanently cleared from cloud storage.'
     ]);
     exit();
 }
 
-// ==============================================================================
-// 1.5 ACTION: DELETE TENANT (Called from Super Admin to permanently wipe store)
-// ==============================================================================
-if ($action === 'delete_tenant' || $action === 'delete') {
-    $tenantId = trim($body['id'] ?? ($body['tenantId'] ?? ($_GET['id'] ?? '')));
-    $subdomain = strtolower(trim($body['subdomain'] ?? ($_GET['subdomain'] ?? '')));
-    $phone = preg_replace('/[^0-9]/', '', $body['phone'] ?? '');
-    $email = strtolower(trim($body['email'] ?? ''));
+if ($action === 'submit_lead') {
+    $name = trim((string)($body['name'] ?? ($body['fullName'] ?? '')));
+    $email = trim((string)($body['email'] ?? ''));
+    $phone = trim((string)($body['phone'] ?? ''));
+    $company = trim((string)($body['company'] ?? ''));
+    $service = $body['service'] ?? '';
+    $servicesList = isset($body['services']) && is_array($body['services']) ? $body['services'] : (!empty($service) ? [$service] : []);
+    $budget = trim((string)($body['budget'] ?? ''));
+    $timeline = trim((string)($body['timeline'] ?? ''));
+    $message = trim((string)($body['message'] ?? ($body['notes'] ?? '')));
+    $source = trim((string)($body['source'] ?? 'CONTACT_FORM'));
 
-    $tenants = getUnifiedTenants($tenantsFile);
-    $remainingTenants = [];
-    $deletedTenant = null;
-
-    foreach ($tenants as $t) {
-        $tId = $t['id'] ?? '';
-        $tSub = strtolower($t['subdomain'] ?? '');
-        $tPhone = preg_replace('/[^0-9]/', '', $t['phone'] ?? ($t['adminUser']['phone'] ?? ''));
-        $tEmail = strtolower(trim($t['email'] ?? ($t['adminUser']['email'] ?? '')));
-
-        $isMatch = false;
-        if (!empty($tenantId) && ($tId === $tenantId || $tSub === strtolower($tenantId))) $isMatch = true;
-        if (!empty($subdomain) && $tSub === $subdomain) $isMatch = true;
-        if (!empty($phone) && !empty($tPhone) && $phone === $tPhone) $isMatch = true;
-        if (!empty($email) && !empty($tEmail) && $email === $tEmail) $isMatch = true;
-
-        if ($isMatch) {
-            $deletedTenant = $t;
-        } else {
-            $remainingTenants[] = $t;
-        }
+    if ($name === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => 'Please enter your valid name and email address.']);
+        exit();
     }
-    writeJsonFile($tenantsFile, $remainingTenants);
-    syncToSecondaryDataDirs('tenants.json', $remainingTenants);
 
-    // Clean associated staff accounts from staff.json
-    $delSub = $subdomain ?: strtolower($deletedTenant['subdomain'] ?? '');
-    $delId = $tenantId ?: ($deletedTenant['id'] ?? '');
-    $allStaff = readJsonFile($staffFile);
-    $remainingStaff = [];
-    foreach ($allStaff as $s) {
-        if ((!empty($delSub) && strtolower($s['subdomain'] ?? '') === $delSub) ||
-            (!empty($delId) && ($s['tenantId'] ?? '') === $delId)) {
-            // Discard staff of deleted tenant
-        } else {
-            $remainingStaff[] = $s;
-        }
-    }
-    writeJsonFile($staffFile, $remainingStaff);
-    syncToSecondaryDataDirs('staff.json', $remainingStaff);
-
-    // Clean notifications for this tenant from notifications.json
-    $allNotifs = readJsonFile($notifsFile);
-    $remainingNotifs = [];
-    foreach ($allNotifs as $n) {
-        if (!empty($delSub) && strtolower($n['subdomain'] ?? '') === $delSub) {
-            // Discard notification
-        } else {
-            $remainingNotifs[] = $n;
-        }
-    }
-    writeJsonFile($notifsFile, $remainingNotifs);
-    syncToSecondaryDataDirs('notifications.json', $remainingNotifs);
-
-    // Record in deleted_tenants.json
-    $deletedList = readJsonFile($deletedTenantsFile);
-    $deletedList = array_filter($deletedList, function($d) use ($delSub, $delId) {
-        return ($d['subdomain'] ?? '') !== $delSub && ($d['id'] ?? '') !== $delId;
-    });
-    $deletedList[] = [
-        'id' => $delId,
-        'subdomain' => $delSub,
-        'phone' => $phone ?: ($deletedTenant['phone'] ?? ''),
-        'email' => $email ?: ($deletedTenant['email'] ?? ''),
-        'deletedAt' => date('c')
+    $leadId = 'lead_' . time() . '_' . rand(100, 999);
+    $lead = [
+        'id' => $leadId,
+        'source' => $source,
+        'name' => $name,
+        'email' => $email,
+        'phone' => $phone,
+        'company' => $company,
+        'services' => $servicesList,
+        'budget' => $budget,
+        'timeline' => $timeline,
+        'message' => $message,
+        'createdAt' => date('c')
     ];
-    writeJsonFile($deletedTenantsFile, array_values($deletedList));
-    syncToSecondaryDataDirs('deleted_tenants.json', array_values($deletedList));
+
+    $leads = dnReadJsonFile($leadsFile, []);
+    array_unshift($leads, $lead);
+    dnWriteJsonFile($leadsFile, array_slice($leads, 0, 500));
+
+    $notifications = getUnifiedNotifications($dataDir);
+    $svcStr = !empty($servicesList) ? implode(', ', $servicesList) : 'General Inquiry';
+    array_unshift($notifications, [
+        'id' => 'notif_' . $leadId,
+        'timestamp' => date('c'),
+        'type' => 'NEW_LEAD',
+        'title' => ($source === 'QUOTE_FORM' ? 'New Quote Request: ' : 'New Contact Inquiry: ') . $name,
+        'tenantName' => $company ?: $name,
+        'subdomain' => '',
+        'ownerName' => $name,
+        'phone' => $phone,
+        'email' => $email,
+        'message' => "{$name} ({$email}" . ($phone ? " / {$phone}" : '') . ") inquired about {$svcStr}" . ($budget ? " • Budget: {$budget}" : '') . ($message ? " — " . substr($message, 0, 140) : ''),
+        'unread' => true
+    ]);
+    dnWriteJsonFile($notifsFile, array_slice($notifications, 0, 100));
+    syncToSecondaryDataDirs('notifications.json', array_slice($notifications, 0, 100));
+
+    $leadHtml = '<div style="font-family: Arial, sans-serif; background: #030712; color: #f8fafc; padding: 24px;">'
+        . '<div style="max-width: 600px; margin: 0 auto; background: #0b132b; border: 1px solid #00e5ff; border-radius: 14px; padding: 24px;">'
+        . '<h2 style="color: #00e5ff; margin-top: 0;">' . htmlspecialchars($source === 'QUOTE_FORM' ? 'New Quote Request' : 'New Contact Inquiry') . '</h2>'
+        . '<p><strong>Name:</strong> ' . htmlspecialchars($name) . '<br>'
+        . '<strong>Email:</strong> ' . htmlspecialchars($email) . '<br>'
+        . '<strong>Phone:</strong> ' . htmlspecialchars($phone ?: 'N/A') . '<br>'
+        . '<strong>Company:</strong> ' . htmlspecialchars($company ?: 'N/A') . '<br>'
+        . '<strong>Services:</strong> ' . htmlspecialchars($svcStr) . '<br>'
+        . ($budget ? '<strong>Budget:</strong> ' . htmlspecialchars($budget) . '<br>' : '')
+        . ($timeline ? '<strong>Timeline:</strong> ' . htmlspecialchars($timeline) . '<br>' : '')
+        . '<strong>Notes / Message:</strong><br>' . nl2br(htmlspecialchars($message ?: '(None)')) . '</p>'
+        . '</div></div>';
+    dnSendGmailSmtp('digitalsnovaofficial@gmail.com', "New Website Lead ({$source}): {$name}", $leadHtml);
 
     echo json_encode([
         'success' => true,
-        'message' => 'Store account and all associated data permanently deleted from cloud database.',
-        'deletedTenant' => $deletedTenant
+        'leadId' => $leadId,
+        'message' => $source === 'QUOTE_FORM'
+            ? 'Quote inquiry received! Our senior strategy team will review your requirements and contact you shortly.'
+            : 'Thank you! Your message has been sent successfully. We will contact you within 24 hours.'
     ]);
     exit();
 }
 
-// 1. ACTION: REGISTER TENANT (Called from website or portal registration)
+// ==============================================================================
+// 4. TENANT REGISTRATION & DELETION
 // ==============================================================================
 if ($action === 'register_tenant' || $action === 'register') {
-    $tenant = isset($body['tenant']) ? $body['tenant'] : $body;
+    $tenant = isset($body['tenant']) && is_array($body['tenant']) ? $body['tenant'] : $body;
+    $allowUpdate = !empty($body['allowUpdate']) || !empty($tenant['allowUpdate']);
 
-    if (empty($tenant['name']) && empty($tenant['clinicName'])) {
+    $storeName = trim((string)($tenant['name'] ?? ($tenant['clinicName'] ?? ($tenant['businessName'] ?? ''))));
+    if ($storeName === '') {
         http_response_code(400);
-        echo json_encode(['success' => false, 'error' => 'Missing store name']);
+        echo json_encode(['success' => false, 'error' => 'Missing store or clinic name.']);
         exit();
     }
 
-    $storeName = !empty($tenant['name']) ? $tenant['name'] : $tenant['clinicName'];
-    $subdomain = !empty($tenant['subdomain']) ? strtolower($tenant['subdomain']) : strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $storeName));
-    $ownerName = !empty($tenant['ownerName']) ? $tenant['ownerName'] : (!empty($tenant['adminName']) ? $tenant['adminName'] : (!empty($tenant['adminUser']['name']) ? $tenant['adminUser']['name'] : $storeName . ' Owner'));
-    $ownerPhone = !empty($tenant['phone']) ? $tenant['phone'] : '';
-    $ownerEmail = !empty($tenant['email']) ? $tenant['email'] : (!empty($tenant['adminUser']['email']) ? $tenant['adminUser']['email'] : '');
-    $planType = !empty($tenant['planType']) ? $tenant['planType'] : 'TRIAL_3_DAYS';
-    $activationKeyInput = strtoupper(trim($tenant['activationKey'] ?? ''));
-    $businessType = !empty($tenant['businessType']) ? $tenant['businessType'] : (!empty($tenant['business_type']) ? $tenant['business_type'] : 'Retail Mart / General Store');
-    $vertical = !empty($tenant['vertical']) ? $tenant['vertical'] : (!empty($tenant['sector']) ? $tenant['sector'] : '');
+    $rawSub = !empty($tenant['subdomain']) ? $tenant['subdomain'] : $storeName;
+    $subdomain = dnSanitizeSubdomain($rawSub);
+    if (dnIsReservedName($subdomain)) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => 'This store subdomain name is reserved or invalid. Please choose another name.']);
+        exit();
+    }
 
-    if (empty($vertical)) {
-        if (stripos($businessType, 'Restaurant') !== false || stripos($businessType, 'Food') !== false || stripos($storeName, 'Resturent') !== false || stripos($storeName, 'Restaurant') !== false || stripos($subdomain, 'resturent') !== false || stripos($subdomain, 'restaurant') !== false) {
-            $vertical = 'RESTAURANT';
-            $businessType = 'Restaurants, Cafes & Food Outlets';
-        } else if (stripos($businessType, 'Pharmacy') !== false || stripos($storeName, 'Pharmacy') !== false || stripos($subdomain, 'pharmacy') !== false) {
-            $vertical = 'PHARMACY';
-            $businessType = 'Pharmacy & Medical Store';
-        } else if (stripos($businessType, 'Clinic') !== false || stripos($businessType, 'Hospital') !== false || stripos($storeName, 'Clinic') !== false || stripos($subdomain, 'clinic') !== false) {
-            $vertical = 'CLINIC_HMS';
-            $businessType = 'Clinic / Hospital';
-        } else {
-            $vertical = 'RETAIL_MART';
-            $businessType = 'Retail Mart / General Store';
+    $ownerName = trim((string)($tenant['ownerName'] ?? ($tenant['adminName'] ?? ($tenant['adminUser']['name'] ?? ($storeName . ' Owner')))));
+    $ownerPhone = trim((string)($tenant['phone'] ?? ($tenant['adminUser']['phone'] ?? '')));
+    $ownerEmail = trim((string)($tenant['email'] ?? ($tenant['adminUser']['email'] ?? '')));
+    $cleanPhone = preg_replace('/[^0-9]/', '', $ownerPhone);
+    $cleanEmail = strtolower($ownerEmail);
+    $explicitId = trim((string)($tenant['id'] ?? ''));
+
+    $tenants = dnGetUnifiedTenants($dataDir);
+
+    // Reject duplicate subdomain / phone / email BEFORE writing anything
+    foreach ($tenants as $existing) {
+        $exId = (string)($existing['id'] ?? '');
+        $exSub = dnSanitizeSubdomain($existing['subdomain'] ?? '');
+        $exPhone = preg_replace('/[^0-9]/', '', (string)($existing['phone'] ?? ($existing['adminUser']['phone'] ?? '')));
+        $exEmail = strtolower(trim((string)($existing['email'] ?? ($existing['adminUser']['email'] ?? ''))));
+
+        if ($allowUpdate && $explicitId !== '' && $exId === $explicitId) {
+            continue;
+        }
+        if ($exSub === $subdomain) {
+            http_response_code(409);
+            echo json_encode(['success' => false, 'error' => "Store subdomain \"{$subdomain}\" is already registered. Please sign in or choose another store name."]);
+            exit();
+        }
+        if (strlen($cleanPhone) >= 7 && $exPhone === $cleanPhone) {
+            http_response_code(409);
+            echo json_encode(['success' => false, 'error' => 'An account with this phone number already exists.']);
+            exit();
+        }
+        if ($cleanEmail !== '' && $exEmail !== '' && $exEmail === $cleanEmail) {
+            http_response_code(409);
+            echo json_encode(['success' => false, 'error' => 'An account with this email address already exists.']);
+            exit();
         }
     }
 
-    $plans = getEffectivePricingPlans($dataDir);
-    $resolvedPlan = resolveSectorPlanPricing($vertical, $planType, $plans);
+    $planType = !empty($tenant['planType']) ? $tenant['planType'] : 'TRIAL_3_DAYS';
+    $activationKeyInput = strtoupper(trim((string)($tenant['activationKey'] ?? '')));
+    $businessType = !empty($tenant['businessType']) ? $tenant['businessType'] : (!empty($tenant['business_type']) ? $tenant['business_type'] : 'Retail Mart / General Store');
+    $rawSec = $tenant['vertical'] ?? ($tenant['sector'] ?? ($tenant['storeType'] ?? ''));
+    $vertical = !empty($rawSec) ? dnNormalizeSectorCode($rawSec) : dnNormalizeSectorCode($businessType . ' ' . $storeName);
+
+    $plans = dnGetEffectivePricingPlans($dataDir);
+    $resolvedPlan = dnResolveSectorPlanPricing($vertical, $planType, $plans);
     $planType = $resolvedPlan['planType'];
     $cycleDays = isset($tenant['cycleDays']) && is_numeric($tenant['cycleDays']) && intval($tenant['cycleDays']) > 0 ? intval($tenant['cycleDays']) : $resolvedPlan['days'];
     $defaultFee = $resolvedPlan['fee'];
 
     $planName = !empty($tenant['planName']) ? $tenant['planName'] : $resolvedPlan['planName'];
     $monthlyFee = isset($tenant['monthlyFee']) && is_numeric($tenant['monthlyFee']) ? floatval($tenant['monthlyFee']) : (isset($tenant['monthly_fee']) && is_numeric($tenant['monthly_fee']) ? floatval($tenant['monthly_fee']) : $defaultFee);
-    $adminUser = !empty($tenant['adminUsername']) ? $tenant['adminUsername'] : (!empty($tenant['adminUser']['username']) ? $tenant['adminUser']['username'] : 'admin.' . $subdomain);
-    $adminPass = !empty($tenant['adminPassword']) ? $tenant['adminPassword'] : (!empty($tenant['adminUser']['password']) ? $tenant['adminUser']['password'] : '123456');
-
-    $tenants = getUnifiedTenants($tenantsFile);
-
-    // Filter out duplicate if same subdomain exists
-    $newTenants = [];
-    foreach ($tenants as $t) {
-        if (strtolower($t['subdomain'] ?? '') !== $subdomain && ($t['id'] ?? '') !== ($tenant['id'] ?? '')) {
-            $newTenants[] = $t;
-        }
-    }
+    $adminUser = trim((string)($tenant['adminUsername'] ?? ($tenant['adminUser']['username'] ?? ('admin.' . $subdomain))));
+    $adminPass = (string)($tenant['adminPassword'] ?? ($tenant['adminUser']['password'] ?? '123456'));
 
     $createdAt = !empty($tenant['createdAt']) ? $tenant['createdAt'] : date('c');
     $expiryTs = strtotime("+{$cycleDays} days");
@@ -1065,8 +372,9 @@ if ($action === 'register_tenant' || $action === 'register') {
     $expiryFormatted = date('d M Y, h:i A', $expiryTs);
 
     $record = [
-        'id' => !empty($tenant['id']) ? $tenant['id'] : 'tenant_' . $subdomain . '_' . time(),
+        'id' => $explicitId !== '' ? $explicitId : ('tenant_' . $subdomain . '_' . time()),
         'name' => $storeName,
+        'businessName' => $storeName,
         'subdomain' => $subdomain,
         'domain' => 'digitalsnova.com/portal/?store=' . $subdomain,
         'portalUrl' => 'https://digitalsnova.com/portal/?store=' . $subdomain,
@@ -1120,13 +428,13 @@ if ($action === 'register_tenant' || $action === 'register') {
         ]
     ];
 
-    if (!empty($activationKeyInput)) {
-        $regKeys = readUnifiedJson($licenseKeysFile, 'license_keys.json', []);
+    if ($activationKeyInput !== '') {
+        $regKeys = dnReadUnifiedJson($licenseKeysFile, 'license_keys.json', []);
         foreach ($regKeys as &$rk) {
-            if (strtoupper(trim($rk['keyCode'] ?? '')) === $activationKeyInput) {
-                $rkStatus = strtoupper($rk['status'] ?? 'READY');
-                $rkSub = strtolower(trim($rk['subdomain'] ?? ''));
-                if (($rkStatus === 'READY' || $rkStatus === 'ACTIVE') && (empty($rkSub) || $rkSub === $subdomain)) {
+            if (strtoupper(trim((string)($rk['keyCode'] ?? ''))) === $activationKeyInput) {
+                $rkStatus = strtoupper((string)($rk['status'] ?? 'READY'));
+                $rkSub = strtolower(trim((string)($rk['subdomain'] ?? '')));
+                if (($rkStatus === 'READY' || $rkStatus === 'ACTIVE') && ($rkSub === '' || $rkSub === $subdomain)) {
                     $kDays = max(1, intval($rk['cycleDays'] ?? $cycleDays));
                     $kFee = is_numeric($rk['fee'] ?? null) ? floatval($rk['fee']) : $monthlyFee;
                     $kPlan = !empty($rk['planType']) ? $rk['planType'] : $planType;
@@ -1141,7 +449,7 @@ if ($action === 'register_tenant' || $action === 'register') {
                     $rk['activatedAt'] = date('c');
                     $rk['tenantId'] = $record['id'];
                     $rk['subdomain'] = $record['subdomain'];
-                    writeJsonFile($licenseKeysFile, $regKeys);
+                    dnWriteJsonFile($licenseKeysFile, $regKeys);
                     syncToSecondaryDataDirs('license_keys.json', $regKeys);
                 }
                 break;
@@ -1150,30 +458,42 @@ if ($action === 'register_tenant' || $action === 'register') {
         unset($rk);
     }
 
-    normalizeTenantState($record, $effectivePlans);
+    dnNormalizeTenantState($record, $plans);
+
+    $newTenants = [];
+    foreach ($tenants as $t) {
+        if ($allowUpdate && $explicitId !== '' && ($t['id'] ?? '') === $explicitId) {
+            continue;
+        }
+        $newTenants[] = $t;
+    }
     $newTenants[] = $record;
-    writeJsonFile($tenantsFile, $newTenants);
+    dnWriteJsonFile($tenantsFile, $newTenants);
     syncToSecondaryDataDirs('tenants.json', $newTenants);
 
-    // Unmark newly registered store from deleted list
-    $deletedList = readJsonFile($deletedTenantsFile);
-    $deletedList = array_filter($deletedList, function($d) use ($subdomain, $ownerPhone, $ownerEmail) {
-        $dSub = strtolower($d['subdomain'] ?? '');
-        $dPhone = preg_replace('/[^0-9]/', '', $d['phone'] ?? '');
-        $dEmail = strtolower(trim($d['email'] ?? ''));
-        $cleanP = preg_replace('/[^0-9]/', '', $ownerPhone);
-        return $dSub !== $subdomain && ($dPhone !== $cleanP || empty($cleanP)) && ($dEmail !== strtolower($ownerEmail) || empty($ownerEmail));
+    // Ensure clean isolated empty workspace exists for this store
+    if (!file_exists(dnWorkspacePath($dataDir, $subdomain))) {
+        dnSaveWorkspace($dataDir, $subdomain, dnEmptyWorkspace());
+    }
+
+    // Remove from deleted_tenants.json if previously deleted and re-registered intentionally
+    $deletedList = dnReadJsonFile($deletedTenantsFile, []);
+    $deletedList = array_filter($deletedList, function($d) use ($subdomain, $cleanPhone, $cleanEmail) {
+        $dSub = strtolower((string)($d['subdomain'] ?? ''));
+        $dPhone = preg_replace('/[^0-9]/', '', (string)($d['phone'] ?? ''));
+        $dEmail = strtolower(trim((string)($d['email'] ?? '')));
+        return $dSub !== $subdomain && ($cleanPhone === '' || $dPhone !== $cleanPhone) && ($cleanEmail === '' || $dEmail !== $cleanEmail);
     });
-    writeJsonFile($deletedTenantsFile, array_values($deletedList));
+    dnWriteJsonFile($deletedTenantsFile, array_values($deletedList));
     syncToSecondaryDataDirs('deleted_tenants.json', array_values($deletedList));
 
-    // Save Real-Time Super Admin Notification
-    $notifications = readJsonFile($notifsFile);
+    // Real-Time Super Admin Notification
+    $notifications = getUnifiedNotifications($dataDir);
     $notif = [
         'id' => 'notif_' . time() . '_' . rand(100, 999),
         'timestamp' => $createdAt,
         'type' => 'NEW_REGISTRATION',
-        'title' => '🎉 New Store Registered (Cloud Sync)',
+        'title' => 'New Store Registered (Cloud Sync)',
         'tenantName' => $storeName,
         'subdomain' => $subdomain,
         'ownerName' => $ownerName,
@@ -1187,226 +507,173 @@ if ($action === 'register_tenant' || $action === 'register') {
         'adminUsername' => $adminUser,
         'adminPassword' => $adminPass,
         'portalUrl' => 'https://digitalsnova.com/portal/?store=' . $subdomain,
-        'message' => "Store '{$storeName}' registered on {$planName}! Owner: {$ownerName} ({$ownerPhone})."
+        'message' => "Store '{$storeName}' registered on {$planName}! Owner: {$ownerName} ({$ownerPhone}).",
+        'unread' => true
     ];
     array_unshift($notifications, $notif);
     if (count($notifications) > 100) {
         $notifications = array_slice($notifications, 0, 100);
     }
-    writeJsonFile($notifsFile, $notifications);
+    dnWriteJsonFile($notifsFile, $notifications);
     syncToSecondaryDataDirs('notifications.json', $notifications);
 
-    // -------------------------------------------------------------------------
-    // AUTOMATED EMAIL 1: WELCOME & ACCESS PASS TO CLIENT
-    // -------------------------------------------------------------------------
-    if (!empty($ownerEmail) && filter_var($ownerEmail, FILTER_VALIDATE_EMAIL)) {
-        $clientSubject = "🎉 Welcome to DigitalsNova - Your Cloud POS Portal is Ready!";
-        $clientHtml = '
-        <!DOCTYPE html>
-        <html>
-        <head><meta charset="utf-8"></head>
-        <body style="font-family: Arial, sans-serif; background-color: #030712; color: #f8fafc; padding: 24px; margin: 0;">
-            <div style="max-width: 600px; margin: 0 auto; background: #0b132b; border: 1px solid #1e293b; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
-                <div style="background: linear-gradient(135deg, #0f172a, #1e3a8a); padding: 28px 24px; text-align: center; border-bottom: 2px solid #00e5ff;">
-                    <h1 style="color: #00e5ff; font-size: 24px; margin: 0 0 6px 0; font-weight: 900; letter-spacing: 1px;">DigitalsNova Cloud POS</h1>
-                    <p style="color: #94a3b8; font-size: 13px; margin: 0;">High-Performance Multi-Tenant Retail & Clinical SaaS</p>
-                </div>
-                <div style="padding: 28px 24px;">
-                    <h2 style="color: #ffffff; font-size: 18px; margin-top: 0;">Assalam-o-Alaikum, ' . htmlspecialchars($ownerName) . '!</h2>
-                    <p style="color: #cbd5e1; font-size: 14px; line-height: 1.6;">
-                        Thank you for choosing <strong>DigitalsNova</strong>. Your dedicated cloud business portal for <strong>' . htmlspecialchars($storeName) . '</strong> has been activated on the <strong>' . htmlspecialchars($planName) . '</strong>.
-                    </p>
-                    <div style="background: #020617; border: 1px solid #334155; border-radius: 12px; padding: 20px; margin: 24px 0;">
-                        <h3 style="color: #f59e0b; font-size: 14px; margin: 0 0 14px 0; text-transform: uppercase; letter-spacing: 0.5px;">🔑 Your Portal Access Credentials</h3>
-                        <p style="margin: 6px 0; font-size: 13px; color: #e2e8f0;"><strong>Store Name:</strong> ' . htmlspecialchars($storeName) . '</p>
-                        <p style="margin: 6px 0; font-size: 13px; color: #e2e8f0;"><strong>Active Plan:</strong> ' . htmlspecialchars($planName) . '</p>
-                        <p style="margin: 6px 0; font-size: 13px; color: #e2e8f0;"><strong>Login Username:</strong> <span style="color: #00e5ff; font-family: monospace; font-weight: bold; background: #0f172a; padding: 2px 8px; border-radius: 4px;">' . htmlspecialchars($adminUser) . '</span> (or your Email: ' . htmlspecialchars($ownerEmail) . ')</p>
-                        <p style="margin: 6px 0; font-size: 13px; color: #e2e8f0;"><strong>Master Password:</strong> <span style="color: #10b981; font-family: monospace; font-weight: bold; background: #0f172a; padding: 2px 8px; border-radius: 4px;">' . htmlspecialchars($adminPass) . '</span></p>
-                    </div>
-                    <div style="text-align: center; margin: 30px 0;">
-                        <a href="https://digitalsnova.com/portal/?store=' . urlencode($subdomain) . '" style="background: linear-gradient(135deg, #00e5ff, #0077b6); color: #020617; font-weight: 900; font-size: 15px; padding: 14px 32px; text-decoration: none; border-radius: 10px; display: inline-block; box-shadow: 0 4px 15px rgba(0,229,255,0.4);">
-                            🚀 Launch Cloud POS Portal &rarr;
-                        </a>
-                    </div>
-                    <p style="font-size: 12px; color: #94a3b8; line-height: 1.5; border-top: 1px solid #1e293b; padding-top: 16px; margin-bottom: 0;">
-                        Direct Portal Link: <a href="https://digitalsnova.com/portal/?store=' . urlencode($subdomain) . '" style="color: #00e5ff;">https://digitalsnova.com/portal/?store=' . htmlspecialchars($subdomain) . '</a><br>
-                        Need assistance? Reply directly to this email (<a href="mailto:digitalsnovaofficial@gmail.com" style="color: #00e5ff;">digitalsnovaofficial@gmail.com</a>) or contact our WhatsApp Tech Desk.
-                    </p>
-                </div>
-                <div style="background: #020617; padding: 16px; text-align: center; font-size: 11px; color: #64748b; border-top: 1px solid #1e293b;">
-                    &copy; ' . date('Y') . ' DigitalsNova SaaS Platform. All Rights Reserved.
-                </div>
-            </div>
-        </body>
-        </html>';
-        sendDigitalsNovaEmail($ownerEmail, $clientSubject, $clientHtml);
+    if ($ownerEmail !== '' && filter_var($ownerEmail, FILTER_VALIDATE_EMAIL)) {
+        $clientSubject = 'Welcome to DigitalsNova - Your Cloud POS Portal is Ready!';
+        $clientHtml = '<!DOCTYPE html><html><head><meta charset="utf-8"></head>'
+            . '<body style="font-family: Arial, sans-serif; background-color: #030712; color: #f8fafc; padding: 24px; margin: 0;">'
+            . '<div style="max-width: 600px; margin: 0 auto; background: #0b132b; border: 1px solid #1e293b; border-radius: 16px; overflow: hidden;">'
+            . '<div style="background: linear-gradient(135deg, #0f172a, #1e3a8a); padding: 28px 24px; text-align: center; border-bottom: 2px solid #00e5ff;">'
+            . '<h1 style="color: #00e5ff; font-size: 24px; margin: 0 0 6px 0; font-weight: 900;">DigitalsNova Cloud POS</h1>'
+            . '<p style="color: #94a3b8; font-size: 13px; margin: 0;">High-Performance Multi-Tenant Retail & Clinical SaaS</p></div>'
+            . '<div style="padding: 28px 24px;">'
+            . '<h2 style="color: #ffffff; font-size: 18px; margin-top: 0;">Assalam-o-Alaikum, ' . htmlspecialchars($ownerName) . '!</h2>'
+            . '<p style="color: #cbd5e1; font-size: 14px; line-height: 1.6;">Your dedicated cloud business portal for <strong>' . htmlspecialchars($storeName) . '</strong> is active on <strong>' . htmlspecialchars($planName) . '</strong>.</p>'
+            . '<div style="background: #020617; border: 1px solid #334155; border-radius: 12px; padding: 20px; margin: 24px 0;">'
+            . '<p style="margin: 6px 0; font-size: 13px; color: #e2e8f0;"><strong>Store:</strong> ' . htmlspecialchars($storeName) . '</p>'
+            . '<p style="margin: 6px 0; font-size: 13px; color: #e2e8f0;"><strong>Login Username:</strong> <code>' . htmlspecialchars($adminUser) . '</code></p>'
+            . '<p style="margin: 6px 0; font-size: 13px; color: #e2e8f0;"><strong>Password:</strong> <code>' . htmlspecialchars($adminPass) . '</code></p></div>'
+            . '<div style="text-align: center; margin: 30px 0;"><a href="https://digitalsnova.com/portal/?store=' . urlencode($subdomain) . '" style="background: linear-gradient(135deg, #00e5ff, #0077b6); color: #020617; font-weight: 900; font-size: 15px; padding: 14px 32px; text-decoration: none; border-radius: 10px; display: inline-block;">Launch Cloud POS Portal &rarr;</a></div>'
+            . '</div></div></body></html>';
+        dnSendGmailSmtp($ownerEmail, $clientSubject, $clientHtml);
     }
 
-    // -------------------------------------------------------------------------
-    // AUTOMATED EMAIL 2: NOTIFICATION ALERT TO PLATFORM OWNER (UBAID)
-    // -------------------------------------------------------------------------
-    $adminAlertEmail = 'digitalsnovaofficial@gmail.com';
-    $adminSubject = "🚨 New Store Provisioned: {$storeName} [{$planName}]";
-    $adminHtml = '
-    <!DOCTYPE html>
-    <html>
-    <head><meta charset="utf-8"></head>
-    <body style="font-family: Arial, sans-serif; background-color: #030712; color: #f8fafc; padding: 20px;">
-        <div style="max-width: 600px; margin: 0 auto; background: #0f172a; border: 2px solid #f59e0b; border-radius: 14px; padding: 24px;">
-            <h2 style="color: #f59e0b; margin-top: 0;">👑 New Client Registration Received!</h2>
-            <p style="font-size: 14px; color: #cbd5e1;">A new store has registered on the platform. Details below:</p>
-            <table style="width: 100%; border-collapse: collapse; font-size: 13px; margin: 16px 0; color: #f1f5f9;">
-                <tr style="border-bottom: 1px solid #334155;"><td style="padding: 8px 0; color: #94a3b8;">Store Name:</td><td style="padding: 8px 0; font-weight: bold;">' . htmlspecialchars($storeName) . '</td></tr>
-                <tr style="border-bottom: 1px solid #334155;"><td style="padding: 8px 0; color: #94a3b8;">Owner:</td><td style="padding: 8px 0;">' . htmlspecialchars($ownerName) . '</td></tr>
-                <tr style="border-bottom: 1px solid #334155;"><td style="padding: 8px 0; color: #94a3b8;">Phone / WhatsApp:</td><td style="padding: 8px 0; font-weight: bold; color: #10b981;">' . htmlspecialchars($ownerPhone) . '</td></tr>
-                <tr style="border-bottom: 1px solid #334155;"><td style="padding: 8px 0; color: #94a3b8;">Email:</td><td style="padding: 8px 0;">' . htmlspecialchars($ownerEmail) . '</td></tr>
-                <tr style="border-bottom: 1px solid #334155;"><td style="padding: 8px 0; color: #94a3b8;">Plan:</td><td style="padding: 8px 0; color: #f59e0b; font-weight: bold;">' . htmlspecialchars($planName) . '</td></tr>
-                <tr style="border-bottom: 1px solid #334155;"><td style="padding: 8px 0; color: #94a3b8;">Subdomain:</td><td style="padding: 8px 0;">' . htmlspecialchars($subdomain) . '</td></tr>
-                <tr style="border-bottom: 1px solid #334155;"><td style="padding: 8px 0; color: #94a3b8;">Admin Username:</td><td style="padding: 8px 0; color: #00e5ff; font-family: monospace; font-weight: bold;">' . htmlspecialchars($adminUser) . '</td></tr>
-                <tr style="border-bottom: 1px solid #334155;"><td style="padding: 8px 0; color: #94a3b8;">Admin Password:</td><td style="padding: 8px 0; color: #f87171; font-family: monospace; font-weight: bold;">' . htmlspecialchars($adminPass) . '</td></tr>
-                <tr><td style="padding: 8px 0; color: #94a3b8;">Registered At:</td><td style="padding: 8px 0;">' . htmlspecialchars($createdAt) . '</td></tr>
-            </table>
-            <div style="margin-top: 20px; text-align: center;">
-                <a href="https://digitalsnova.com/super-admin" style="background: #f59e0b; color: #0f172a; padding: 10px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Open Super Admin HQ</a>
-            </div>
-        </div>
-    </body>
-    </html>';
-    sendDigitalsNovaEmail($adminAlertEmail, $adminSubject, $adminHtml);
+    $adminHtml = '<div style="font-family: Arial, sans-serif; background: #0f172a; color: #f8fafc; padding: 24px; border: 2px solid #f59e0b; border-radius: 14px;">'
+        . '<h2 style="color: #f59e0b; margin-top: 0;">New Client Registration</h2>'
+        . '<p><strong>Store:</strong> ' . htmlspecialchars($storeName) . ' (' . htmlspecialchars($subdomain) . ')<br>'
+        . '<strong>Owner:</strong> ' . htmlspecialchars($ownerName) . '<br>'
+        . '<strong>Phone:</strong> ' . htmlspecialchars($ownerPhone) . '<br>'
+        . '<strong>Email:</strong> ' . htmlspecialchars($ownerEmail) . '<br>'
+        . '<strong>Plan:</strong> ' . htmlspecialchars($planName) . '</p></div>';
+    dnSendGmailSmtp('digitalsnovaofficial@gmail.com', "New Store Provisioned: {$storeName} [{$planName}]", $adminHtml);
 
     echo json_encode([
         'success' => true,
         'message' => 'Tenant registered, synced, and emails dispatched!',
         'tenant' => $record,
+        'user' => $record['adminUser'],
         'notification' => $notif
     ]);
     exit();
 }
 
-// ==============================================================================
-// 2. ACTION: GET ALL (Super Admin Dashboard fetch from ANY computer)
-// ==============================================================================
-if ($action === 'get_all' || $action === 'tenants') {
-    $tenants = getUnifiedTenants($tenantsFile);
-    $notifications = getUnifiedNotifications($notifsFile);
-    $staff = readJsonFile($staffFile);
-    $deletedTenants = readJsonFile($deletedTenantsFile);
+if ($action === 'delete_tenant' || $action === 'delete') {
+    $tenantId = trim((string)($body['id'] ?? ($body['tenantId'] ?? ($_GET['id'] ?? ''))));
+    $subdomain = strtolower(trim((string)($body['subdomain'] ?? ($_GET['subdomain'] ?? ''))));
+    $phone = preg_replace('/[^0-9]/', '', (string)($body['phone'] ?? ''));
+    $email = strtolower(trim((string)($body['email'] ?? '')));
 
-    $effectivePlans = getEffectivePricingPlans($dataDir);
+    $tenants = dnGetUnifiedTenants($dataDir);
+    $remainingTenants = [];
+    $deletedTenant = null;
 
-    // Auto-heal & normalize subscription state, pricing, modules, and credentials across all tenants
-    $deletedTenants = readUnifiedJson($deletedTenantsFile, 'deleted_tenants.json', []);
-    $deletedLookupAll = [];
-    foreach ($deletedTenants as $dt) {
-        if (!empty($dt['id'])) $deletedLookupAll[strtolower($dt['id'])] = true;
-        if (!empty($dt['subdomain'])) $deletedLookupAll[strtolower($dt['subdomain'])] = true;
-    }
+    foreach ($tenants as $t) {
+        $tId = (string)($t['id'] ?? '');
+        $tSub = strtolower((string)($t['subdomain'] ?? ''));
+        $tPhone = preg_replace('/[^0-9]/', '', (string)($t['phone'] ?? ($t['adminUser']['phone'] ?? '')));
+        $tEmail = strtolower(trim((string)($t['email'] ?? ($t['adminUser']['email'] ?? ''))));
 
-    // Auto-rescue any registered store present in notifications but missing from tenants (skipping deleted stores)
-    $tenantsDirty = false;
-    foreach ($notifications as $n) {
-        $nSub = strtolower(trim($n['subdomain'] ?? ''));
-        $nName = trim($n['tenantName'] ?? ($n['name'] ?? ''));
-        if (!empty($nSub) && !empty($nName) && !isset($deletedLookupAll[$nSub]) && !in_array($nSub, ['clinic', 'admin', 'superadmin', 'hq'])) {
-            $found = false;
-            foreach ($tenants as $t) {
-                if (strtolower($t['subdomain'] ?? '') === $nSub) {
-                    $found = true;
-                    break;
-                }
-            }
-            if (!$found) {
-                $nVert = strtoupper($n['vertical'] ?? '');
-                $isRest = ($nVert === 'RESTAURANT') || (stripos($nName, 'Resturent') !== false || stripos($nName, 'Restaurant') !== false || stripos($nSub, 'resturent') !== false || stripos($nSub, 'restaurant') !== false);
-                $isPharm = ($nVert === 'PHARMACY') || (stripos($nName, 'Pharmacy') !== false || stripos($nSub, 'pharmacy') !== false);
-                $isClin = ($nVert === 'CLINIC_HMS') || (stripos($nName, 'Clinic') !== false || stripos($nName, 'Hospital') !== false);
-                $vert = $isRest ? 'RESTAURANT' : ($isPharm ? 'PHARMACY' : ($isClin ? 'CLINIC_HMS' : 'RETAIL_MART'));
-                $bType = $isRest ? 'Restaurants, Cafes & Food Outlets' : ($isPharm ? 'Pharmacy & Medical Store' : ($isClin ? 'Clinic / Hospital' : 'Retail Mart / General Store'));
-                $nPlanType = $n['planType'] ?? 'MONTHLY';
-                $resolved = resolveSectorPlanPricing($vert, $nPlanType, $effectivePlans);
-                $fee = (isset($n['monthlyFee']) && is_numeric($n['monthlyFee'])) ? floatval($n['monthlyFee']) : $resolved['fee'];
-                $pName = !empty($n['planName']) ? $n['planName'] : $resolved['planName'];
-                $tenants[] = [
-                    'id' => 'tenant_' . $nSub,
-                    'name' => $nName,
-                    'subdomain' => $nSub,
-                    'domain' => 'digitalsnova.com/portal/?store=' . $nSub,
-                    'portalUrl' => 'https://digitalsnova.com/portal/?store=' . $nSub,
-                    'phone' => $n['phone'] ?? '03012200230',
-                    'email' => $n['email'] ?? '',
-                    'businessType' => $bType,
-                    'business_type' => $bType,
-                    'vertical' => $vert,
-                    'sector' => $vert,
-                    'storeType' => $vert,
-                    'planType' => $resolved['planType'],
-                    'planName' => $pName,
-                    'cycleDays' => $resolved['days'],
-                    'monthlyFee' => $fee,
-                    'monthly_fee' => $fee,
-                    'createdAt' => $n['timestamp'] ?? date('c'),
-                    'adminName' => $n['ownerName'] ?? 'Store Owner',
-                    'adminUsername' => $n['adminUsername'] ?? ($n['adminUser'] ?? ('admin.' . $nSub)),
-                    'adminPassword' => $n['adminPassword'] ?? '123456',
-                    'adminPin' => '1234',
-                    'status' => 'ACTIVE',
-                    'enabledModules' => [
-                        'pos' => true,
-                        'inventory' => true,
-                        'patientsLedger' => ($vert === 'CLINIC_HMS'),
-                        'tableManagement' => ($vert === 'RESTAURANT'),
-                        'expiryBatch' => ($vert === 'PHARMACY')
-                    ],
-                    'subscription' => [
-                        'state' => 'ACTIVE',
-                        'plan' => $resolved['planType'],
-                        'planName' => $pName,
-                        'billingCycleDay' => 1,
-                        'totalDays' => $resolved['days'],
-                        'graceDaysRemaining' => 3,
-                        'monthlyFee' => $fee
-                    ],
-                    'adminUser' => [
-                        'name' => $n['ownerName'] ?? 'Store Owner',
-                        'username' => $n['adminUsername'] ?? ($n['adminUser'] ?? ('admin.' . $nSub)),
-                        'password' => $n['adminPassword'] ?? '123456',
-                        'role' => $vert === 'CLINIC_HMS' ? 'CLINIC_ADMIN' : 'STORE_ADMIN'
-                    ]
-                ];
-                $tenantsDirty = true;
-            }
+        $isMatch = false;
+        if ($tenantId !== '' && ($tId === $tenantId || $tSub === strtolower($tenantId))) $isMatch = true;
+        if ($subdomain !== '' && $tSub === $subdomain) $isMatch = true;
+        if ($phone !== '' && $tPhone !== '' && $phone === $tPhone) $isMatch = true;
+        if ($email !== '' && $tEmail !== '' && $email === $tEmail) $isMatch = true;
+
+        if ($isMatch) {
+            $deletedTenant = $t;
+        } else {
+            $remainingTenants[] = $t;
         }
     }
+    dnWriteJsonFile($tenantsFile, $remainingTenants);
+    syncToSecondaryDataDirs('tenants.json', $remainingTenants);
 
-    $activeTenants = [];
-    foreach ($tenants as $tItem) {
-        $tidL = strtolower($tItem['id'] ?? '');
-        $tsubL = strtolower($tItem['subdomain'] ?? '');
-        if ((!empty($tsubL) && isset($deletedLookupAll[$tsubL])) ||
-            (!empty($tidL) && isset($deletedLookupAll[$tidL]))) {
-            $tenantsDirty = true;
+    $delSub = $subdomain ?: strtolower((string)($deletedTenant['subdomain'] ?? ''));
+    $delId = $tenantId ?: ($deletedTenant['id'] ?? '');
+
+    if ($delSub !== '') {
+        dnDeleteWorkspace($dataDir, $delSub);
+    }
+
+    $allStaff = dnReadUnifiedJson($staffFile, 'staff.json', []);
+    $remainingStaff = [];
+    foreach ($allStaff as $s) {
+        if (($delSub !== '' && strtolower((string)($s['subdomain'] ?? '')) === $delSub) ||
+            ($delId !== '' && ($s['tenantId'] ?? '') === $delId)) {
             continue;
         }
-        if (normalizeTenantState($tItem, $effectivePlans)) {
+        $remainingStaff[] = $s;
+    }
+    dnWriteJsonFile($staffFile, $remainingStaff);
+    syncToSecondaryDataDirs('staff.json', $remainingStaff);
+
+    $allNotifs = dnReadJsonFile($notifsFile, []);
+    $remainingNotifs = [];
+    foreach ($allNotifs as $n) {
+        if ($delSub !== '' && strtolower((string)($n['subdomain'] ?? '')) === $delSub) {
+            continue;
+        }
+        $remainingNotifs[] = $n;
+    }
+    dnWriteJsonFile($notifsFile, $remainingNotifs);
+    syncToSecondaryDataDirs('notifications.json', $remainingNotifs);
+
+    $deletedList = dnReadUnifiedJson($deletedTenantsFile, 'deleted_tenants.json', []);
+    $deletedList = array_filter($deletedList, function($d) use ($delSub, $delId) {
+        return ($d['subdomain'] ?? '') !== $delSub && ($d['id'] ?? '') !== $delId;
+    });
+    $deletedList[] = [
+        'id' => $delId,
+        'subdomain' => $delSub,
+        'phone' => $phone ?: ($deletedTenant['phone'] ?? ''),
+        'email' => $email ?: ($deletedTenant['email'] ?? ''),
+        'deletedAt' => date('c')
+    ];
+    dnWriteJsonFile($deletedTenantsFile, array_values($deletedList));
+    syncToSecondaryDataDirs('deleted_tenants.json', array_values($deletedList));
+
+    echo json_encode([
+        'success' => true,
+        'message' => 'Store account and all associated data permanently deleted from cloud database.',
+        'deletedTenant' => $deletedTenant
+    ]);
+    exit();
+}
+
+// ==============================================================================
+// 5. GET_ALL & ISOLATED TENANT WORKSPACE BOOTSTRAP
+// ==============================================================================
+if ($action === 'get_all' || $action === 'tenants') {
+    $tenants = dnGetUnifiedTenants($dataDir);
+    $notifications = getUnifiedNotifications($dataDir);
+    $effectivePlans = dnGetEffectivePricingPlans($dataDir);
+    $deletedTenants = dnReadUnifiedJson($deletedTenantsFile, 'deleted_tenants.json', []);
+
+    $tenantsDirty = false;
+    foreach ($tenants as &$tItem) {
+        if (dnNormalizeTenantState($tItem, $effectivePlans)) {
             $tenantsDirty = true;
         }
-        $activeTenants[] = $tItem;
     }
-    $tenants = $activeTenants;
-
+    unset($tItem);
     if ($tenantsDirty) {
-        writeJsonFile($tenantsFile, $tenants);
+        dnWriteJsonFile($tenantsFile, $tenants);
         syncToSecondaryDataDirs('tenants.json', $tenants);
     }
 
-    $staff = readUnifiedJson($staffFile, 'staff.json', []);
-    $deletedStaff = readUnifiedJson($deletedStaffFile, 'deleted_staff.json', []);
-    $platformBrand = array_merge(getDefaultPlatformBrand(), readUnifiedJson($platformBrandFile, 'platform_brand.json', []));
-    $remoteConfig = array_merge(getDefaultRemoteConfig(), readUnifiedJson($remoteConfigFile, 'remote_config.json', []));
-    $licenseKeys = readUnifiedJson($licenseKeysFile, 'license_keys.json', []);
-    $deletedLicenseKeys = readUnifiedJson($deletedLicenseKeysFile, 'deleted_license_keys.json', []);
-    $passwordResets = readUnifiedJson($passwordResetsFile, 'password_resets.json', []);
-    $cronLogs = readUnifiedJson($cronLogsFile, 'cron_logs.json', []);
+    $staff = dnReadUnifiedJson($staffFile, 'staff.json', []);
+    $deletedStaff = dnReadUnifiedJson($deletedStaffFile, 'deleted_staff.json', []);
+    $platformBrand = array_merge(dnGetDefaultPlatformBrand(), dnReadUnifiedJson($platformBrandFile, 'platform_brand.json', []));
+    $remoteConfig = array_merge(dnGetDefaultRemoteConfig(), dnReadUnifiedJson($remoteConfigFile, 'remote_config.json', []));
+    $licenseKeys = dnReadUnifiedJson($licenseKeysFile, 'license_keys.json', []);
+    $deletedLicenseKeys = dnReadUnifiedJson($deletedLicenseKeysFile, 'deleted_license_keys.json', []);
+    $passwordResets = dnReadUnifiedJson($passwordResetsFile, 'password_resets.json', []);
+    $cronLogs = dnReadUnifiedJson($cronLogsFile, 'cron_logs.json', []);
+
+    $ctx = dnResolveWorkspaceContext($body, $tenants);
+    $workspace = null;
+    if ($ctx['subdomain'] !== '' && $ctx['subdomain'] !== 'hq' && $ctx['subdomain'] !== 'store') {
+        $workspace = dnLoadWorkspace($dataDir, $ctx['subdomain']);
+    }
 
     echo json_encode([
         'success' => true,
@@ -1422,33 +689,58 @@ if ($action === 'get_all' || $action === 'tenants') {
         'deleted_license_keys' => $deletedLicenseKeys,
         'password_resets' => $passwordResets,
         'cron_logs' => $cronLogs,
+        'workspace' => $workspace,
         'count' => count($tenants),
         'serverTime' => date('c')
     ]);
     exit();
 }
 
+if ($action === 'get_workspace') {
+    $tenants = dnGetUnifiedTenants($dataDir);
+    $ctx = dnResolveWorkspaceContext($body, $tenants);
+    if ($ctx['subdomain'] === '') {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => 'Missing store subdomain']);
+        exit();
+    }
+    echo json_encode([
+        'success' => true,
+        'subdomain' => $ctx['subdomain'],
+        'workspace' => dnLoadWorkspace($dataDir, $ctx['subdomain'])
+    ]);
+    exit();
+}
+
 // ==============================================================================
-// 3. ACTION: UNIVERSAL LOGIN (Authenticate by Username, Email, OR Phone)
+// 6. UNIVERSAL LOGIN, OTP RECOVERY & PROFILE MANAGEMENT
 // ==============================================================================
 if ($action === 'login') {
-    $identifier = trim(strtolower($body['identifier'] ?? ($body['username'] ?? '')));
-    $password = trim($body['password'] ?? '');
+    $identifier = trim(strtolower((string)($body['identifier'] ?? ($body['username'] ?? ''))));
+    $password = trim((string)($body['password'] ?? ''));
 
-    if (empty($identifier) || empty($password)) {
+    if ($identifier === '' || $password === '') {
         http_response_code(400);
-        echo json_encode(['success' => false, 'error' => 'Please provide username and password']);
+        echo json_encode(['success' => false, 'error' => 'Please provide username and password.']);
         exit();
     }
 
-    // Check Master Super Admin (Ubaid)
-    if (($identifier === 'ubaid' || $identifier === 'superadmin') && $password === '2200230') {
+    // Master Super Admin verified strictly against persisted super_admin.json
+    $saCheck = dnVerifySuperAdminLogin($dataDir, $identifier, $password);
+    if ($saCheck['matched']) {
+        if (!$saCheck['ok']) {
+            http_response_code(401);
+            echo json_encode(['success' => false, 'error' => 'Invalid password for Super Admin account.']);
+            exit();
+        }
+        $sa = $saCheck['sa'];
         echo json_encode([
             'success' => true,
             'user' => [
-                'id' => 'u_ubaid',
-                'name' => 'Ubaid Ur Rehman (Platform Owner)',
-                'username' => 'ubaid',
+                'id' => $sa['id'] ?? 'u_ubaid',
+                'name' => $sa['name'] ?? 'Ubaid Ur Rehman (Platform Owner)',
+                'username' => $sa['username'] ?? 'ubaid',
+                'email' => $sa['email'] ?? 'ubaidurrehman2200230@gmail.com',
                 'role' => 'SUPER_ADMIN',
                 'active' => true
             ],
@@ -1459,18 +751,17 @@ if ($action === 'login') {
 
     $cleanPhone = preg_replace('/[^0-9]/', '', $identifier);
 
-    // Check if account has been deleted by Super Admin
-    $deletedList = readUnifiedJson($deletedTenantsFile, 'deleted_tenants.json', []);
+    $deletedList = dnReadUnifiedJson($deletedTenantsFile, 'deleted_tenants.json', []);
     foreach ($deletedList as $dt) {
-        $dtSub = strtolower($dt['subdomain'] ?? '');
-        $dtId = strtolower($dt['id'] ?? '');
-        $dtPhone = preg_replace('/[^0-9]/', '', $dt['phone'] ?? '');
-        $dtEmail = strtolower(trim($dt['email'] ?? ''));
+        $dtSub = strtolower((string)($dt['subdomain'] ?? ''));
+        $dtId = strtolower((string)($dt['id'] ?? ''));
+        $dtPhone = preg_replace('/[^0-9]/', '', (string)($dt['phone'] ?? ''));
+        $dtEmail = strtolower(trim((string)($dt['email'] ?? '')));
 
         if (($dtSub && $identifier === $dtSub) ||
             ($dtId && $identifier === $dtId) ||
             ($dtEmail && $identifier === $dtEmail) ||
-            (!empty($cleanPhone) && !empty($dtPhone) && $cleanPhone === $dtPhone)) {
+            ($cleanPhone !== '' && $dtPhone !== '' && $cleanPhone === $dtPhone)) {
             http_response_code(403);
             echo json_encode([
                 'success' => false,
@@ -1479,34 +770,35 @@ if ($action === 'login') {
             exit();
         }
     }
-    $tenants = getUnifiedTenants($tenantsFile);
-    $effectivePlans = getEffectivePricingPlans($dataDir);
+
+    $tenants = dnGetUnifiedTenants($dataDir);
+    $effectivePlans = dnGetEffectivePricingPlans($dataDir);
     $matchedTenant = null;
 
     foreach ($tenants as $t) {
-        $tSub = strtolower($t['subdomain'] ?? '');
-        $tUser = strtolower($t['adminUsername'] ?? ($t['adminUser']['username'] ?? ''));
-        $tEmail = strtolower($t['email'] ?? ($t['adminUser']['email'] ?? ''));
-        $tPhone = preg_replace('/[^0-9]/', '', $t['phone'] ?? ($t['adminUser']['phone'] ?? ''));
+        $tSub = strtolower((string)($t['subdomain'] ?? ''));
+        $tUser = strtolower((string)($t['adminUsername'] ?? ($t['adminUser']['username'] ?? '')));
+        $tEmail = strtolower((string)($t['email'] ?? ($t['adminUser']['email'] ?? '')));
+        $tPhone = preg_replace('/[^0-9]/', '', (string)($t['phone'] ?? ($t['adminUser']['phone'] ?? '')));
 
         if ($identifier === $tSub ||
             $identifier === $tUser ||
-            $identifier === $tEmail ||
-            (!empty($cleanPhone) && $cleanPhone === $tPhone)) {
+            ($tEmail !== '' && $identifier === $tEmail) ||
+            ($cleanPhone !== '' && $tPhone !== '' && $cleanPhone === $tPhone)) {
             $matchedTenant = $t;
             break;
         }
     }
 
     if ($matchedTenant) {
-        normalizeTenantState($matchedTenant, $effectivePlans);
-        $expectedPass = $matchedTenant['adminPassword'] ?? ($matchedTenant['adminUser']['password'] ?? '123456');
-        if ($expectedPass !== $password && $password !== '2200230') {
+        dnNormalizeTenantState($matchedTenant, $effectivePlans);
+        $expectedPass = (string)($matchedTenant['adminPassword'] ?? ($matchedTenant['adminUser']['password'] ?? '123456'));
+        if (!hash_equals($expectedPass, $password)) {
             http_response_code(401);
             echo json_encode(['success' => false, 'error' => 'Incorrect password for this account.']);
             exit();
         }
-        if ((!empty($matchedTenant['manualBlocked']) || strtoupper($matchedTenant['status'] ?? '') === 'BLOCKED') && $password !== '2200230') {
+        if (!empty($matchedTenant['manualBlocked']) || strtoupper((string)($matchedTenant['status'] ?? '')) === 'BLOCKED') {
             http_response_code(403);
             echo json_encode([
                 'success' => false,
@@ -1535,12 +827,11 @@ if ($action === 'login') {
         exit();
     }
 
-    // Check Staff Accounts (Attach full tenant so staff stay strictly isolated to their business sector)
-    $allStaff = readUnifiedJson($staffFile, 'staff.json', []);
+    $allStaff = dnReadUnifiedJson($staffFile, 'staff.json', []);
     foreach ($allStaff as $s) {
-        $sUser = strtolower($s['username'] ?? '');
+        $sUser = strtolower((string)($s['username'] ?? ''));
         if ($identifier === $sUser) {
-            if (($s['password'] ?? '123') !== $password && $password !== '2200230') {
+            if (!hash_equals((string)($s['password'] ?? '123'), $password)) {
                 http_response_code(401);
                 echo json_encode(['success' => false, 'error' => 'Incorrect password for staff account.']);
                 exit();
@@ -1551,17 +842,17 @@ if ($action === 'login') {
                 exit();
             }
             $staffTenant = null;
-            $sSub = strtolower($s['subdomain'] ?? '');
-            $sTid = $s['tenantId'] ?? '';
+            $sSub = strtolower((string)($s['subdomain'] ?? ''));
+            $sTid = (string)($s['tenantId'] ?? '');
             foreach ($tenants as $t) {
-                if ((!empty($sTid) && ($t['id'] ?? '') === $sTid) || (!empty($sSub) && strtolower($t['subdomain'] ?? '') === $sSub)) {
+                if (($sTid !== '' && ($t['id'] ?? '') === $sTid) || ($sSub !== '' && strtolower((string)($t['subdomain'] ?? '')) === $sSub)) {
                     $staffTenant = $t;
                     break;
                 }
             }
             if ($staffTenant) {
-                normalizeTenantState($staffTenant, $effectivePlans);
-                if (!empty($staffTenant['manualBlocked']) || strtoupper($staffTenant['status'] ?? '') === 'BLOCKED') {
+                dnNormalizeTenantState($staffTenant, $effectivePlans);
+                if (!empty($staffTenant['manualBlocked']) || strtoupper((string)($staffTenant['status'] ?? '')) === 'BLOCKED') {
                     http_response_code(403);
                     echo json_encode(['success' => false, 'error' => 'Parent store account is suspended by platform administrator.']);
                     exit();
@@ -1584,329 +875,587 @@ if ($action === 'login') {
     exit();
 }
 
-// ==============================================================================
-// 4. ACTION: SAVE STAFF (Sync staff to server)
-// ==============================================================================
-if ($action === 'save_staff') {
-    $staffItem = isset($body['staff']) ? $body['staff'] : $body;
-    if (empty($staffItem['username'])) {
+if ($action === 'send_recovery_otp') {
+    $identifier = strtolower(trim((string)($body['identifier'] ?? '')));
+    if ($identifier === '') {
         http_response_code(400);
-        echo json_encode(['success' => false, 'error' => 'Missing staff username']);
+        echo json_encode(['success' => false, 'error' => 'Please enter your registered Gmail, username, or phone number.']);
         exit();
     }
 
-    $allStaff = readUnifiedJson($staffFile, 'staff.json', []);
-    $filteredStaff = [];
-    $cleanUser = strtolower(trim($staffItem['username']));
+    $cleanPhone = preg_replace('/[^0-9]/', '', $identifier);
+    $tenants = dnGetUnifiedTenants($dataDir);
+    $allStaff = dnReadUnifiedJson($staffFile, 'staff.json', []);
+    $sa = dnGetSuperAdmin($dataDir);
 
-    foreach ($allStaff as $s) {
-        if (strtolower($s['username'] ?? '') !== $cleanUser) {
-            $filteredStaff[] = $s;
+    $targetType = '';
+    $targetId = '';
+    $targetName = '';
+    $targetEmail = '';
+    $tenantId = '';
+
+    $saAliases = array_map('strtolower', is_array($sa['aliases'] ?? null) ? $sa['aliases'] : ['ubaid', 'superadmin']);
+    if ($identifier === strtolower((string)$sa['username']) || in_array($identifier, $saAliases, true) || $identifier === strtolower((string)$sa['email'])) {
+        $targetType = 'SUPER_ADMIN';
+        $targetId = $sa['id'];
+        $targetName = $sa['name'];
+        $targetEmail = $sa['email'];
+    } else {
+        foreach ($tenants as $t) {
+            $tSub = strtolower((string)($t['subdomain'] ?? ''));
+            $tUser = strtolower((string)($t['adminUsername'] ?? ($t['adminUser']['username'] ?? '')));
+            $tEmail = strtolower(trim((string)($t['email'] ?? ($t['adminUser']['email'] ?? ''))));
+            $tPhone = preg_replace('/[^0-9]/', '', (string)($t['phone'] ?? ($t['adminUser']['phone'] ?? '')));
+            if ($identifier === $tSub || $identifier === $tUser || ($tEmail !== '' && $identifier === $tEmail) || ($cleanPhone !== '' && $tPhone === $cleanPhone)) {
+                $targetType = 'TENANT';
+                $targetId = $t['id'];
+                $targetName = $t['name'] ?? $tSub;
+                $targetEmail = $t['email'] ?? ($t['adminUser']['email'] ?? '');
+                $tenantId = $t['id'];
+                break;
+            }
+        }
+        if ($targetType === '') {
+            foreach ($allStaff as $s) {
+                if (strtolower((string)($s['username'] ?? '')) === $identifier || strtolower((string)($s['email'] ?? '')) === $identifier) {
+                    $targetType = 'STAFF';
+                    $targetId = $s['id'];
+                    $targetName = $s['name'] ?? $s['username'];
+                    $targetEmail = $s['email'] ?? '';
+                    $tenantId = $s['tenantId'] ?? '';
+                    break;
+                }
+            }
         }
     }
 
+    if ($targetType === '') {
+        http_response_code(404);
+        echo json_encode(['success' => false, 'error' => 'No registered account found with this username, email, or phone.']);
+        exit();
+    }
+
+    if (empty($targetEmail) || !filter_var($targetEmail, FILTER_VALIDATE_EMAIL)) {
+        $resets = dnReadUnifiedJson($passwordResetsFile, 'password_resets.json', []);
+        $req = [
+            'id' => 'pr_' . time() . '_' . rand(100, 999),
+            'identifier' => $identifier,
+            'tenantId' => $tenantId,
+            'tenantName' => $targetName,
+            'status' => 'PENDING',
+            'createdAt' => date('c')
+        ];
+        array_unshift($resets, $req);
+        dnWriteJsonFile($passwordResetsFile, array_slice($resets, 0, 50));
+        syncToSecondaryDataDirs('password_resets.json', array_slice($resets, 0, 50));
+
+        http_response_code(400);
+        echo json_encode([
+            'success' => false,
+            'noEmail' => true,
+            'ticketId' => $req['id'],
+            'error' => 'No recovery email is saved on this account. A support ticket (#' . $req['id'] . ') was sent to your Administrator to reset your password.'
+        ]);
+        exit();
+    }
+
+    $tokens = dnReadJsonFile($otpTokensFile, []);
+    $now = time();
+    // Prune expired
+    $tokens = array_values(array_filter($tokens, function($tk) use ($now) {
+        return intval($tk['expiresAt'] ?? 0) > $now;
+    }));
+
+    foreach ($tokens as $tk) {
+        if (($tk['targetId'] ?? '') === $targetId && ($now - intval($tk['createdAt'] ?? 0)) < 60) {
+            http_response_code(429);
+            echo json_encode(['success' => false, 'error' => 'Please wait 60 seconds before requesting another verification code.']);
+            exit();
+        }
+    }
+
+    $otp = str_pad((string)random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+    $salt = bin2hex(random_bytes(16));
+    $hash = hash('sha256', $salt . ':' . $otp);
+
+    $tokens = array_values(array_filter($tokens, function($tk) use ($targetId) {
+        return ($tk['targetId'] ?? '') !== $targetId;
+    }));
+    $tokens[] = [
+        'targetType' => $targetType,
+        'targetId' => $targetId,
+        'identifier' => $identifier,
+        'email' => $targetEmail,
+        'salt' => $salt,
+        'hash' => $hash,
+        'attempts' => 0,
+        'createdAt' => $now,
+        'expiresAt' => $now + 600
+    ];
+    dnWriteJsonFile($otpTokensFile, $tokens);
+
+    $mailHtml = '<div style="font-family: Arial, sans-serif; background: #030712; color: #f8fafc; padding: 24px;">'
+        . '<div style="max-width: 520px; margin: 0 auto; background: #0b132b; border: 1px solid #00e5ff; border-radius: 14px; padding: 24px;">'
+        . '<h2 style="color: #00e5ff; margin-top: 0;">DigitalsNova Password Reset Code</h2>'
+        . '<p>Use this 6-digit verification code to reset the password for <strong>' . htmlspecialchars($targetName) . '</strong>:</p>'
+        . '<div style="background: #020617; border: 2px solid #f59e0b; border-radius: 10px; padding: 16px; text-align: center; font-family: monospace; font-size: 28px; font-weight: 900; letter-spacing: 6px; color: #f59e0b;">' . $otp . '</div>'
+        . '<p style="font-size: 12px; color: #94a3b8; margin-top: 16px;">This code expires in 10 minutes. Do not share this code with anyone.</p></div></div>';
+    dnSendGmailSmtp($targetEmail, 'DigitalsNova Password Recovery Code: ' . $otp, $mailHtml);
+
+    $parts = explode('@', $targetEmail);
+    $uPart = $parts[0] ?? 'user';
+    $dPart = $parts[1] ?? 'gmail.com';
+    $masked = strlen($uPart) <= 2 ? substr($uPart, 0, 1) . '*@' . $dPart : substr($uPart, 0, 2) . str_repeat('*', max(2, strlen($uPart) - 3)) . substr($uPart, -1) . '@' . $dPart;
+
+    echo json_encode([
+        'success' => true,
+        'maskedEmail' => $masked,
+        'expiresIn' => 600,
+        'message' => "A 6-digit verification code has been emailed to {$masked}."
+    ]);
+    exit();
+}
+
+if ($action === 'verify_recovery_otp') {
+    $identifier = strtolower(trim((string)($body['identifier'] ?? '')));
+    $otpInput = trim((string)($body['otp'] ?? ($body['code'] ?? '')));
+    $newPassword = (string)($body['newPassword'] ?? ($body['password'] ?? ''));
+
+    if ($identifier === '' || $otpInput === '' || strlen($newPassword) < 3) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => 'Please enter your 6-digit code and a new password (min 3 characters).']);
+        exit();
+    }
+
+    $tokens = dnReadJsonFile($otpTokensFile, []);
+    $now = time();
+    $matchIdx = -1;
+    foreach ($tokens as $i => $tk) {
+        if (strtolower((string)($tk['identifier'] ?? '')) === $identifier && intval($tk['expiresAt'] ?? 0) > $now) {
+            $matchIdx = $i;
+            break;
+        }
+    }
+
+    if ($matchIdx === -1) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => 'Verification code has expired or was not requested.']);
+        exit();
+    }
+
+    $tk = $tokens[$matchIdx];
+    if (intval($tk['attempts'] ?? 0) >= 5) {
+        array_splice($tokens, $matchIdx, 1);
+        dnWriteJsonFile($otpTokensFile, $tokens);
+        http_response_code(429);
+        echo json_encode(['success' => false, 'error' => 'Too many incorrect attempts. Please request a new code.']);
+        exit();
+    }
+
+    $candidateHash = hash('sha256', ($tk['salt'] ?? '') . ':' . $otpInput);
+    if (!hash_equals((string)($tk['hash'] ?? ''), $candidateHash)) {
+        $tokens[$matchIdx]['attempts'] = intval($tk['attempts'] ?? 0) + 1;
+        dnWriteJsonFile($otpTokensFile, $tokens);
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => 'Invalid verification code. Please check your email and try again.']);
+        exit();
+    }
+
+    $resetUsername = $identifier;
+    $tType = $tk['targetType'] ?? '';
+    $tId = $tk['targetId'] ?? '';
+
+    if ($tType === 'SUPER_ADMIN') {
+        $sa = dnGetSuperAdmin($dataDir);
+        $sa['passwordHash'] = password_hash($newPassword, PASSWORD_DEFAULT);
+        $sa['updatedAt'] = date('c');
+        dnSaveSuperAdmin($dataDir, $sa);
+        $resetUsername = $sa['username'] ?? 'ubaid';
+    } elseif ($tType === 'TENANT') {
+        $tenants = dnGetUnifiedTenants($dataDir);
+        $plans = dnGetEffectivePricingPlans($dataDir);
+        foreach ($tenants as &$t) {
+            if (($t['id'] ?? '') === $tId) {
+                $t['adminPassword'] = $newPassword;
+                if (!isset($t['adminUser']) || !is_array($t['adminUser'])) $t['adminUser'] = [];
+                $t['adminUser']['password'] = $newPassword;
+                $t['forceLogoutAt'] = intval(round(microtime(true) * 1000));
+                dnNormalizeTenantState($t, $plans);
+                $resetUsername = $t['adminUsername'] ?? ($t['subdomain'] ?? $identifier);
+                break;
+            }
+        }
+        unset($t);
+        dnWriteJsonFile($tenantsFile, $tenants);
+        syncToSecondaryDataDirs('tenants.json', $tenants);
+    } elseif ($tType === 'STAFF') {
+        $allStaff = dnReadUnifiedJson($staffFile, 'staff.json', []);
+        foreach ($allStaff as &$s) {
+            if (($s['id'] ?? '') === $tId) {
+                $s['password'] = $newPassword;
+                $resetUsername = $s['username'] ?? $identifier;
+                break;
+            }
+        }
+        unset($s);
+        dnWriteJsonFile($staffFile, $allStaff);
+        syncToSecondaryDataDirs('staff.json', $allStaff);
+    }
+
+    array_splice($tokens, $matchIdx, 1);
+    dnWriteJsonFile($otpTokensFile, $tokens);
+
+    echo json_encode([
+        'success' => true,
+        'username' => $resetUsername,
+        'message' => 'Password updated successfully! You can now sign in with your new password.'
+    ]);
+    exit();
+}
+
+// ==============================================================================
+// 7. STAFF MANAGEMENT
+// ==============================================================================
+if ($action === 'save_staff') {
+    $staffItem = isset($body['staff']) && is_array($body['staff']) ? $body['staff'] : $body;
+    $cleanUser = strtolower(trim((string)($staffItem['username'] ?? '')));
+    if ($cleanUser === '' || dnIsReservedName($cleanUser)) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => 'Invalid or reserved staff username.']);
+        exit();
+    }
+
+    $tenants = dnGetUnifiedTenants($dataDir);
+    foreach ($tenants as $t) {
+        $tUser = strtolower(trim((string)($t['adminUsername'] ?? ($t['adminUser']['username'] ?? ''))));
+        if ($tUser !== '' && $tUser === $cleanUser) {
+            http_response_code(409);
+            echo json_encode(['success' => false, 'error' => "Username @{$cleanUser} is already used by an Admin account."]);
+            exit();
+        }
+    }
+
+    $allStaff = dnReadUnifiedJson($staffFile, 'staff.json', []);
+    $incomingId = (string)($staffItem['id'] ?? '');
+    $existingCreated = null;
+    $filteredStaff = [];
+
+    foreach ($allStaff as $s) {
+        $sId = (string)($s['id'] ?? '');
+        $sUser = strtolower(trim((string)($s['username'] ?? '')));
+        if ($sUser === $cleanUser && ($incomingId === '' || $sId !== $incomingId)) {
+            http_response_code(409);
+            echo json_encode(['success' => false, 'error' => "Staff username @{$cleanUser} already exists."]);
+            exit();
+        }
+        if ($incomingId !== '' && $sId === $incomingId) {
+            $existingCreated = $s['createdAt'] ?? null;
+            continue;
+        }
+        $filteredStaff[] = $s;
+    }
+
     $newStaff = [
-        'id' => !empty($staffItem['id']) ? $staffItem['id'] : 'staff_' . time(),
+        'id' => $incomingId !== '' ? $incomingId : ('staff_' . time()),
         'tenantId' => $staffItem['tenantId'] ?? '',
-        'subdomain' => $staffItem['subdomain'] ?? '',
-        'name' => $staffItem['name'] ?? 'POS Cashier',
+        'subdomain' => dnSanitizeSubdomain($staffItem['subdomain'] ?? ''),
+        'name' => trim((string)($staffItem['name'] ?? 'POS Cashier')),
         'username' => $cleanUser,
-        'password' => $staffItem['password'] ?? '123',
-        'role' => 'STAFF',
+        'password' => (string)($staffItem['password'] ?? '123'),
+        'role' => !empty($staffItem['role']) ? strtoupper((string)$staffItem['role']) : 'STAFF',
         'active' => isset($staffItem['active']) ? (bool)$staffItem['active'] : true,
-        'createdAt' => date('c')
+        'createdAt' => $existingCreated ?: (!empty($staffItem['createdAt']) ? $staffItem['createdAt'] : date('c'))
     ];
 
     $filteredStaff[] = $newStaff;
-    writeJsonFile($staffFile, $filteredStaff);
+    dnWriteJsonFile($staffFile, $filteredStaff);
     syncToSecondaryDataDirs('staff.json', $filteredStaff);
 
-    $deletedStaff = readUnifiedJson($deletedStaffFile, 'deleted_staff.json', []);
+    $deletedStaff = dnReadUnifiedJson($deletedStaffFile, 'deleted_staff.json', []);
     $deletedStaff = array_values(array_filter($deletedStaff, function($d) use ($newStaff) {
         return ($d['id'] ?? $d) !== $newStaff['id'];
     }));
-    writeJsonFile($deletedStaffFile, $deletedStaff);
+    dnWriteJsonFile($deletedStaffFile, $deletedStaff);
     syncToSecondaryDataDirs('deleted_staff.json', $deletedStaff);
 
     echo json_encode(['success' => true, 'staff' => $newStaff]);
     exit();
 }
 
-// ==============================================================================
-// 5. ACTION: NEWSLETTER / BROADCAST EMAIL (Sent from digitalsnovaofficial@gmail.com)
-// ==============================================================================
-if ($action === 'newsletter' || $action === 'send_broadcast') {
-    $subject = !empty($body['subject']) ? $body['subject'] : 'Important Update from DigitalsNova';
-    $messageText = !empty($body['message']) ? $body['message'] : '';
-
-    if (empty($messageText)) {
-        http_response_code(400);
-        echo json_encode(['success' => false, 'error' => 'Message cannot be empty']);
-        exit();
-    }
-
-    $tenants = readJsonFile($tenantsFile);
-    $sentCount = 0;
-
-    foreach ($tenants as $t) {
-        $email = $t['email'] ?? ($t['adminUser']['email'] ?? '');
-        if (!empty($email) && filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            $broadcastHtml = '
-            <!DOCTYPE html><html><body style="font-family: Arial, sans-serif; background-color: #030712; color: #f8fafc; padding: 20px;">
-                <div style="max-width: 600px; margin: 0 auto; background: #0b132b; border: 1px solid #1e293b; border-radius: 12px; padding: 24px;">
-                    <h2 style="color: #00e5ff; margin-top: 0;">DigitalsNova Official Announcement</h2>
-                    <p style="color: #e2e8f0; font-size: 14px; line-height: 1.6;">' . nl2br(htmlspecialchars($messageText)) . '</p>
-                    <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #1e293b; font-size: 12px; color: #94a3b8;">
-                        Sent by DigitalsNova Official (<a href="mailto:digitalsnovaofficial@gmail.com" style="color: #00e5ff;">digitalsnovaofficial@gmail.com</a>)
-                    </div>
-                </div>
-            </body></html>';
-            sendDigitalsNovaEmail($email, $subject, $broadcastHtml);
-            $sentCount++;
-        }
-    }
-
-    echo json_encode(['success' => true, 'sentCount' => $sentCount]);
-    exit();
-}
-
-
-// ==============================================================================
-// 1.8 ACTION: CARD / STRIPE SUBSCRIPTION CHECKOUT & AUTO-RENEWAL
-// ==============================================================================
-if ($action === 'card_checkout' || $action === 'stripe_checkout' || $action === 'subscription_payment') {
-    $tenantId = trim($body['tenantId'] ?? ($body['id'] ?? ''));
-    $subdomain = strtolower(trim($body['subdomain'] ?? ''));
-
-    $tenants = getUnifiedTenants($tenantsFile);
-    $matchedIndex = -1;
-    foreach ($tenants as $idx => $t) {
-        $tId = $t['id'] ?? '';
-        $tSub = strtolower($t['subdomain'] ?? '');
-        if ((!empty($tenantId) && $tId === $tenantId) || (!empty($subdomain) && $tSub === $subdomain)) {
-            $matchedIndex = $idx;
+if ($action === 'toggle_staff') {
+    $staffId = trim((string)($body['id'] ?? ''));
+    $active = isset($body['active']) ? (bool)$body['active'] : true;
+    $allStaff = dnReadUnifiedJson($staffFile, 'staff.json', []);
+    $updated = null;
+    foreach ($allStaff as &$s) {
+        if (($s['id'] ?? '') === $staffId || strtolower((string)($s['username'] ?? '')) === strtolower($staffId)) {
+            $s['active'] = $active;
+            $updated = $s;
             break;
         }
     }
+    unset($s);
+    dnWriteJsonFile($staffFile, $allStaff);
+    syncToSecondaryDataDirs('staff.json', $allStaff);
+    echo json_encode(['success' => true, 'staff' => $updated]);
+    exit();
+}
 
-    $storeName = $body['cardName'] ?? ($body['storeName'] ?? ($subdomain ?: 'DigitalsNova Client'));
-    $sub = $subdomain ?: strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $storeName));
+if ($action === 'delete_staff') {
+    $staffId = trim((string)($body['id'] ?? ''));
+    $allStaff = dnReadUnifiedJson($staffFile, 'staff.json', []);
+    $remaining = array_values(array_filter($allStaff, function($s) use ($staffId) {
+        return ($s['id'] ?? '') !== $staffId;
+    }));
+    dnWriteJsonFile($staffFile, $remaining);
+    syncToSecondaryDataDirs('staff.json', $remaining);
 
-    if ($matchedIndex !== -1) {
-        $tenantRef = &$tenants[$matchedIndex];
-    } else {
-        $tenantRef = [
-            'id' => $tenantId ?: 'tenant_' . $sub . '_' . time(),
-            'name' => $storeName,
-            'subdomain' => $sub,
-            'email' => $body['email'] ?? 'client@digitalsnova.com',
-            'phone' => $body['phone'] ?? '+92-300-0000000',
-            'vertical' => strtoupper($body['vertical'] ?? ($body['sector'] ?? 'RETAIL_MART')),
-            'status' => 'ACTIVE'
-        ];
+    $deletedStaff = dnReadUnifiedJson($deletedStaffFile, 'deleted_staff.json', []);
+    if (!in_array($staffId, $deletedStaff, true)) $deletedStaff[] = $staffId;
+    dnWriteJsonFile($deletedStaffFile, $deletedStaff);
+    syncToSecondaryDataDirs('deleted_staff.json', $deletedStaff);
+
+    echo json_encode(['success' => true, 'deletedId' => $staffId]);
+    exit();
+}
+
+if ($action === 'update_profile') {
+    $role = strtoupper(trim((string)($body['role'] ?? '')));
+    $tenantId = trim((string)($body['tenantId'] ?? ''));
+    $subdomain = dnSanitizeSubdomain($body['subdomain'] ?? '');
+    $userId = trim((string)($body['userId'] ?? ''));
+    $newName = isset($body['name']) ? trim((string)$body['name']) : '';
+    $newUsername = isset($body['username']) ? trim((string)$body['username']) : '';
+    $newEmail = isset($body['email']) ? trim((string)$body['email']) : '';
+    $newPass = isset($body['newPassword']) ? trim((string)$body['newPassword']) : (isset($body['password']) ? trim((string)$body['password']) : '');
+    $currentPass = isset($body['currentPassword']) ? trim((string)$body['currentPassword']) : '';
+
+    if ($role === 'SUPER_ADMIN') {
+        $sa = dnGetSuperAdmin($dataDir);
+        if ($newPass !== '' && $currentPass !== '' && !password_verify($currentPass, $sa['passwordHash'])) {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'error' => 'Current Super Admin password is incorrect.']);
+            exit();
+        }
+        if ($newName !== '') $sa['name'] = $newName;
+        if ($newUsername !== '') $sa['username'] = strtolower($newUsername);
+        if ($newEmail !== '' && filter_var($newEmail, FILTER_VALIDATE_EMAIL)) $sa['email'] = $newEmail;
+        if ($newPass !== '') $sa['passwordHash'] = password_hash($newPass, PASSWORD_DEFAULT);
+        $sa['updatedAt'] = date('c');
+        dnSaveSuperAdmin($dataDir, $sa);
+        echo json_encode([
+            'success' => true,
+            'role' => 'SUPER_ADMIN',
+            'user' => [
+                'id' => $sa['id'],
+                'name' => $sa['name'],
+                'username' => $sa['username'],
+                'email' => $sa['email'],
+                'role' => 'SUPER_ADMIN'
+            ],
+            'message' => 'Super Admin profile and password updated.'
+        ]);
+        exit();
     }
 
-    $refVertical = strtoupper($tenantRef['vertical'] ?? ($tenantRef['sector'] ?? ($tenantRef['storeType'] ?? ($body['vertical'] ?? 'CLINIC_HMS'))));
-    $rawPlan = strtoupper(trim($body['planType'] ?? ($body['plan'] ?? 'MONTHLY')));
-    $effectivePlans = getEffectivePricingPlans($dataDir);
-    $resolved = resolveSectorPlanPricing($refVertical, $rawPlan, $effectivePlans);
-
-    $planType = $resolved['planType'];
-    $amount = $resolved['fee'];
-    $planDays = $resolved['days'];
-    $planName = $resolved['planName'];
-
-    $validUntilTimestamp = strtotime("+{$planDays} days");
-    $validUntilDate = date('d M Y, h:i A', $validUntilTimestamp);
-    $txnId = 'TXN_' . strtoupper(bin2hex(random_bytes(6))) . '_' . time();
-    $keyCode = 'DNOVA-' . strtoupper(substr(preg_replace('/[^A-Z0-9]/', '', $planType), 0, 4)) . '-' . strtoupper(bin2hex(random_bytes(3))) . '-' . strtoupper(bin2hex(random_bytes(3)));
-
-    $tenantRef['status'] = 'ACTIVE';
-    $tenantRef['planType'] = $planType;
-    $tenantRef['planName'] = $planName;
-    $tenantRef['monthlyFee'] = $amount;
-    $tenantRef['monthly_fee'] = $amount;
-    $tenantRef['cycleDays'] = $planDays;
-    $tenantRef['subscriptionExpiry'] = date('c', $validUntilTimestamp);
-    $tenantRef['lastPaymentDate'] = date('c');
-    $tenantRef['manualBlocked'] = false;
-    $tenantRef['subscription'] = [
-        'state' => 'ACTIVE',
-        'plan' => $planType,
-        'planName' => $planName,
-        'billingCycleDay' => 1,
-        'totalDays' => $planDays,
-        'graceDaysRemaining' => 3,
-        'monthlyFee' => $amount,
-        'lastPaymentDate' => date('c'),
-        'validUntil' => date('c', $validUntilTimestamp),
-        'validUntilFormatted' => $validUntilDate,
-        'txnId' => $txnId
-    ];
-
-    if ($matchedIndex !== -1) {
-        $tenants[$matchedIndex] = $tenantRef;
-    } else {
-        $tenants[] = $tenantRef;
+    if ($role === 'STAFF') {
+        $allStaff = dnReadUnifiedJson($staffFile, 'staff.json', []);
+        $updatedUser = null;
+        foreach ($allStaff as &$s) {
+            if (($userId !== '' && ($s['id'] ?? '') === $userId) ||
+                ($newUsername !== '' && strtolower((string)($s['username'] ?? '')) === strtolower($newUsername))) {
+                if ($newName !== '') $s['name'] = $newName;
+                if ($newPass !== '') $s['password'] = $newPass;
+                $updatedUser = $s;
+                break;
+            }
+        }
+        unset($s);
+        dnWriteJsonFile($staffFile, $allStaff);
+        syncToSecondaryDataDirs('staff.json', $allStaff);
+        echo json_encode(['success' => true, 'user' => $updatedUser]);
+        exit();
     }
-    writeJsonFile($tenantsFile, $tenants);
-    syncToSecondaryDataDirs('tenants.json', $tenants);
 
-    // Save payment log
-    $payments = readJsonFile($paymentsFile);
-    $payments[] = [
-        'id' => $txnId,
-        'tenantId' => $tenantRef['id'],
-        'tenantName' => $tenantRef['name'],
-        'subdomain' => $tenantRef['subdomain'],
-        'planType' => $planType,
-        'planName' => $planName,
-        'amount' => $amount,
-        'currency' => 'PKR',
-        'status' => 'SUCCEEDED',
+    $tenants = dnGetUnifiedTenants($dataDir);
+    $effectivePlans = dnGetEffectivePricingPlans($dataDir);
+    $updatedTenant = null;
+    foreach ($tenants as &$t) {
+        if (($tenantId !== '' && ($t['id'] ?? '') === $tenantId) ||
+            ($subdomain !== '' && strtolower((string)($t['subdomain'] ?? '')) === $subdomain)) {
+            $profCredChanged = false;
+            if ($newName !== '') $t['adminName'] = $newName;
+            if ($newEmail !== '' && filter_var($newEmail, FILTER_VALIDATE_EMAIL)) $t['email'] = $newEmail;
+            if ($newUsername !== '' && $newUsername !== trim((string)($t['adminUsername'] ?? ''))) {
+                $t['adminUsername'] = $newUsername;
+                $profCredChanged = true;
+            }
+            if ($newPass !== '' && $newPass !== (string)($t['adminPassword'] ?? '')) {
+                $t['adminPassword'] = $newPass;
+                $profCredChanged = true;
+            }
+            if ($profCredChanged) {
+                $t['forceLogoutAt'] = intval(round(microtime(true) * 1000));
+            }
+            dnNormalizeTenantState($t, $effectivePlans);
+            $updatedTenant = $t;
+            break;
+        }
+    }
+    unset($t);
+    if ($updatedTenant) {
+        dnWriteJsonFile($tenantsFile, $tenants);
+        syncToSecondaryDataDirs('tenants.json', $tenants);
+    }
+    echo json_encode(['success' => true, 'tenant' => $updatedTenant]);
+    exit();
+}
+
+if ($action === 'forgot_password') {
+    $resets = dnReadUnifiedJson($passwordResetsFile, 'password_resets.json', []);
+    $req = [
+        'id' => 'pr_' . time() . '_' . rand(100, 999),
+        'identifier' => trim((string)($body['identifier'] ?? '')),
+        'tenantId' => trim((string)($body['tenantId'] ?? '')),
+        'tenantName' => trim((string)($body['tenantName'] ?? '')),
+        'status' => 'PENDING',
         'createdAt' => date('c')
     ];
-    writeJsonFile($paymentsFile, $payments);
-    syncToSecondaryDataDirs('payments.json', $payments);
+    array_unshift($resets, $req);
+    $resets = array_slice($resets, 0, 50);
+    dnWriteJsonFile($passwordResetsFile, $resets);
+    syncToSecondaryDataDirs('password_resets.json', $resets);
+    echo json_encode(['success' => true, 'request' => $req]);
+    exit();
+}
 
-    // Real-Time Notification
-    $notifications = readJsonFile($notifsFile);
-    array_unshift($notifications, [
-        'id' => 'notif_pay_' . time(),
-        'timestamp' => date('c'),
-        'type' => 'PAYMENT_RECEIVED',
-        'title' => '💳 Subscription Payment Received: Rs. ' . number_format($amount),
-        'tenantName' => $tenantRef['name'],
-        'subdomain' => $tenantRef['subdomain'],
-        'planType' => $planType,
-        'planName' => $planName,
-        'amount' => $amount,
-        'txnId' => $txnId,
-        'portalUrl' => 'https://digitalsnova.com/portal/?store=' . $tenantRef['subdomain'],
-        'message' => "Payment of Rs. " . number_format($amount) . " confirmed for {$tenantRef['name']}. Active until {$validUntilDate}."
-    ]);
-    writeJsonFile($notifsFile, $notifications);
-    syncToSecondaryDataDirs('notifications.json', $notifications);
-
-    // Send Gmail SMTP Email Receipt
-    $clientEmail = $tenantRef['email'] ?? ($tenantRef['adminUser']['email'] ?? '');
-    $receiptHtml = '<div style="font-family: Arial, sans-serif; background: #0b132b; color: #fff; padding: 24px; border-radius: 14px; border: 2px solid #10b981;">'
-        . '<h2 style="color: #10b981; margin-top: 0;">✓ Payment Verified & Active!</h2>'
-        . '<p>Your payment for <strong>' . htmlspecialchars($planName) . '</strong> has been processed successfully.</p>'
-        . '<p><strong>Store:</strong> ' . htmlspecialchars($tenantRef['name']) . ' (' . htmlspecialchars($tenantRef['subdomain']) . ')<br>'
-        . '<strong>Amount Paid:</strong> Rs. ' . number_format($amount) . ' PKR<br>'
-        . '<strong>Validity:</strong> ' . $validUntilDate . '<br>'
-        . '<strong>Activation Key:</strong> <code style="color: #00e5ff; font-size: 15px; font-weight: bold;">' . htmlspecialchars($keyCode) . '</code></p>'
-        . '<p><a href="https://digitalsnova.com/portal/?store=' . urlencode($tenantRef['subdomain']) . '" style="background: #00e5ff; color: #020617; font-weight: bold; padding: 10px 20px; text-decoration: none; border-radius: 8px; display: inline-block;">Open Portal</a></p>'
-        . '</div>';
-
-    if (!empty($clientEmail) && filter_var($clientEmail, FILTER_VALIDATE_EMAIL)) {
-        sendGmailSmtp($clientEmail, "💳 Payment Receipt: {$planName} [Rs. " . number_format($amount) . "] - DigitalsNova", $receiptHtml);
+if ($action === 'resolve_password_reset') {
+    $reqId = trim((string)($body['id'] ?? ''));
+    $newPass = trim((string)($body['newPassword'] ?? ''));
+    $resets = dnReadUnifiedJson($passwordResetsFile, 'password_resets.json', []);
+    $targetReq = null;
+    foreach ($resets as &$r) {
+        if (($r['id'] ?? '') === $reqId) {
+            $r['status'] = strtoupper((string)($body['status'] ?? ($body['decision'] ?? 'RESOLVED')));
+            $r['resolvedBy'] = $body['resolvedBy'] ?? 'Super Admin';
+            $r['resolvedAt'] = date('c');
+            $targetReq = $r;
+            break;
+        }
     }
-    sendGmailSmtp('digitalsnovaofficial@gmail.com', "👑 Payment Received: Rs. " . number_format($amount) . " from {$tenantRef['name']}", $receiptHtml);
+    unset($r);
+    dnWriteJsonFile($passwordResetsFile, $resets);
+    syncToSecondaryDataDirs('password_resets.json', $resets);
 
-    echo json_encode([
-        'success' => true,
-        'message' => "Payment of Rs. " . number_format($amount) . " authorized and verified! License renewed until {$validUntilDate}.",
-        'txnId' => $txnId,
-        'amount' => $amount,
-        'planType' => $planType,
-        'planName' => $planName,
-        'validUntil' => date('c', $validUntilTimestamp),
-        'validUntilFormatted' => $validUntilDate,
-        'key' => [
-            'keyCode' => $keyCode,
-            'plan' => $planType,
-            'days' => $planDays,
-            'fee' => $amount,
-            'validUntil' => $validUntilDate
-        ],
-        'tenant' => $tenantRef
-    ]);
+    // Optional direct password reset from Admin/Super Admin
+    if ($targetReq && $targetReq['status'] === 'RESOLVED' && $newPass !== '') {
+        $ident = strtolower(trim((string)($targetReq['identifier'] ?? '')));
+        $tenants = dnGetUnifiedTenants($dataDir);
+        $plans = dnGetEffectivePricingPlans($dataDir);
+        $tDirty = false;
+        foreach ($tenants as &$t) {
+            if (($targetReq['tenantId'] ?? '') === ($t['id'] ?? '') || strtolower((string)($t['subdomain'] ?? '')) === $ident || strtolower((string)($t['adminUsername'] ?? '')) === $ident) {
+                $t['adminPassword'] = $newPass;
+                $t['forceLogoutAt'] = intval(round(microtime(true) * 1000));
+                dnNormalizeTenantState($t, $plans);
+                $tDirty = true;
+                break;
+            }
+        }
+        unset($t);
+        if ($tDirty) {
+            dnWriteJsonFile($tenantsFile, $tenants);
+            syncToSecondaryDataDirs('tenants.json', $tenants);
+        } else {
+            $allStaff = dnReadUnifiedJson($staffFile, 'staff.json', []);
+            $sDirty = false;
+            foreach ($allStaff as &$s) {
+                if (strtolower((string)($s['username'] ?? '')) === $ident) {
+                    $s['password'] = $newPass;
+                    $sDirty = true;
+                    break;
+                }
+            }
+            unset($s);
+            if ($sDirty) {
+                dnWriteJsonFile($staffFile, $allStaff);
+                syncToSecondaryDataDirs('staff.json', $allStaff);
+            }
+        }
+    }
+
+    echo json_encode(['success' => true]);
     exit();
 }
 
 // ==============================================================================
-// 6. REMOTE CONTROL ACTIONS: PLATFORM BRAND, REMOTE CONFIG & APP BROADCAST
+// 8. REMOTE CONFIG, PLATFORM BRAND & TENANT CONTROLS
 // ==============================================================================
 if ($action === 'get_platform_brand') {
-    $brand = array_merge(getDefaultPlatformBrand(), readUnifiedJson($platformBrandFile, 'platform_brand.json', []));
+    $brand = array_merge(dnGetDefaultPlatformBrand(), dnReadUnifiedJson($platformBrandFile, 'platform_brand.json', []));
     echo json_encode(['success' => true, 'platformBrand' => $brand]);
     exit();
 }
 
 if ($action === 'save_platform_brand') {
-    $existing = array_merge(getDefaultPlatformBrand(), readUnifiedJson($platformBrandFile, 'platform_brand.json', []));
+    $existing = array_merge(dnGetDefaultPlatformBrand(), dnReadUnifiedJson($platformBrandFile, 'platform_brand.json', []));
     $payload = isset($body['platformBrand']) && is_array($body['platformBrand']) ? $body['platformBrand'] : $body;
     $updated = [
-        'name' => isset($payload['name']) ? trim($payload['name']) : $existing['name'],
-        'logoUrl' => isset($payload['logoUrl']) ? trim($payload['logoUrl']) : $existing['logoUrl'],
-        'tagline' => isset($payload['tagline']) ? trim($payload['tagline']) : $existing['tagline'],
-        'address' => isset($payload['address']) ? trim($payload['address']) : $existing['address'],
-        'phone' => isset($payload['phone']) ? trim($payload['phone']) : $existing['phone'],
+        'name' => isset($payload['name']) ? trim((string)$payload['name']) : $existing['name'],
+        'logoUrl' => isset($payload['logoUrl']) ? trim((string)$payload['logoUrl']) : $existing['logoUrl'],
+        'tagline' => isset($payload['tagline']) ? trim((string)$payload['tagline']) : $existing['tagline'],
+        'address' => isset($payload['address']) ? trim((string)$payload['address']) : $existing['address'],
+        'phone' => isset($payload['phone']) ? trim((string)$payload['phone']) : $existing['phone'],
         'updatedAt' => date('c')
     ];
-    writeJsonFile($platformBrandFile, $updated);
+    dnWriteJsonFile($platformBrandFile, $updated);
     syncToSecondaryDataDirs('platform_brand.json', $updated);
     echo json_encode(['success' => true, 'platformBrand' => $updated, 'message' => 'Platform branding updated across all devices.']);
     exit();
 }
 
 if ($action === 'get_remote_config') {
-    $cfg = array_merge(getDefaultRemoteConfig(), readUnifiedJson($remoteConfigFile, 'remote_config.json', []));
+    $cfg = array_merge(dnGetDefaultRemoteConfig(), dnReadUnifiedJson($remoteConfigFile, 'remote_config.json', []));
     echo json_encode(['success' => true, 'remoteConfig' => $cfg]);
     exit();
 }
 
 if ($action === 'save_remote_config') {
-    $existing = array_merge(getDefaultRemoteConfig(), readUnifiedJson($remoteConfigFile, 'remote_config.json', []));
+    $existing = array_merge(dnGetDefaultRemoteConfig(), dnReadUnifiedJson($remoteConfigFile, 'remote_config.json', []));
     $payload = isset($body['remoteConfig']) && is_array($body['remoteConfig']) ? $body['remoteConfig'] : $body;
     $updated = [
-        'appVersion' => !empty($payload['appVersion']) ? trim($payload['appVersion']) : ($existing['appVersion'] ?? '20261111v20'),
-        'buildId' => !empty($payload['buildId']) ? trim($payload['buildId']) : ($existing['buildId'] ?? '20261111v20'),
+        'appVersion' => !empty($payload['appVersion']) ? trim((string)$payload['appVersion']) : ($existing['appVersion'] ?? '20261111v21'),
+        'buildId' => !empty($payload['buildId']) ? trim((string)$payload['buildId']) : ($existing['buildId'] ?? '20261111v21'),
         'forceReloadAt' => !empty($payload['pushUpdate'])
             ? intval(round(microtime(true) * 1000))
             : (isset($payload['forceReloadAt']) ? intval($payload['forceReloadAt']) : intval($existing['forceReloadAt'] ?? 0)),
         'maintenanceMode' => isset($payload['maintenanceMode']) ? (bool)$payload['maintenanceMode'] : (bool)($existing['maintenanceMode'] ?? false),
-        'maintenanceMessage' => isset($payload['maintenanceMessage']) ? trim($payload['maintenanceMessage']) : ($existing['maintenanceMessage'] ?? ''),
-        'globalNotice' => isset($payload['globalNotice']) ? trim($payload['globalNotice']) : ($existing['globalNotice'] ?? ''),
-        'globalNoticeType' => !empty($payload['globalNoticeType']) ? strtoupper(trim($payload['globalNoticeType'])) : ($existing['globalNoticeType'] ?? 'INFO'),
+        'maintenanceMessage' => isset($payload['maintenanceMessage']) ? trim((string)$payload['maintenanceMessage']) : ($existing['maintenanceMessage'] ?? ''),
+        'globalNotice' => isset($payload['globalNotice']) ? trim((string)$payload['globalNotice']) : ($existing['globalNotice'] ?? ''),
+        'globalNoticeType' => !empty($payload['globalNoticeType']) ? strtoupper(trim((string)$payload['globalNoticeType'])) : ($existing['globalNoticeType'] ?? 'INFO'),
         'globalNoticeActive' => isset($payload['globalNoticeActive']) ? (bool)$payload['globalNoticeActive'] : (bool)($existing['globalNoticeActive'] ?? false),
         'updatedAt' => date('c')
     ];
-    writeJsonFile($remoteConfigFile, $updated);
+    dnWriteJsonFile($remoteConfigFile, $updated);
     syncToSecondaryDataDirs('remote_config.json', $updated);
     echo json_encode(['success' => true, 'remoteConfig' => $updated, 'message' => 'Remote configuration saved & pushed to all terminals.']);
     exit();
 }
 
-// ==============================================================================
-// 7. SUPER ADMIN / CLIENT LIVE CONTROL: UPDATE TENANT, UNLOCK & MIDNIGHT CRON
-// ==============================================================================
 if ($action === 'update_tenant') {
     $updates = isset($body['updates']) && is_array($body['updates']) ? $body['updates'] : $body;
-    $targetId = trim($body['id'] ?? ($body['tenantId'] ?? ($updates['id'] ?? ($_GET['id'] ?? ''))));
-    $targetSub = strtolower(trim($body['subdomain'] ?? ($updates['subdomain'] ?? ($_GET['subdomain'] ?? ''))));
+    $targetId = trim((string)($body['id'] ?? ($body['tenantId'] ?? ($updates['id'] ?? ($_GET['id'] ?? '')))));
+    $targetSub = strtolower(trim((string)($body['subdomain'] ?? ($updates['subdomain'] ?? ($_GET['subdomain'] ?? '')))));
 
-    if (empty($targetId) && empty($targetSub)) {
+    if ($targetId === '' && $targetSub === '') {
         http_response_code(400);
         echo json_encode(['success' => false, 'error' => 'Missing tenant identifier']);
         exit();
     }
 
-    $tenants = getUnifiedTenants($tenantsFile);
-    $effectivePlans = getEffectivePricingPlans($dataDir);
-    $matchedIndex = -1;
-
-    foreach ($tenants as $idx => $t) {
-        $tId = $t['id'] ?? '';
-        $tSub = strtolower($t['subdomain'] ?? '');
-        if ((!empty($targetId) && ($tId === $targetId || $tSub === strtolower($targetId))) ||
-            (!empty($targetSub) && $tSub === $targetSub)) {
-            $matchedIndex = $idx;
-            break;
-        }
-    }
+    $tenants = dnGetUnifiedTenants($dataDir);
+    $effectivePlans = dnGetEffectivePricingPlans($dataDir);
+    $matchedIndex = dnFindTenantMatch($tenants, $targetId, $targetSub);
 
     if ($matchedIndex === -1) {
         http_response_code(404);
@@ -1915,12 +1464,13 @@ if ($action === 'update_tenant') {
     }
 
     $t = &$tenants[$matchedIndex];
-    $scalarFields = ['name', 'logoUrl', 'phone', 'address', 'email', 'receiptHeader', 'receiptFooter', 'smsApiUrl', 'smsApiKey', 'adminPin', 'planType', 'planName', 'activeLicenseKey', 'vertical', 'sector', 'storeType', 'businessType'];
+    $scalarFields = ['name', 'businessName', 'logoUrl', 'phone', 'address', 'email', 'receiptHeader', 'receiptFooter', 'smsApiUrl', 'smsApiKey', 'adminPin', 'planType', 'planName', 'activeLicenseKey', 'vertical', 'sector', 'storeType', 'businessType'];
     foreach ($scalarFields as $f) {
         if (array_key_exists($f, $updates) && $updates[$f] !== null) {
             $t[$f] = $updates[$f];
         }
     }
+    if (isset($updates['name']) && !isset($updates['businessName'])) $t['businessName'] = $updates['name'];
     if (array_key_exists('smsEnabled', $updates)) $t['smsEnabled'] = (bool)$updates['smsEnabled'];
     if (isset($updates['cycleDays']) && is_numeric($updates['cycleDays']) && intval($updates['cycleDays']) > 0) {
         $t['cycleDays'] = intval($updates['cycleDays']);
@@ -1939,7 +1489,7 @@ if ($action === 'update_tenant') {
     }
     if (isset($updates['planType']) && !isset($updates['planName'])) {
         $vertNow = $t['vertical'] ?? 'RETAIL_MART';
-        $resolvedNew = resolveSectorPlanPricing($vertNow, $updates['planType'], $effectivePlans);
+        $resolvedNew = dnResolveSectorPlanPricing($vertNow, $updates['planType'], $effectivePlans);
         $t['planName'] = $resolvedNew['planName'];
     }
     if (isset($updates['enabledModules']) && is_array($updates['enabledModules'])) {
@@ -1947,7 +1497,7 @@ if ($action === 'update_tenant') {
     }
 
     $credsChanged = false;
-    $prevUser = trim($t['adminUsername'] ?? ($t['adminUser']['username'] ?? ''));
+    $prevUser = trim((string)($t['adminUsername'] ?? ($t['adminUser']['username'] ?? '')));
     $prevPass = (string)($t['adminPassword'] ?? ($t['adminUser']['password'] ?? ''));
     if (isset($updates['adminName'])) {
         $t['adminName'] = $updates['adminName'];
@@ -1955,21 +1505,15 @@ if ($action === 'update_tenant') {
         $t['adminUser']['name'] = $updates['adminName'];
     }
     if (isset($updates['adminUsername'])) {
-        $newU = trim($updates['adminUsername']);
-        if ($newU !== '' && $newU !== $prevUser) {
-            $credsChanged = true;
-            $prevUser = $newU;
-        }
+        $newU = trim((string)$updates['adminUsername']);
+        if ($newU !== '' && $newU !== $prevUser) { $credsChanged = true; $prevUser = $newU; }
         $t['adminUsername'] = $newU;
         if (!isset($t['adminUser']) || !is_array($t['adminUser'])) $t['adminUser'] = [];
         $t['adminUser']['username'] = $newU;
     }
     if (isset($updates['adminPassword'])) {
         $newP = (string)$updates['adminPassword'];
-        if ($newP !== '' && $newP !== $prevPass) {
-            $credsChanged = true;
-            $prevPass = $newP;
-        }
+        if ($newP !== '' && $newP !== $prevPass) { $credsChanged = true; $prevPass = $newP; }
         $t['adminPassword'] = $newP;
         if (!isset($t['adminUser']) || !is_array($t['adminUser'])) $t['adminUser'] = [];
         $t['adminUser']['password'] = $newP;
@@ -1978,7 +1522,7 @@ if ($action === 'update_tenant') {
         $t['adminUser'] = array_merge(is_array($t['adminUser'] ?? null) ? $t['adminUser'] : [], $updates['adminUser']);
         if (isset($updates['adminUser']['name'])) $t['adminName'] = $updates['adminUser']['name'];
         if (isset($updates['adminUser']['username'])) {
-            $u2 = trim($updates['adminUser']['username']);
+            $u2 = trim((string)$updates['adminUser']['username']);
             if ($u2 !== '' && $u2 !== $prevUser) $credsChanged = true;
             $t['adminUsername'] = $u2;
         }
@@ -1993,13 +1537,10 @@ if ($action === 'update_tenant') {
         $t['manualBlocked'] = (bool)$updates['manualBlocked'];
         $t['status'] = $t['manualBlocked'] ? 'BLOCKED' : 'ACTIVE';
     } elseif (isset($updates['status'])) {
-        $stUpper = strtoupper(trim($updates['status']));
+        $stUpper = strtoupper(trim((string)$updates['status']));
         $t['status'] = $stUpper;
-        if ($stUpper === 'BLOCKED') {
-            $t['manualBlocked'] = true;
-        } elseif ($stUpper === 'ACTIVE') {
-            $t['manualBlocked'] = false;
-        }
+        if ($stUpper === 'BLOCKED') $t['manualBlocked'] = true;
+        elseif ($stUpper === 'ACTIVE') $t['manualBlocked'] = false;
     }
 
     if (isset($updates['forceLogoutAt'])) {
@@ -2008,11 +1549,11 @@ if ($action === 'update_tenant') {
         $t['forceLogoutAt'] = intval(round(microtime(true) * 1000));
     }
 
-    normalizeTenantState($t, $effectivePlans);
+    dnNormalizeTenantState($t, $effectivePlans);
     $updatedTenant = $t;
     unset($t);
 
-    writeJsonFile($tenantsFile, $tenants);
+    dnWriteJsonFile($tenantsFile, $tenants);
     syncToSecondaryDataDirs('tenants.json', $tenants);
 
     echo json_encode(['success' => true, 'tenant' => $updatedTenant, 'message' => 'Tenant updated and pushed live!']);
@@ -2020,21 +1561,11 @@ if ($action === 'update_tenant') {
 }
 
 if ($action === 'unlock_tenant') {
-    $targetId = trim($body['tenantId'] ?? ($body['id'] ?? ($_GET['id'] ?? '')));
-    $targetSub = strtolower(trim($body['subdomain'] ?? ($_GET['subdomain'] ?? '')));
-    $tenants = getUnifiedTenants($tenantsFile);
-    $effectivePlans = getEffectivePricingPlans($dataDir);
-    $matchedIndex = -1;
-
-    foreach ($tenants as $idx => $t) {
-        $tId = $t['id'] ?? '';
-        $tSub = strtolower($t['subdomain'] ?? '');
-        if ((!empty($targetId) && ($tId === $targetId || $tSub === strtolower($targetId))) ||
-            (!empty($targetSub) && $tSub === $targetSub)) {
-            $matchedIndex = $idx;
-            break;
-        }
-    }
+    $targetId = trim((string)($body['tenantId'] ?? ($body['id'] ?? ($_GET['id'] ?? ''))));
+    $targetSub = strtolower(trim((string)($body['subdomain'] ?? ($_GET['subdomain'] ?? ''))));
+    $tenants = dnGetUnifiedTenants($dataDir);
+    $effectivePlans = dnGetEffectivePricingPlans($dataDir);
+    $matchedIndex = dnFindTenantMatch($tenants, $targetId, $targetSub);
 
     if ($matchedIndex === -1) {
         http_response_code(404);
@@ -2055,11 +1586,11 @@ if ($action === 'unlock_tenant') {
     $t['subscription']['state'] = 'ACTIVE';
     $t['subscription']['validUntil'] = date('c', $validTs);
     $t['subscription']['validUntilFormatted'] = date('d M Y, h:i A', $validTs);
-    normalizeTenantState($t, $effectivePlans);
+    dnNormalizeTenantState($t, $effectivePlans);
     $unlocked = $t;
     unset($t);
 
-    writeJsonFile($tenantsFile, $tenants);
+    dnWriteJsonFile($tenantsFile, $tenants);
     syncToSecondaryDataDirs('tenants.json', $tenants);
 
     echo json_encode(['success' => true, 'tenant' => $unlocked, 'message' => 'Store unlocked & restored to Day 1 active cycle.']);
@@ -2067,14 +1598,14 @@ if ($action === 'unlock_tenant') {
 }
 
 if ($action === 'run_midnight_cron') {
-    $tenants = getUnifiedTenants($tenantsFile);
-    $effectivePlans = getEffectivePricingPlans($dataDir);
+    $tenants = dnGetUnifiedTenants($dataDir);
+    $effectivePlans = dnGetEffectivePricingPlans($dataDir);
     $graceCount = 0;
     $lockedCount = 0;
 
     foreach ($tenants as &$t) {
-        if (!empty($t['manualBlocked']) || strtoupper($t['status'] ?? '') === 'BLOCKED') {
-            normalizeTenantState($t, $effectivePlans);
+        if (!empty($t['manualBlocked']) || strtoupper((string)($t['status'] ?? '')) === 'BLOCKED') {
+            dnNormalizeTenantState($t, $effectivePlans);
             $lockedCount++;
             continue;
         }
@@ -2085,17 +1616,17 @@ if ($action === 'run_midnight_cron') {
             $remDays = max(1, $totalDays - $day + 1);
             $t['subscriptionExpiry'] = date('c', strtotime("+{$remDays} days"));
         }
-        normalizeTenantState($t, $effectivePlans);
+        dnNormalizeTenantState($t, $effectivePlans);
         $st = $t['subscription']['state'] ?? 'ACTIVE';
         if ($st === 'GRACE_PERIOD') $graceCount++;
         if ($st === 'LOCKED') $lockedCount++;
     }
     unset($t);
 
-    writeJsonFile($tenantsFile, $tenants);
+    dnWriteJsonFile($tenantsFile, $tenants);
     syncToSecondaryDataDirs('tenants.json', $tenants);
 
-    $cronLogs = readUnifiedJson($cronLogsFile, 'cron_logs.json', []);
+    $cronLogs = dnReadUnifiedJson($cronLogsFile, 'cron_logs.json', []);
     $entry = [
         'id' => 'cron_' . time(),
         'timestamp' => date('c'),
@@ -2103,7 +1634,7 @@ if ($action === 'run_midnight_cron') {
     ];
     array_unshift($cronLogs, $entry);
     $cronLogs = array_slice($cronLogs, 0, 50);
-    writeJsonFile($cronLogsFile, $cronLogs);
+    dnWriteJsonFile($cronLogsFile, $cronLogs);
     syncToSecondaryDataDirs('cron_logs.json', $cronLogs);
 
     echo json_encode(['success' => true, 'log' => $entry, 'tenants' => $tenants]);
@@ -2111,23 +1642,18 @@ if ($action === 'run_midnight_cron') {
 }
 
 // ==============================================================================
-// 8. LICENSE & ACTIVATION KEY MANAGEMENT (Full Sync Across Devices)
+// 9. LICENSE KEYS & CARD CHECKOUT
 // ==============================================================================
 if ($action === 'generate_license_key') {
-    $tenants = getUnifiedTenants($tenantsFile);
-    $effectivePlans = getEffectivePricingPlans($dataDir);
-    $tenantId = trim($body['tenantId'] ?? '');
-    $targetTenant = null;
-    foreach ($tenants as $t) {
-        if (($t['id'] ?? '') === $tenantId || strtolower($t['subdomain'] ?? '') === strtolower($tenantId)) {
-            $targetTenant = $t;
-            break;
-        }
-    }
+    $tenants = dnGetUnifiedTenants($dataDir);
+    $effectivePlans = dnGetEffectivePricingPlans($dataDir);
+    $tenantId = trim((string)($body['tenantId'] ?? ''));
+    $idx = dnFindTenantMatch($tenants, $tenantId, '');
+    $targetTenant = ($idx !== -1) ? $tenants[$idx] : null;
 
-    $planType = strtoupper(trim($body['planType'] ?? 'MONTHLY'));
+    $planType = strtoupper(trim((string)($body['planType'] ?? 'MONTHLY')));
     $vert = $targetTenant ? ($targetTenant['vertical'] ?? 'RETAIL_MART') : 'RETAIL_MART';
-    $resolved = resolveSectorPlanPricing($vert, $planType, $effectivePlans);
+    $resolved = dnResolveSectorPlanPricing($vert, $planType, $effectivePlans);
     $cycleDays = isset($body['cycleDays']) && intval($body['cycleDays']) > 0 ? intval($body['cycleDays']) : $resolved['days'];
     $fee = isset($body['fee']) && is_numeric($body['fee']) ? floatval($body['fee']) : $resolved['fee'];
     $keyCode = 'DNOVA-' . strtoupper(substr(preg_replace('/[^A-Z0-9]/', '', $planType), 0, 4)) . '-' . strtoupper(bin2hex(random_bytes(3))) . '-' . strtoupper(bin2hex(random_bytes(2)));
@@ -2146,9 +1672,9 @@ if ($action === 'generate_license_key') {
         'createdAt' => date('c')
     ];
 
-    $keys = readUnifiedJson($licenseKeysFile, 'license_keys.json', []);
+    $keys = dnReadUnifiedJson($licenseKeysFile, 'license_keys.json', []);
     array_unshift($keys, $newKey);
-    writeJsonFile($licenseKeysFile, $keys);
+    dnWriteJsonFile($licenseKeysFile, $keys);
     syncToSecondaryDataDirs('license_keys.json', $keys);
 
     echo json_encode(['success' => true, 'key' => $newKey]);
@@ -2156,32 +1682,27 @@ if ($action === 'generate_license_key') {
 }
 
 if ($action === 'toggle_license_key') {
-    $keyId = trim($body['id'] ?? ($_GET['id'] ?? ''));
-    $keys = readUnifiedJson($licenseKeysFile, 'license_keys.json', []);
-    $tenants = getUnifiedTenants($tenantsFile);
-    $effectivePlans = getEffectivePricingPlans($dataDir);
+    $keyId = trim((string)($body['id'] ?? ($_GET['id'] ?? '')));
+    $keys = dnReadUnifiedJson($licenseKeysFile, 'license_keys.json', []);
+    $tenants = dnGetUnifiedTenants($dataDir);
+    $effectivePlans = dnGetEffectivePricingPlans($dataDir);
     $updatedKey = null;
     $affectedTenant = null;
 
     foreach ($keys as &$k) {
-        if (($k['id'] ?? '') === $keyId || strcasecmp($k['keyCode'] ?? '', $keyId) === 0) {
-            $curSt = strtoupper($k['status'] ?? 'READY');
+        if (($k['id'] ?? '') === $keyId || strcasecmp((string)($k['keyCode'] ?? ''), $keyId) === 0) {
+            $curSt = strtoupper((string)($k['status'] ?? 'READY'));
             $isRevoked = ($curSt === 'REVOKED' || $curSt === 'INACTIVE');
-            if ($isRevoked) {
-                $k['status'] = !empty($k['activatedAt']) ? 'ACTIVATED' : 'READY';
-            } else {
-                $k['status'] = 'REVOKED';
-            }
+            $k['status'] = $isRevoked ? (!empty($k['activatedAt']) ? 'ACTIVATED' : 'READY') : 'REVOKED';
             $updatedKey = $k;
 
-            // Enforce key revocation/restoration on the tenant immediately
             $kCode = $k['keyCode'] ?? '';
             $kTid = $k['tenantId'] ?? '';
             foreach ($tenants as &$t) {
                 if (($t['activeLicenseKey'] ?? '') === $kCode || (!empty($k['activatedAt']) && ($t['id'] ?? '') === $kTid)) {
                     $t['manualBlocked'] = ($k['status'] === 'REVOKED');
                     $t['status'] = ($k['status'] === 'REVOKED') ? 'BLOCKED' : 'ACTIVE';
-                    normalizeTenantState($t, $effectivePlans);
+                    dnNormalizeTenantState($t, $effectivePlans);
                     $affectedTenant = $t;
                 }
             }
@@ -2197,10 +1718,10 @@ if ($action === 'toggle_license_key') {
         exit();
     }
 
-    writeJsonFile($licenseKeysFile, $keys);
+    dnWriteJsonFile($licenseKeysFile, $keys);
     syncToSecondaryDataDirs('license_keys.json', $keys);
     if ($affectedTenant) {
-        writeJsonFile($tenantsFile, $tenants);
+        dnWriteJsonFile($tenantsFile, $tenants);
         syncToSecondaryDataDirs('tenants.json', $tenants);
     }
 
@@ -2209,20 +1730,17 @@ if ($action === 'toggle_license_key') {
 }
 
 if ($action === 'delete_license_key') {
-    $keyId = trim($body['id'] ?? ($_GET['id'] ?? ''));
-    $keys = readUnifiedJson($licenseKeysFile, 'license_keys.json', []);
-    $remaining = [];
-    foreach ($keys as $k) {
-        if (($k['id'] ?? '') !== $keyId) {
-            $remaining[] = $k;
-        }
-    }
-    writeJsonFile($licenseKeysFile, $remaining);
+    $keyId = trim((string)($body['id'] ?? ($_GET['id'] ?? '')));
+    $keys = dnReadUnifiedJson($licenseKeysFile, 'license_keys.json', []);
+    $remaining = array_values(array_filter($keys, function($k) use ($keyId) {
+        return ($k['id'] ?? '') !== $keyId;
+    }));
+    dnWriteJsonFile($licenseKeysFile, $remaining);
     syncToSecondaryDataDirs('license_keys.json', $remaining);
 
-    $delKeys = readUnifiedJson($deletedLicenseKeysFile, 'deleted_license_keys.json', []);
-    if (!in_array($keyId, $delKeys)) $delKeys[] = $keyId;
-    writeJsonFile($deletedLicenseKeysFile, $delKeys);
+    $delKeys = dnReadUnifiedJson($deletedLicenseKeysFile, 'deleted_license_keys.json', []);
+    if (!in_array($keyId, $delKeys, true)) $delKeys[] = $keyId;
+    dnWriteJsonFile($deletedLicenseKeysFile, $delKeys);
     syncToSecondaryDataDirs('deleted_license_keys.json', $delKeys);
 
     echo json_encode(['success' => true, 'deletedId' => $keyId]);
@@ -2230,20 +1748,20 @@ if ($action === 'delete_license_key') {
 }
 
 if ($action === 'activate_license_key') {
-    $keyCode = strtoupper(trim($body['keyCode'] ?? ''));
-    $targetId = trim($body['tenantId'] ?? '');
-    $targetSub = strtolower(trim($body['subdomain'] ?? ''));
+    $keyCode = strtoupper(trim((string)($body['keyCode'] ?? '')));
+    $targetId = trim((string)($body['tenantId'] ?? ''));
+    $targetSub = strtolower(trim((string)($body['subdomain'] ?? '')));
 
-    if (empty($keyCode)) {
+    if ($keyCode === '') {
         http_response_code(400);
         echo json_encode(['success' => false, 'error' => 'Please enter a valid License Key code.']);
         exit();
     }
 
-    $keys = readUnifiedJson($licenseKeysFile, 'license_keys.json', []);
+    $keys = dnReadUnifiedJson($licenseKeysFile, 'license_keys.json', []);
     $matchedKeyIdx = -1;
     foreach ($keys as $idx => $k) {
-        if (strtoupper(trim($k['keyCode'] ?? '')) === $keyCode) {
+        if (strtoupper(trim((string)($k['keyCode'] ?? ''))) === $keyCode) {
             $matchedKeyIdx = $idx;
             break;
         }
@@ -2253,7 +1771,7 @@ if ($action === 'activate_license_key') {
         echo json_encode(['success' => false, 'error' => 'Invalid License Key. Please contact DigitalsNova HQ.']);
         exit();
     }
-    $kStatus = strtoupper($keys[$matchedKeyIdx]['status'] ?? 'READY');
+    $kStatus = strtoupper((string)($keys[$matchedKeyIdx]['status'] ?? 'READY'));
     if ($kStatus === 'REVOKED' || $kStatus === 'INACTIVE') {
         http_response_code(403);
         echo json_encode(['success' => false, 'error' => 'This License Key has been revoked by Super Admin.']);
@@ -2261,37 +1779,16 @@ if ($action === 'activate_license_key') {
     }
 
     $kTid = $keys[$matchedKeyIdx]['tenantId'] ?? '';
-    $kSub = strtolower(trim($keys[$matchedKeyIdx]['subdomain'] ?? ''));
-    if ($kStatus === 'ACTIVATED' && !empty($kSub) && !empty($targetSub) && $kSub !== $targetSub) {
-        http_response_code(403);
-        echo json_encode(['success' => false, 'error' => 'This License Key is already activated on another store.']);
-        exit();
-    }
-    if (!empty($kSub) && !empty($targetSub) && $kSub !== $targetSub) {
+    $kSub = strtolower(trim((string)($keys[$matchedKeyIdx]['subdomain'] ?? '')));
+    if ($kSub !== '' && $targetSub !== '' && $kSub !== $targetSub) {
         http_response_code(403);
         echo json_encode(['success' => false, 'error' => 'This License Key is assigned to store subdomain "' . $kSub . '".']);
         exit();
     }
 
-    $tenants = getUnifiedTenants($tenantsFile);
-    $effectivePlans = getEffectivePricingPlans($dataDir);
-    $tIdx = -1;
-    foreach ($tenants as $idx => $t) {
-        $tId = $t['id'] ?? '';
-        $tSub = strtolower($t['subdomain'] ?? '');
-        if (!empty($targetId) && $tId === $targetId) { $tIdx = $idx; break; }
-        if (!empty($targetSub) && $tSub === $targetSub) { $tIdx = $idx; break; }
-    }
-    if ($tIdx === -1 && empty($targetId) && empty($targetSub)) {
-        foreach ($tenants as $idx => $t) {
-            $tId = $t['id'] ?? '';
-            $tSub = strtolower($t['subdomain'] ?? '');
-            if ((!empty($kTid) && $tId === $kTid) || (!empty($kSub) && $tSub === $kSub)) {
-                $tIdx = $idx;
-                break;
-            }
-        }
-    }
+    $tenants = dnGetUnifiedTenants($dataDir);
+    $effectivePlans = dnGetEffectivePricingPlans($dataDir);
+    $tIdx = dnFindTenantMatch($tenants, $targetId ?: $kTid, $targetSub ?: $kSub);
     if ($tIdx === -1) {
         http_response_code(404);
         echo json_encode(['success' => false, 'error' => 'Target tenant store not found for activation.']);
@@ -2318,11 +1815,11 @@ if ($action === 'activate_license_key') {
     $tenants[$tIdx]['activeLicenseKey'] = $keyCode;
     $tenants[$tIdx]['lastPaymentDate'] = date('c');
     $tenants[$tIdx]['subscriptionExpiry'] = date('c', $expTs);
-    normalizeTenantState($tenants[$tIdx], $effectivePlans);
+    dnNormalizeTenantState($tenants[$tIdx], $effectivePlans);
 
-    writeJsonFile($licenseKeysFile, $keys);
+    dnWriteJsonFile($licenseKeysFile, $keys);
     syncToSecondaryDataDirs('license_keys.json', $keys);
-    writeJsonFile($tenantsFile, $tenants);
+    dnWriteJsonFile($tenantsFile, $tenants);
     syncToSecondaryDataDirs('tenants.json', $tenants);
 
     echo json_encode([
@@ -2335,190 +1832,1348 @@ if ($action === 'activate_license_key') {
 }
 
 if ($action === 'deactivate_license_key') {
-    $targetId = trim($body['tenantId'] ?? '');
-    $targetSub = strtolower(trim($body['subdomain'] ?? ''));
-    $keyCode = strtoupper(trim($body['keyCode'] ?? ''));
+    $targetId = trim((string)($body['tenantId'] ?? ''));
+    $targetSub = strtolower(trim((string)($body['subdomain'] ?? '')));
+    $keyCode = strtoupper(trim((string)($body['keyCode'] ?? '')));
 
-    $tenants = getUnifiedTenants($tenantsFile);
-    $effectivePlans = getEffectivePricingPlans($dataDir);
-    $keys = readUnifiedJson($licenseKeysFile, 'license_keys.json', []);
+    $tenants = dnGetUnifiedTenants($dataDir);
+    $effectivePlans = dnGetEffectivePricingPlans($dataDir);
+    $keys = dnReadUnifiedJson($licenseKeysFile, 'license_keys.json', []);
 
-    foreach ($tenants as &$t) {
-        if ((!empty($targetId) && ($t['id'] ?? '') === $targetId) ||
-            (!empty($targetSub) && strtolower($t['subdomain'] ?? '') === $targetSub)) {
-            $activeKey = strtoupper($t['activeLicenseKey'] ?? $keyCode);
-            $t['activeLicenseKey'] = '';
-            $t['manualBlocked'] = true;
-            $t['status'] = 'BLOCKED';
-            normalizeTenantState($t, $effectivePlans);
-
-            if (!empty($activeKey)) {
-                foreach ($keys as &$k) {
-                    if (strtoupper($k['keyCode'] ?? '') === $activeKey) {
-                        $k['status'] = 'REVOKED';
-                    }
+    $idx = dnFindTenantMatch($tenants, $targetId, $targetSub);
+    if ($idx !== -1) {
+        $activeKey = strtoupper((string)($tenants[$idx]['activeLicenseKey'] ?: $keyCode));
+        $tenants[$idx]['activeLicenseKey'] = '';
+        $tenants[$idx]['manualBlocked'] = true;
+        $tenants[$idx]['status'] = 'BLOCKED';
+        dnNormalizeTenantState($tenants[$idx], $effectivePlans);
+        if ($activeKey !== '') {
+            foreach ($keys as &$k) {
+                if (strtoupper((string)($k['keyCode'] ?? '')) === $activeKey) {
+                    $k['status'] = 'REVOKED';
                 }
-                unset($k);
             }
-            break;
+            unset($k);
         }
     }
-    unset($t);
 
-    writeJsonFile($licenseKeysFile, $keys);
+    dnWriteJsonFile($licenseKeysFile, $keys);
     syncToSecondaryDataDirs('license_keys.json', $keys);
-    writeJsonFile($tenantsFile, $tenants);
+    dnWriteJsonFile($tenantsFile, $tenants);
     syncToSecondaryDataDirs('tenants.json', $tenants);
 
     echo json_encode(['success' => true, 'message' => 'License key revoked and portal locked.']);
     exit();
 }
 
-// ==============================================================================
-// 9. STAFF TOGGLE / DELETE, PROFILE UPDATES & PASSWORD RECOVERY
-// ==============================================================================
-if ($action === 'toggle_staff') {
-    $staffId = trim($body['id'] ?? '');
-    $active = isset($body['active']) ? (bool)$body['active'] : true;
-    $allStaff = readUnifiedJson($staffFile, 'staff.json', []);
-    $updated = null;
-    foreach ($allStaff as &$s) {
-        if (($s['id'] ?? '') === $staffId || strtolower($s['username'] ?? '') === strtolower($staffId)) {
-            $s['active'] = $active;
-            $updated = $s;
-            break;
-        }
-    }
-    unset($s);
-    writeJsonFile($staffFile, $allStaff);
-    syncToSecondaryDataDirs('staff.json', $allStaff);
-    echo json_encode(['success' => true, 'staff' => $updated]);
+if ($action === 'card_checkout' || $action === 'stripe_checkout' || $action === 'subscription_payment') {
+    require __DIR__ . '/stripe-checkout.php';
     exit();
 }
 
-if ($action === 'delete_staff') {
-    $staffId = trim($body['id'] ?? '');
-    $allStaff = readUnifiedJson($staffFile, 'staff.json', []);
-    $remaining = [];
-    foreach ($allStaff as $s) {
-        if (($s['id'] ?? '') !== $staffId) {
-            $remaining[] = $s;
-        }
+// ==============================================================================
+// 10. CROSS-DEVICE WIRELESS BARCODE SCANNER QUEUE (HTTP + BroadcastChannel)
+// ==============================================================================
+if ($action === 'push_scan') {
+    $tid = trim((string)($body['tenantId'] ?? ($body['subdomain'] ?? ($_GET['tenantId'] ?? 'default'))));
+    $barcode = trim((string)($body['barcode'] ?? ''));
+    $deviceName = trim((string)($body['deviceName'] ?? 'Mobile Phone Scanner'));
+    if ($barcode === '') {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => 'Missing barcode value']);
+        exit();
     }
-    writeJsonFile($staffFile, $remaining);
-    syncToSecondaryDataDirs('staff.json', $remaining);
-
-    $deletedStaff = readUnifiedJson($deletedStaffFile, 'deleted_staff.json', []);
-    if (!in_array($staffId, $deletedStaff)) $deletedStaff[] = $staffId;
-    writeJsonFile($deletedStaffFile, $deletedStaff);
-    syncToSecondaryDataDirs('deleted_staff.json', $deletedStaff);
-
-    echo json_encode(['success' => true, 'deletedId' => $staffId]);
+    $safeKey = preg_replace('/[^a-zA-Z0-9_\-]/', '_', $tid) ?: 'default';
+    $scanFile = $dataDir . '/scans/' . $safeKey . '.json';
+    $nowMs = intval(round(microtime(true) * 1000));
+    $cutoff = $nowMs - 120000;
+    $scans = array_values(array_filter(dnReadJsonFile($scanFile, []), function($s) use ($cutoff) {
+        return intval($s['timestamp'] ?? 0) > $cutoff;
+    }));
+    $entry = [
+        'id' => 'sc_' . $nowMs . '_' . rand(100, 999),
+        'barcode' => $barcode,
+        'deviceName' => $deviceName,
+        'timestamp' => $nowMs
+    ];
+    $scans[] = $entry;
+    dnWriteJsonFile($scanFile, array_slice($scans, -50));
+    echo json_encode(['success' => true, 'scan' => $entry]);
     exit();
 }
 
-if ($action === 'update_profile') {
-    $role = strtoupper(trim($body['role'] ?? ''));
-    $tenantId = trim($body['tenantId'] ?? '');
-    $subdomain = strtolower(trim($body['subdomain'] ?? ''));
-    $userId = trim($body['userId'] ?? '');
-    $newName = isset($body['name']) ? trim($body['name']) : '';
-    $newUsername = isset($body['username']) ? trim($body['username']) : '';
-    $newPass = isset($body['newPassword']) ? trim($body['newPassword']) : (isset($body['password']) ? trim($body['password']) : '');
+if ($action === 'poll_scans') {
+    $tid = trim((string)($_GET['tenantId'] ?? ($body['tenantId'] ?? 'default')));
+    $since = intval($_GET['since'] ?? ($body['since'] ?? 0));
+    $safeKey = preg_replace('/[^a-zA-Z0-9_\-]/', '_', $tid) ?: 'default';
+    $scanFile = $dataDir . '/scans/' . $safeKey . '.json';
+    $nowMs = intval(round(microtime(true) * 1000));
+    $cutoff = $nowMs - 120000;
+    $scans = array_values(array_filter(dnReadJsonFile($scanFile, []), function($s) use ($cutoff) {
+        return intval($s['timestamp'] ?? 0) > $cutoff;
+    }));
+    dnWriteJsonFile($scanFile, $scans);
+    $newScans = array_values(array_filter($scans, function($s) use ($since) {
+        return intval($s['timestamp'] ?? 0) > $since;
+    }));
+    echo json_encode(['success' => true, 'scans' => $newScans, 'serverTimeMs' => $nowMs]);
+    exit();
+}
 
-    if ($role === 'SUPER_ADMIN') {
-        echo json_encode(['success' => true, 'role' => 'SUPER_ADMIN', 'message' => 'Super Admin profile saved.']);
+// ==============================================================================
+// 11. OFFLINE QUEUE SYNCHRONIZATION (Applies directly into Tenant Workspace!)
+// ==============================================================================
+if ($action === 'sync_offline_sales') {
+    $sales = isset($body['sales']) && is_array($body['sales']) ? $body['sales'] : [];
+    $tenants = dnGetUnifiedTenants($dataDir);
+    $payments = dnReadUnifiedJson($paymentsFile, 'payments.json', []);
+    $existingPayIds = [];
+    foreach ($payments as $p) {
+        if (!empty($p['id'])) $existingPayIds[$p['id']] = true;
+    }
+
+    $workspacesCache = [];
+    $synced = 0;
+
+    foreach ($sales as $sale) {
+        if (!is_array($sale)) continue;
+        $saleId = !empty($sale['id']) ? $sale['id'] : ('sale_offline_' . uniqid());
+        $sub = dnSanitizeSubdomain($sale['subdomain'] ?? '');
+        if ($sub === '' && !empty($sale['tenantId'])) {
+            $idx = dnFindTenantMatch($tenants, $sale['tenantId'], '');
+            if ($idx !== -1) $sub = dnSanitizeSubdomain($tenants[$idx]['subdomain'] ?? '');
+        }
+        if ($sub === '') $sub = 'default';
+
+        if (!isset($workspacesCache[$sub])) {
+            $workspacesCache[$sub] = dnLoadWorkspace($dataDir, $sub);
+        }
+        $ws = &$workspacesCache[$sub];
+
+        $alreadyInWs = false;
+        foreach ($ws['sales'] as $exS) {
+            if (($exS['id'] ?? '') === $saleId) { $alreadyInWs = true; break; }
+        }
+
+        $subTotal = isset($sale['subtotal']) ? floatval($sale['subtotal']) : 0;
+        $discAmt = isset($sale['discountAmount']) ? floatval($sale['discountAmount']) : 0;
+        $netTotal = isset($sale['netTotal']) ? floatval($sale['netTotal']) : (isset($sale['total']) ? floatval($sale['total']) : max(0, $subTotal - $discAmt));
+        $paidAmt = isset($sale['amountPaidToday']) ? floatval($sale['amountPaidToday']) : $netTotal;
+
+        if (!$alreadyInWs) {
+            $cleanSale = array_merge($sale, [
+                'id' => $saleId,
+                'subdomain' => $sub,
+                'invoiceNumber' => $sale['invoiceNumber'] ?? ('INV-' . substr($saleId, -4)),
+                'subtotal' => $subTotal > 0 ? $subTotal : $netTotal,
+                'discountAmount' => $discAmt,
+                'netTotal' => $netTotal,
+                'amountPaidToday' => $paidAmt,
+                'remainingLedgerBalance' => isset($sale['remainingLedgerBalance']) ? floatval($sale['remainingLedgerBalance']) : max(0, $netTotal - $paidAmt),
+                'paymentMethod' => strtoupper((string)($sale['paymentMethod'] ?? 'CASH')),
+                'status' => $sale['status'] ?? 'COMPLETED',
+                'offlineQueued' => false,
+                'syncedFromOffline' => true,
+                'createdAt' => $sale['createdAt'] ?? ($sale['timestamp'] ?? date('c'))
+            ]);
+            array_unshift($ws['sales'], $cleanSale);
+
+            // Deduct non-session stock
+            if (!empty($sale['items']) && is_array($sale['items'])) {
+                foreach ($sale['items'] as $item) {
+                    if (strtoupper((string)($item['type'] ?? '')) === 'SESSION') continue;
+                    $qty = max(1, floatval($item['qty'] ?? ($item['quantity'] ?? 1)));
+                    foreach ($ws['inventory'] as &$inv) {
+                        if ((!empty($item['id']) && ($inv['id'] ?? '') === $item['id']) ||
+                            (!empty($item['barcode']) && ($inv['barcode'] ?? '') === $item['barcode'])) {
+                            $inv['quantity'] = max(0, floatval($inv['quantity'] ?? 0) - $qty);
+                            break;
+                        }
+                    }
+                    unset($inv);
+                }
+            }
+
+            if (is_array($ws['activeShift'] ?? null)) {
+                $ws['activeShift']['totalSalesCount'] = intval($ws['activeShift']['totalSalesCount'] ?? 0) + 1;
+                if ($cleanSale['paymentMethod'] === 'CASH') {
+                    $ws['activeShift']['totalCashCollected'] = floatval($ws['activeShift']['totalCashCollected'] ?? 0) + $paidAmt;
+                } else {
+                    $ws['activeShift']['totalDigitalCollected'] = floatval($ws['activeShift']['totalDigitalCollected'] ?? 0) + $paidAmt;
+                }
+            }
+            $synced++;
+        }
+
+        if (!isset($existingPayIds[$saleId])) {
+            $existingPayIds[$saleId] = true;
+            $payments[] = [
+                'id' => $saleId,
+                'tenantId' => $sale['tenantId'] ?? $sub,
+                'subdomain' => $sub,
+                'invoiceNumber' => $sale['invoiceNumber'] ?? ('OFF-' . substr($saleId, -6)),
+                'patientName' => $sale['patientName'] ?? ($sale['customerName'] ?? 'Walk-in'),
+                'amount' => $paidAmt,
+                'method' => $sale['paymentMethod'] ?? 'CASH',
+                'createdAt' => $sale['createdAt'] ?? date('c'),
+                'syncedFromOffline' => true,
+                'status' => 'COMPLETED'
+            ];
+        }
+        unset($ws);
+    }
+
+    foreach ($workspacesCache as $subKey => $wsData) {
+        dnSaveWorkspace($dataDir, $subKey, $wsData);
+    }
+    dnWriteJsonFile($paymentsFile, $payments);
+    syncToSecondaryDataDirs('payments.json', $payments);
+
+    echo json_encode(['success' => true, 'synced_count' => $synced, 'message' => "Successfully synced {$synced} offline sales into cloud workspace."]);
+    exit();
+}
+
+if ($action === 'sync_offline_inventory') {
+    $ops = isset($body['operations']) && is_array($body['operations']) ? $body['operations'] : (isset($body['items']) && is_array($body['items']) ? $body['items'] : []);
+    $invSyncFile = $dataDir . '/inventory_sync.json';
+    $existingOps = dnReadUnifiedJson($invSyncFile, 'inventory_sync.json', []);
+    $seen = [];
+    foreach ($existingOps as $eo) {
+        if (!empty($eo['opId'])) $seen[$eo['opId']] = true;
+    }
+
+    $workspacesCache = [];
+    $synced = 0;
+
+    foreach ($ops as $op) {
+        if (!is_array($op)) continue;
+        $opId = !empty($op['opId']) ? $op['opId'] : (!empty($op['id']) ? $op['id'] : ('inv_offline_' . uniqid()));
+        if (isset($seen[$opId])) continue;
+        $seen[$opId] = true;
+
+        $sub = dnSanitizeSubdomain($op['subdomain'] ?? '');
+        if ($sub === '') $sub = 'default';
+        if (!isset($workspacesCache[$sub])) {
+            $workspacesCache[$sub] = dnLoadWorkspace($dataDir, $sub);
+        }
+        $ws = &$workspacesCache[$sub];
+        $type = strtoupper((string)($op['type'] ?? 'UPSERT'));
+        $payload = $op['payload'] ?? $op;
+
+        $applyUpsert = function(&$invArr, $item) {
+            if (!is_array($item) || empty($item['name'])) return;
+            $itemId = $item['id'] ?? ('inv_' . time() . '_' . rand(100, 999));
+            $barcode = $item['barcode'] ?? '';
+            $found = -1;
+            foreach ($invArr as $i => $cur) {
+                if (($cur['id'] ?? '') === $itemId || ($barcode !== '' && ($cur['barcode'] ?? '') === $barcode)) {
+                    $found = $i;
+                    break;
+                }
+            }
+            if ($found >= 0) {
+                $invArr[$found] = array_merge($invArr[$found], $item);
+            } else {
+                $invArr[] = array_merge(['id' => $itemId, 'createdAt' => date('c')], $item);
+            }
+        };
+
+        if ($type === 'BULK_UPSERT' && is_array($payload)) {
+            foreach ($payload as $row) {
+                $applyUpsert($ws['inventory'], $row);
+            }
+        } elseif ($type === 'UPSERT' || $type === 'UPDATE') {
+            $applyUpsert($ws['inventory'], $payload);
+        } elseif ($type === 'DELETE' && is_array($payload)) {
+            $delId = $payload['id'] ?? '';
+            $ws['inventory'] = array_values(array_filter($ws['inventory'], function($cur) use ($delId) {
+                return ($cur['id'] ?? '') !== $delId;
+            }));
+        }
+        unset($ws);
+
+        $existingOps[] = [
+            'opId' => $opId,
+            'type' => $type,
+            'subdomain' => $sub,
+            'payload' => $payload,
+            'offlineTimestamp' => $op['timestamp'] ?? date('c'),
+            'serverTimestamp' => date('c')
+        ];
+        $synced++;
+    }
+
+    foreach ($workspacesCache as $subKey => $wsData) {
+        dnSaveWorkspace($dataDir, $subKey, $wsData);
+    }
+    dnWriteJsonFile($invSyncFile, array_slice($existingOps, -500));
+    syncToSecondaryDataDirs('inventory_sync.json', array_slice($existingOps, -500));
+
+    echo json_encode(['success' => true, 'synced_count' => $synced, 'message' => "Successfully synced {$synced} offline inventory changes."]);
+    exit();
+}
+
+// ==============================================================================
+// 12. ISOLATED TENANT WORKSPACE ERP / POS / HMS MUTATION ENDPOINTS
+// ==============================================================================
+$wsActions = [
+    'checkout_sale', 'park_cart', 'unpark_cart', 'open_shift', 'close_shift',
+    'create_patient', 'delete_patient', 'create_treatment', 'pay_treatment_session', 'delete_treatment',
+    'add_stock', 'update_stock', 'delete_stock', 'bulk_inventory', 'bulk_treatments',
+    'add_catalog_treatment', 'delete_catalog_treatment',
+    'verify_pin_discount', 'request_remote_discount', 'respond_discount_request',
+    'refund_sale', 'delete_sale'
+];
+
+if (in_array($action, $wsActions, true)) {
+    $tenants = dnGetUnifiedTenants($dataDir);
+    $ctx = dnResolveWorkspaceContext($body, $tenants);
+    $sub = $ctx['subdomain'];
+    if ($sub === '') {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => 'Missing store subdomain for workspace operation.']);
+        exit();
+    }
+    $tenant = $ctx['tenant'];
+    $ws = dnLoadWorkspace($dataDir, $sub);
+
+    // ----- POS CHECKOUT -----
+    if ($action === 'checkout_sale') {
+        $items = isset($body['items']) && is_array($body['items']) ? $body['items'] : [];
+        if (empty($items)) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'error' => 'Cannot finalize an empty cart.']);
+            exit();
+        }
+        $saleId = !empty($body['id']) ? (string)$body['id'] : ('sale_' . time() . '_' . rand(100, 999));
+        foreach ($ws['sales'] as $exS) {
+            if (($exS['id'] ?? '') === $saleId) {
+                echo json_encode(['success' => true, 'sale' => $exS, 'duplicate' => true]);
+                exit();
+            }
+        }
+
+        $subTotal = 0;
+        $normItems = [];
+        foreach ($items as $it) {
+            $qty = max(1, floatval($it['qty'] ?? ($it['quantity'] ?? 1)));
+            $unitPrice = floatval($it['unitPrice'] ?? ($it['price'] ?? 0));
+            $lineTotal = round($qty * $unitPrice, 2);
+            $subTotal += $lineTotal;
+            $normItems[] = array_merge($it, [
+                'qty' => $qty,
+                'quantity' => $qty,
+                'unitPrice' => $unitPrice,
+                'subtotal' => $lineTotal
+            ]);
+        }
+
+        $discAmt = max(0, floatval($body['discountAmount'] ?? 0));
+        $netTotal = max(0, round($subTotal - $discAmt, 2));
+        $paidToday = isset($body['amountPaidToday']) && $body['amountPaidToday'] !== ''
+            ? max(0, floatval($body['amountPaidToday']))
+            : $netTotal;
+        $remaining = max(0, round($netTotal - $paidToday, 2));
+        $payMethod = strtoupper((string)($body['paymentMethod'] ?? 'CASH'));
+
+        $invNo = !empty($body['invoiceNumber']) ? (string)$body['invoiceNumber'] : ('INV-' . substr((string)time(), -4) . rand(10, 99));
+        $patId = trim((string)($body['patientId'] ?? 'pat_walkin'));
+        $matchedPat = null;
+        foreach ($ws['patients'] as $p) {
+            if (($p['id'] ?? '') === $patId) {
+                $matchedPat = $p;
+                break;
+            }
+        }
+        $patCode = !empty($body['patientCode'])
+            ? (string)$body['patientCode']
+            : ($matchedPat ? (string)($matchedPat['patientCode'] ?? 'PAT') : (($patId === 'pat_walkin' || $patId === '') ? 'WALK-IN' : 'CUST'));
+
+        $discountApprovedBy = !empty($body['discountApprovedBy']) ? (string)$body['discountApprovedBy'] : null;
+        $discReqId = !empty($body['discountRequestId']) ? trim((string)$body['discountRequestId']) : '';
+        if ($discReqId !== '' && isset($ws['discountRequests']) && is_array($ws['discountRequests'])) {
+            foreach ($ws['discountRequests'] as &$dr) {
+                if (($dr['id'] ?? '') === $discReqId) {
+                    $dr['invoiceNumber'] = $invNo;
+                    if ($discountApprovedBy === null && !empty($dr['approvedBy'])) {
+                        $discountApprovedBy = (string)$dr['approvedBy'];
+                    }
+                    break;
+                }
+            }
+            unset($dr);
+        }
+        if ($discAmt > 0 && $discountApprovedBy === null) {
+            $discountApprovedBy = 'Admin';
+        }
+
+        $saleRecord = [
+            'id' => $saleId,
+            'tenantId' => $ctx['tenantId'] ?: ('tenant_' . $sub),
+            'subdomain' => $sub,
+            'invoiceNumber' => $invNo,
+            'patientId' => $patId ?: 'pat_walkin',
+            'patientCode' => $patCode,
+            'patientName' => $body['patientName'] ?? ($body['walkInName'] ?? ($matchedPat ? $matchedPat['name'] : 'Walk-in Customer')),
+            'patientPhone' => $body['patientPhone'] ?? ($body['walkInPhone'] ?? ($matchedPat ? $matchedPat['phone'] : '')),
+            'cashierId' => $body['cashierId'] ?? 'u_staff',
+            'cashierName' => $body['cashierName'] ?? 'POS Cashier',
+            'items' => $normItems,
+            'subtotal' => $subTotal,
+            'discountAmount' => $discAmt,
+            'discount' => $discAmt,
+            'discountRequestId' => $body['discountRequestId'] ?? null,
+            'discountApprovedBy' => $discountApprovedBy,
+            'netTotal' => $netTotal,
+            'total' => $netTotal,
+            'amountPaidToday' => $paidToday,
+            'paidAmount' => $paidToday,
+            'remainingLedgerBalance' => $remaining,
+            'dueAmount' => $remaining,
+            'paymentMethod' => $payMethod,
+            'tableNumber' => $body['tableNumber'] ?? null,
+            'waiterName' => $body['waiterName'] ?? null,
+            'orderType' => $body['orderType'] ?? 'RETAIL',
+            'treatmentId' => $body['treatmentId'] ?? null,
+            'status' => 'COMPLETED',
+            'offlineQueued' => false,
+            'createdAt' => date('c')
+        ];
+
+        // Deduct non-session stock
+        foreach ($normItems as $item) {
+            if (strtoupper((string)($item['type'] ?? '')) === 'SESSION') continue;
+            $qty = floatval($item['qty']);
+            foreach ($ws['inventory'] as &$inv) {
+                if ((!empty($item['id']) && ($inv['id'] ?? '') === $item['id']) ||
+                    (!empty($item['barcode']) && ($inv['barcode'] ?? '') === $item['barcode'])) {
+                    $inv['quantity'] = max(0, floatval($inv['quantity'] ?? 0) - $qty);
+                    break;
+                }
+            }
+            unset($inv);
+        }
+
+        // Update linked patient balance or treatment ledger
+        if (!empty($body['treatmentId'])) {
+            foreach ($ws['treatments'] as &$tr) {
+                if (($tr['id'] ?? '') === $body['treatmentId']) {
+                    $tr['paidAmount'] = floatval($tr['paidAmount'] ?? 0) + $paidToday;
+                    $tr['remainingBalance'] = max(0, floatval($tr['totalCost'] ?? 0) - $tr['paidAmount']);
+                    $tr['status'] = ($tr['remainingBalance'] <= 0) ? 'COMPLETED' : 'IN_PROGRESS';
+                    if (!isset($tr['sessions']) || !is_array($tr['sessions'])) $tr['sessions'] = [];
+                    $tr['sessions'][] = [
+                        'id' => 'ses_' . time(),
+                        'sessionNumber' => count($tr['sessions']) + 1,
+                        'amountPaid' => $paidToday,
+                        'balanceAfter' => $tr['remainingBalance'],
+                        'invoiceNumber' => $invNo,
+                        'notes' => 'POS Checkout Payment (' . $invNo . ')',
+                        'date' => date('c')
+                    ];
+                    $saleRecord['remainingLedgerBalance'] = $tr['remainingBalance'];
+                    $saleRecord['dueAmount'] = $tr['remainingBalance'];
+                    break;
+                }
+            }
+            unset($tr);
+        }
+
+        array_unshift($ws['sales'], $saleRecord);
+        $ws['sales'] = array_slice($ws['sales'], 0, 1000);
+
+        if (is_array($ws['activeShift'] ?? null)) {
+            $ws['activeShift']['totalSalesCount'] = intval($ws['activeShift']['totalSalesCount'] ?? 0) + 1;
+            if ($payMethod === 'CASH') {
+                $ws['activeShift']['totalCashCollected'] = floatval($ws['activeShift']['totalCashCollected'] ?? 0) + $paidToday;
+            } else {
+                $ws['activeShift']['totalDigitalCollected'] = floatval($ws['activeShift']['totalDigitalCollected'] ?? 0) + $paidToday;
+            }
+        }
+
+        $smsText = "Receipt {$saleRecord['invoiceNumber']}: Rs. " . number_format($netTotal) . " (Paid: Rs. " . number_format($paidToday) . ($saleRecord['remainingLedgerBalance'] > 0 ? ", Due: Rs. " . number_format($saleRecord['remainingLedgerBalance']) : '') . "). Thank you!";
+        $smsLog = [
+            'id' => 'sms_' . time() . '_' . rand(10, 99),
+            'to' => $saleRecord['patientPhone'],
+            'recipientPhone' => $saleRecord['patientPhone'],
+            'patientName' => $saleRecord['patientName'],
+            'message' => $smsText,
+            'status' => 'QUEUED',
+            'timestamp' => date('c'),
+            'createdAt' => date('c')
+        ];
+        array_unshift($ws['smsLogs'], $smsLog);
+        $ws['smsLogs'] = array_slice($ws['smsLogs'], 0, 200);
+
+        array_unshift($ws['auditLogs'], [
+            'id' => 'aud_' . time() . '_' . rand(10, 99),
+            'action' => 'SALE_COMPLETED',
+            'receiptId' => $saleRecord['invoiceNumber'],
+            'actor' => $saleRecord['cashierName'],
+            'staffName' => $saleRecord['cashierName'],
+            'staffId' => $saleRecord['cashierId'],
+            'approvingAdmin' => $discountApprovedBy ?: $saleRecord['cashierName'],
+            'details' => "Invoice {$saleRecord['invoiceNumber']} • Net Rs. {$netTotal} • Paid Rs. {$paidToday} ({$payMethod})",
+            'timestamp' => date('c'),
+            'createdAt' => date('c')
+        ]);
+        $ws['auditLogs'] = array_slice($ws['auditLogs'], 0, 300);
+
+        dnSaveWorkspace($dataDir, $sub, $ws);
+
+        // Append to global payments ledger
+        $payments = dnReadUnifiedJson($paymentsFile, 'payments.json', []);
+        array_unshift($payments, [
+            'id' => $saleId,
+            'tenantId' => $saleRecord['tenantId'],
+            'subdomain' => $sub,
+            'invoiceNumber' => $saleRecord['invoiceNumber'],
+            'patientName' => $saleRecord['patientName'],
+            'amount' => $paidToday,
+            'method' => $payMethod,
+            'status' => 'COMPLETED',
+            'createdAt' => $saleRecord['createdAt']
+        ]);
+        dnWriteJsonFile($paymentsFile, array_slice($payments, 0, 500));
+        syncToSecondaryDataDirs('payments.json', array_slice($payments, 0, 500));
+
+        echo json_encode(['success' => true, 'sale' => $saleRecord, 'smsLog' => $smsLog]);
         exit();
     }
 
-    if ($role === 'STAFF') {
-        $allStaff = readUnifiedJson($staffFile, 'staff.json', []);
-        $updatedUser = null;
-        foreach ($allStaff as &$s) {
-            if ((!empty($userId) && ($s['id'] ?? '') === $userId) ||
-                (!empty($newUsername) && strtolower($s['username'] ?? '') === strtolower($newUsername))) {
-                if (!empty($newName)) $s['name'] = $newName;
-                if (!empty($newPass)) $s['password'] = $newPass;
-                $updatedUser = $s;
+    // ----- HOLD / PARK BILL -----
+    if ($action === 'park_cart') {
+        $park = [
+            'id' => 'park_' . time() . '_' . rand(100, 999),
+            'patientId' => $body['patientId'] ?? 'pat_walkin',
+            'patientName' => $body['patientName'] ?? 'Walk-in Customer',
+            'patientPhone' => $body['patientPhone'] ?? '',
+            'walkInName' => $body['walkInName'] ?? '',
+            'walkInPhone' => $body['walkInPhone'] ?? '',
+            'items' => isset($body['items']) && is_array($body['items']) ? $body['items'] : [],
+            'subtotal' => floatval($body['subtotal'] ?? 0),
+            'discount' => floatval($body['discount'] ?? 0),
+            'netTotal' => floatval($body['netTotal'] ?? 0),
+            'cashierId' => $body['cashierId'] ?? 'u_staff',
+            'cashierName' => $body['cashierName'] ?? 'Staff',
+            'notes' => $body['notes'] ?? '',
+            'createdAt' => date('c')
+        ];
+        array_unshift($ws['parkedSales'], $park);
+        dnSaveWorkspace($dataDir, $sub, $ws);
+        echo json_encode(['success' => true, 'parked' => $park]);
+        exit();
+    }
+
+    if ($action === 'unpark_cart') {
+        $parkId = trim((string)($body['id'] ?? ($_GET['id'] ?? '')));
+        $ws['parkedSales'] = array_values(array_filter($ws['parkedSales'], function($p) use ($parkId) {
+            return ($p['id'] ?? '') !== $parkId;
+        }));
+        dnSaveWorkspace($dataDir, $sub, $ws);
+        echo json_encode(['success' => true, 'deletedId' => $parkId]);
+        exit();
+    }
+
+    // ----- SHIFTS & Z-REPORT -----
+    if ($action === 'open_shift') {
+        $shift = [
+            'id' => 'shift_' . time() . '_' . rand(10, 99),
+            'code' => (string)rand(100, 999),
+            'tenantId' => $ctx['tenantId'] ?: ('tenant_' . $sub),
+            'subdomain' => $sub,
+            'cashierId' => $body['cashierId'] ?? 'u_staff',
+            'cashierName' => $body['cashierName'] ?? 'POS Cashier',
+            'openingFloat' => floatval($body['openingFloat'] ?? 0),
+            'openedAt' => date('c'),
+            'status' => 'ACTIVE',
+            'totalSalesCount' => 0,
+            'totalCashCollected' => 0,
+            'totalDigitalCollected' => 0
+        ];
+        $ws['activeShift'] = $shift;
+        dnSaveWorkspace($dataDir, $sub, $ws);
+        echo json_encode(['success' => true, 'shift' => $shift]);
+        exit();
+    }
+
+    if ($action === 'close_shift') {
+        $active = is_array($ws['activeShift'] ?? null) ? $ws['activeShift'] : [
+            'id' => trim((string)($body['shiftId'] ?? ('shift_' . time()))),
+            'code' => (string)rand(100, 999),
+            'cashierName' => $body['cashierName'] ?? 'POS Cashier',
+            'openingFloat' => 0,
+            'openedAt' => date('c')
+        ];
+        $openTs = strtotime((string)($active['openedAt'] ?? date('c'))) ?: time();
+        $cashCollected = 0;
+        $digitalCollected = 0;
+        $salesCount = 0;
+        $grossSales = 0;
+        $totalDiscounts = 0;
+        $netSales = 0;
+        $breakdown = [
+            'CASH' => 0,
+            'CARD' => 0,
+            'BANK_TRANSFER' => 0
+        ];
+
+        foreach ($ws['sales'] as $s) {
+            if (strtoupper((string)($s['status'] ?? '')) === 'REFUNDED') continue;
+            $sTs = strtotime((string)($s['createdAt'] ?? '0')) ?: 0;
+            if ($sTs >= ($openTs - 5)) {
+                $salesCount++;
+                $sDisc = floatval($s['discountAmount'] ?? ($s['discount'] ?? 0));
+                $sNet = floatval($s['netTotal'] ?? ($s['total'] ?? 0));
+                $sSub = isset($s['subtotal']) ? floatval($s['subtotal']) : ($sNet + $sDisc);
+                $grossSales += $sSub;
+                $totalDiscounts += $sDisc;
+                $netSales += $sNet;
+                $paid = floatval($s['amountPaidToday'] ?? $sNet);
+                $pm = strtoupper((string)($s['paymentMethod'] ?? 'CASH'));
+                if ($pm === 'CASH') {
+                    $cashCollected += $paid;
+                    $breakdown['CASH'] += $paid;
+                } elseif ($pm === 'CARD') {
+                    $digitalCollected += $paid;
+                    $breakdown['CARD'] += $paid;
+                } else {
+                    $digitalCollected += $paid;
+                    $breakdown['BANK_TRANSFER'] += $paid;
+                }
+            }
+        }
+
+        $openingFloat = round(floatval($active['openingFloat'] ?? 0), 2);
+        $netCash = max(round($cashCollected, 2), round(floatval($active['totalCashCollected'] ?? 0), 2));
+        $digitalTot = max(round($digitalCollected, 2), round(floatval($active['totalDigitalCollected'] ?? 0), 2));
+        $expectedCash = round($openingFloat + $netCash, 2);
+        $actualCash = round(floatval($body['actualCashCounted'] ?? 0), 2);
+        $diff = round($actualCash - $expectedCash, 2);
+        $notes = trim((string)($body['notes'] ?? ($body['closingNotes'] ?? '')));
+
+        $closed = array_merge($active, [
+            'closedAt' => date('c'),
+            'salesCount' => max($salesCount, intval($active['totalSalesCount'] ?? 0)),
+            'totalSalesCount' => max($salesCount, intval($active['totalSalesCount'] ?? 0)),
+            'grossSales' => round($grossSales, 2),
+            'totalDiscounts' => round($totalDiscounts, 2),
+            'netSales' => round($netSales, 2),
+            'paymentBreakdown' => [
+                'CASH' => round($breakdown['CASH'], 2),
+                'CARD' => round($breakdown['CARD'], 2),
+                'BANK_TRANSFER' => round($breakdown['BANK_TRANSFER'], 2)
+            ],
+            'netCashCollected' => $netCash,
+            'totalCashCollected' => $netCash,
+            'totalDigitalCollected' => $digitalTot,
+            'expectedCashInDrawer' => $expectedCash,
+            'expectedCash' => $expectedCash,
+            'actualCashCounted' => $actualCash,
+            'difference' => $diff,
+            'discrepancy' => $diff,
+            'notes' => $notes,
+            'closingNotes' => $notes,
+            'status' => 'CLOSED'
+        ]);
+        array_unshift($ws['closedShifts'], $closed);
+        $ws['closedShifts'] = array_slice($ws['closedShifts'], 0, 100);
+        $ws['activeShift'] = null;
+        dnSaveWorkspace($dataDir, $sub, $ws);
+        echo json_encode(['success' => true, 'shift' => $closed]);
+        exit();
+    }
+
+    // ----- PATIENTS & TREATMENTS -----
+    if ($action === 'create_patient') {
+        $name = trim((string)($body['name'] ?? ''));
+        $phone = trim((string)($body['phone'] ?? ''));
+        if ($name === '') {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'error' => 'Patient name is required.']);
+            exit();
+        }
+        $pat = [
+            'id' => 'pat_' . time() . '_' . rand(100, 999),
+            'patientCode' => 'PAT-' . rand(1000, 9999),
+            'name' => $name,
+            'phone' => $phone,
+            'age' => $body['age'] ?? '',
+            'gender' => $body['gender'] ?? 'Male',
+            'balance' => 0,
+            'createdAt' => date('c')
+        ];
+        array_unshift($ws['patients'], $pat);
+        dnSaveWorkspace($dataDir, $sub, $ws);
+        echo json_encode(['success' => true, 'patient' => $pat]);
+        exit();
+    }
+
+    if ($action === 'delete_patient') {
+        $patId = trim((string)($body['id'] ?? ($_GET['id'] ?? '')));
+        $ws['patients'] = array_values(array_filter($ws['patients'], function($p) use ($patId) {
+            return ($p['id'] ?? '') !== $patId;
+        }));
+        dnSaveWorkspace($dataDir, $sub, $ws);
+        echo json_encode(['success' => true, 'deletedId' => $patId]);
+        exit();
+    }
+
+    if ($action === 'create_treatment') {
+        $patId = trim((string)($body['patientId'] ?? ''));
+        $pat = null;
+        foreach ($ws['patients'] as $p) {
+            if (($p['id'] ?? '') === $patId) { $pat = $p; break; }
+        }
+        $totalCost = max(0, floatval($body['totalCost'] ?? 0));
+        $initialPaid = max(0, floatval($body['initialPaid'] ?? 0));
+        $rem = max(0, round($totalCost - $initialPaid, 2));
+        $invNo = 'INV-' . substr((string)time(), -4) . rand(10, 99);
+        $trId = 'tr_' . time() . '_' . rand(100, 999);
+        $patName = $pat ? $pat['name'] : ($body['patientName'] ?? 'Patient');
+        $patPhone = $pat ? ($pat['phone'] ?? '') : ($body['patientPhone'] ?? '');
+        $patCode = $pat ? ($pat['patientCode'] ?? 'PAT') : 'PAT';
+        $title = trim((string)($body['title'] ?? 'Clinical Treatment'));
+        $cashierName = trim((string)($body['cashierName'] ?? 'Receptionist POS'));
+        $payMethod = strtoupper((string)($body['paymentMethod'] ?? 'CASH'));
+
+        $tr = [
+            'id' => $trId,
+            'patientId' => $patId,
+            'patientName' => $patName,
+            'patientPhone' => $patPhone,
+            'patientCode' => $patCode,
+            'title' => $title,
+            'totalCost' => $totalCost,
+            'paidAmount' => $initialPaid,
+            'remainingBalance' => $rem,
+            'totalSessions' => max(1, intval($body['totalSessions'] ?? 1)),
+            'status' => ($rem <= 0 ? 'COMPLETED' : 'IN_PROGRESS'),
+            'sessions' => [[
+                'id' => 'ses_' . time(),
+                'sessionNumber' => 1,
+                'amountPaid' => $initialPaid,
+                'balanceAfter' => $rem,
+                'invoiceNumber' => $invNo,
+                'notes' => $body['notes'] ?? 'Initial session',
+                'date' => !empty($body['sessionDate']) ? $body['sessionDate'] : date('c')
+            ]],
+            'createdAt' => date('c')
+        ];
+        array_unshift($ws['treatments'], $tr);
+
+        $saleRecord = null;
+        $smsLog = null;
+        if ($initialPaid > 0) {
+            $saleId = 'sale_' . time() . '_' . rand(100, 999);
+            $saleRecord = [
+                'id' => $saleId,
+                'tenantId' => $ctx['tenantId'] ?: ('tenant_' . $sub),
+                'subdomain' => $sub,
+                'invoiceNumber' => $invNo,
+                'patientId' => $patId ?: 'pat_walkin',
+                'patientCode' => $patCode,
+                'patientName' => $patName,
+                'patientPhone' => $patPhone,
+                'cashierId' => $body['cashierId'] ?? 'u_staff',
+                'cashierName' => $cashierName,
+                'items' => [[
+                    'id' => $trId,
+                    'name' => $title . ' (Session #1)',
+                    'qty' => 1,
+                    'quantity' => 1,
+                    'unitPrice' => $initialPaid,
+                    'price' => $initialPaid,
+                    'subtotal' => $initialPaid,
+                    'type' => 'SESSION'
+                ]],
+                'subtotal' => $initialPaid,
+                'discountAmount' => 0,
+                'discount' => 0,
+                'discountApprovedBy' => null,
+                'netTotal' => $initialPaid,
+                'total' => $initialPaid,
+                'amountPaidToday' => $initialPaid,
+                'paidAmount' => $initialPaid,
+                'remainingLedgerBalance' => $rem,
+                'dueAmount' => $rem,
+                'paymentMethod' => $payMethod,
+                'orderType' => 'SESSION',
+                'treatmentId' => $trId,
+                'status' => 'COMPLETED',
+                'offlineQueued' => false,
+                'createdAt' => date('c')
+            ];
+            array_unshift($ws['sales'], $saleRecord);
+            $ws['sales'] = array_slice($ws['sales'], 0, 1000);
+
+            if (is_array($ws['activeShift'] ?? null)) {
+                $ws['activeShift']['totalSalesCount'] = intval($ws['activeShift']['totalSalesCount'] ?? 0) + 1;
+                if ($payMethod === 'CASH') {
+                    $ws['activeShift']['totalCashCollected'] = floatval($ws['activeShift']['totalCashCollected'] ?? 0) + $initialPaid;
+                } else {
+                    $ws['activeShift']['totalDigitalCollected'] = floatval($ws['activeShift']['totalDigitalCollected'] ?? 0) + $initialPaid;
+                }
+            }
+
+            $smsText = "Receipt {$invNo} ({$title} Session #1): Paid Rs. " . number_format($initialPaid) . ($rem > 0 ? ", Remaining Balance: Rs. " . number_format($rem) : ", Account Settled") . ". Thank you!";
+            $smsLog = [
+                'id' => 'sms_' . time() . '_' . rand(10, 99),
+                'to' => $patPhone,
+                'recipientPhone' => $patPhone,
+                'patientName' => $patName,
+                'message' => $smsText,
+                'status' => 'QUEUED',
+                'timestamp' => date('c'),
+                'createdAt' => date('c')
+            ];
+            array_unshift($ws['smsLogs'], $smsLog);
+            $ws['smsLogs'] = array_slice($ws['smsLogs'], 0, 200);
+
+            array_unshift($ws['auditLogs'], [
+                'id' => 'aud_' . time() . '_' . rand(10, 99),
+                'action' => 'TREATMENT_SESSION_PAID',
+                'receiptId' => $invNo,
+                'actor' => $cashierName,
+                'staffName' => $cashierName,
+                'staffId' => $body['cashierId'] ?? 'u_staff',
+                'approvingAdmin' => $cashierName,
+                'details' => "Created treatment '{$title}' for {$patName} • Session #1 Paid Rs. {$initialPaid} • Bal Rs. {$rem}",
+                'timestamp' => date('c'),
+                'createdAt' => date('c')
+            ]);
+            $ws['auditLogs'] = array_slice($ws['auditLogs'], 0, 300);
+
+            $payments = dnReadUnifiedJson($paymentsFile, 'payments.json', []);
+            array_unshift($payments, [
+                'id' => $saleId,
+                'tenantId' => $saleRecord['tenantId'],
+                'subdomain' => $sub,
+                'invoiceNumber' => $invNo,
+                'patientName' => $patName,
+                'amount' => $initialPaid,
+                'method' => $payMethod,
+                'status' => 'COMPLETED',
+                'createdAt' => $saleRecord['createdAt']
+            ]);
+            dnWriteJsonFile($paymentsFile, array_slice($payments, 0, 500));
+            syncToSecondaryDataDirs('payments.json', array_slice($payments, 0, 500));
+        }
+
+        dnSaveWorkspace($dataDir, $sub, $ws);
+        echo json_encode(['success' => true, 'treatment' => $tr, 'sale' => $saleRecord, 'smsLog' => $smsLog]);
+        exit();
+    }
+
+    if ($action === 'pay_treatment_session') {
+        $trId = trim((string)($body['id'] ?? ($_GET['id'] ?? '')));
+        $amt = max(0, floatval($body['amountPaid'] ?? 0));
+        $cashierName = trim((string)($body['cashierName'] ?? 'Receptionist POS'));
+        $payMethod = strtoupper((string)($body['paymentMethod'] ?? 'CASH'));
+        $invNo = 'INV-' . substr((string)time(), -4) . rand(10, 99);
+        $updated = null;
+        $sesNum = 1;
+        foreach ($ws['treatments'] as &$tr) {
+            if (($tr['id'] ?? '') === $trId) {
+                if (!isset($tr['sessions']) || !is_array($tr['sessions'])) $tr['sessions'] = [];
+                $sesNum = count($tr['sessions']) + 1;
+                $tr['paidAmount'] = floatval($tr['paidAmount'] ?? 0) + $amt;
+                $tr['remainingBalance'] = max(0, round(floatval($tr['totalCost'] ?? 0) - $tr['paidAmount'], 2));
+                $tr['status'] = ($tr['remainingBalance'] <= 0) ? 'COMPLETED' : 'IN_PROGRESS';
+                $tr['sessions'][] = [
+                    'id' => 'ses_' . time() . '_' . rand(10, 99),
+                    'sessionNumber' => $sesNum,
+                    'amountPaid' => $amt,
+                    'balanceAfter' => $tr['remainingBalance'],
+                    'invoiceNumber' => $invNo,
+                    'notes' => $body['notes'] ?? 'Follow-up session',
+                    'date' => !empty($body['sessionDate']) ? $body['sessionDate'] : date('c')
+                ];
+                $updated = $tr;
+                break;
+            }
+        }
+        unset($tr);
+        if (!$updated) {
+            http_response_code(404);
+            echo json_encode(['success' => false, 'error' => 'Treatment record not found.']);
+            exit();
+        }
+
+        $saleRecord = null;
+        $smsLog = null;
+        if ($amt > 0) {
+            $saleId = 'sale_' . time() . '_' . rand(100, 999);
+            $patName = $updated['patientName'] ?? 'Patient';
+            $patPhone = $updated['patientPhone'] ?? '';
+            $patCode = $updated['patientCode'] ?? 'PAT';
+            $rem = floatval($updated['remainingBalance'] ?? 0);
+            $saleRecord = [
+                'id' => $saleId,
+                'tenantId' => $ctx['tenantId'] ?: ('tenant_' . $sub),
+                'subdomain' => $sub,
+                'invoiceNumber' => $invNo,
+                'patientId' => $updated['patientId'] ?? 'pat_walkin',
+                'patientCode' => $patCode,
+                'patientName' => $patName,
+                'patientPhone' => $patPhone,
+                'cashierId' => $body['cashierId'] ?? 'u_staff',
+                'cashierName' => $cashierName,
+                'items' => [[
+                    'id' => $updated['id'],
+                    'name' => ($updated['title'] ?? 'Treatment') . ' (Session #' . $sesNum . ')',
+                    'qty' => 1,
+                    'quantity' => 1,
+                    'unitPrice' => $amt,
+                    'price' => $amt,
+                    'subtotal' => $amt,
+                    'type' => 'SESSION'
+                ]],
+                'subtotal' => $amt,
+                'discountAmount' => 0,
+                'discount' => 0,
+                'discountApprovedBy' => null,
+                'netTotal' => $amt,
+                'total' => $amt,
+                'amountPaidToday' => $amt,
+                'paidAmount' => $amt,
+                'remainingLedgerBalance' => $rem,
+                'dueAmount' => $rem,
+                'paymentMethod' => $payMethod,
+                'orderType' => 'SESSION',
+                'treatmentId' => $updated['id'],
+                'status' => 'COMPLETED',
+                'offlineQueued' => false,
+                'createdAt' => date('c')
+            ];
+            array_unshift($ws['sales'], $saleRecord);
+            $ws['sales'] = array_slice($ws['sales'], 0, 1000);
+
+            if (is_array($ws['activeShift'] ?? null)) {
+                $ws['activeShift']['totalSalesCount'] = intval($ws['activeShift']['totalSalesCount'] ?? 0) + 1;
+                if ($payMethod === 'CASH') {
+                    $ws['activeShift']['totalCashCollected'] = floatval($ws['activeShift']['totalCashCollected'] ?? 0) + $amt;
+                } else {
+                    $ws['activeShift']['totalDigitalCollected'] = floatval($ws['activeShift']['totalDigitalCollected'] ?? 0) + $amt;
+                }
+            }
+
+            $smsText = "Receipt {$invNo} ({$updated['title']} Session #{$sesNum}): Paid Rs. " . number_format($amt) . ($rem > 0 ? ", Remaining Balance: Rs. " . number_format($rem) : ", Account Settled") . ". Thank you!";
+            $smsLog = [
+                'id' => 'sms_' . time() . '_' . rand(10, 99),
+                'to' => $patPhone,
+                'recipientPhone' => $patPhone,
+                'patientName' => $patName,
+                'message' => $smsText,
+                'status' => 'QUEUED',
+                'timestamp' => date('c'),
+                'createdAt' => date('c')
+            ];
+            array_unshift($ws['smsLogs'], $smsLog);
+            $ws['smsLogs'] = array_slice($ws['smsLogs'], 0, 200);
+
+            array_unshift($ws['auditLogs'], [
+                'id' => 'aud_' . time() . '_' . rand(10, 99),
+                'action' => 'TREATMENT_SESSION_PAID',
+                'receiptId' => $invNo,
+                'actor' => $cashierName,
+                'staffName' => $cashierName,
+                'staffId' => $body['cashierId'] ?? 'u_staff',
+                'approvingAdmin' => $cashierName,
+                'details' => "Session #{$sesNum} Paid Rs. {$amt} for {$patName} ({$updated['title']}) • Bal After Rs. {$rem}",
+                'timestamp' => date('c'),
+                'createdAt' => date('c')
+            ]);
+            $ws['auditLogs'] = array_slice($ws['auditLogs'], 0, 300);
+
+            $payments = dnReadUnifiedJson($paymentsFile, 'payments.json', []);
+            array_unshift($payments, [
+                'id' => $saleId,
+                'tenantId' => $saleRecord['tenantId'],
+                'subdomain' => $sub,
+                'invoiceNumber' => $invNo,
+                'patientName' => $patName,
+                'amount' => $amt,
+                'method' => $payMethod,
+                'status' => 'COMPLETED',
+                'createdAt' => $saleRecord['createdAt']
+            ]);
+            dnWriteJsonFile($paymentsFile, array_slice($payments, 0, 500));
+            syncToSecondaryDataDirs('payments.json', array_slice($payments, 0, 500));
+        }
+
+        dnSaveWorkspace($dataDir, $sub, $ws);
+        echo json_encode(['success' => true, 'treatment' => $updated, 'sale' => $saleRecord, 'smsLog' => $smsLog]);
+        exit();
+    }
+
+    if ($action === 'delete_treatment') {
+        $trId = trim((string)($body['id'] ?? ($_GET['id'] ?? '')));
+        $ws['treatments'] = array_values(array_filter($ws['treatments'], function($tr) use ($trId) {
+            return ($tr['id'] ?? '') !== $trId;
+        }));
+        dnSaveWorkspace($dataDir, $sub, $ws);
+        echo json_encode(['success' => true, 'deletedId' => $trId]);
+        exit();
+    }
+
+    // ----- INVENTORY & TREATMENT CATALOG -----
+    if ($action === 'add_stock') {
+        $item = [
+            'id' => !empty($body['id']) ? $body['id'] : ('inv_' . time() . '_' . rand(10, 99)),
+            'tenantId' => $ctx['tenantId'] ?: ('tenant_' . $sub),
+            'subdomain' => $sub,
+            'barcode' => trim((string)($body['barcode'] ?? (string)rand(100000000, 999999999))),
+            'name' => trim((string)($body['name'] ?? 'Product')),
+            'category' => trim((string)($body['category'] ?? 'General')),
+            'supplier' => trim((string)($body['supplier'] ?? ($tenant['name'] ?? 'Supplier'))),
+            'quantity' => floatval($body['quantity'] ?? 0),
+            'minStockAlert' => floatval($body['minStockAlert'] ?? 10),
+            'purchasePrice' => floatval($body['purchasePrice'] ?? 0),
+            'sellingPrice' => floatval($body['sellingPrice'] ?? 0),
+            'imageUrl' => $body['imageUrl'] ?? '',
+            'description' => $body['description'] ?? '',
+            'unit' => $body['unit'] ?? 'Pcs',
+            'expiryDate' => $body['expiryDate'] ?? '',
+            'createdAt' => date('c')
+        ];
+        $ws['inventory'][] = $item;
+        dnSaveWorkspace($dataDir, $sub, $ws);
+        echo json_encode(['success' => true, 'item' => $item]);
+        exit();
+    }
+
+    if ($action === 'update_stock') {
+        $itemId = trim((string)($body['id'] ?? ($_GET['id'] ?? '')));
+        $updates = isset($body['updates']) && is_array($body['updates']) ? $body['updates'] : $body;
+        unset($updates['action'], $updates['subdomain'], $updates['tenantId']);
+        $updated = null;
+        foreach ($ws['inventory'] as &$inv) {
+            if (($inv['id'] ?? '') === $itemId) {
+                $inv = array_merge($inv, $updates);
+                $updated = $inv;
+                break;
+            }
+        }
+        unset($inv);
+        if (!$updated) {
+            $updated = array_merge(['id' => $itemId, 'subdomain' => $sub, 'createdAt' => date('c')], $updates);
+            $ws['inventory'][] = $updated;
+        }
+        dnSaveWorkspace($dataDir, $sub, $ws);
+        echo json_encode(['success' => true, 'item' => $updated]);
+        exit();
+    }
+
+    if ($action === 'delete_stock') {
+        $itemId = trim((string)($body['id'] ?? ($_GET['id'] ?? '')));
+        $ws['inventory'] = array_values(array_filter($ws['inventory'], function($inv) use ($itemId) {
+            return ($inv['id'] ?? '') !== $itemId;
+        }));
+        dnSaveWorkspace($dataDir, $sub, $ws);
+        echo json_encode(['success' => true, 'deletedId' => $itemId]);
+        exit();
+    }
+
+    if ($action === 'bulk_inventory') {
+        $items = isset($body['items']) && is_array($body['items']) ? $body['items'] : [];
+        foreach ($items as $idx => $row) {
+            $bCode = !empty($row['barcode']) ? $row['barcode'] : (string)(896400000 + rand(1000, 99999) + $idx);
+            $found = -1;
+            foreach ($ws['inventory'] as $i => $cur) {
+                if (($cur['barcode'] ?? '') === $bCode || strtolower((string)($cur['name'] ?? '')) === strtolower((string)($row['name'] ?? ''))) {
+                    $found = $i; break;
+                }
+            }
+            if ($found >= 0) {
+                $ws['inventory'][$found]['quantity'] = floatval($ws['inventory'][$found]['quantity'] ?? 0) + floatval($row['quantity'] ?? 50);
+            } else {
+                $ws['inventory'][] = [
+                    'id' => 'inv_' . time() . '_' . $idx . rand(10, 99),
+                    'tenantId' => $ctx['tenantId'] ?: ('tenant_' . $sub),
+                    'subdomain' => $sub,
+                    'barcode' => $bCode,
+                    'name' => trim((string)($row['name'] ?? 'Product')),
+                    'category' => $row['category'] ?? 'General',
+                    'supplier' => $row['supplier'] ?? ($tenant['name'] ?? 'Local Store'),
+                    'quantity' => floatval($row['quantity'] ?? 50),
+                    'minStockAlert' => floatval($row['minStockAlert'] ?? 10),
+                    'purchasePrice' => floatval($row['purchasePrice'] ?? 100),
+                    'sellingPrice' => floatval($row['sellingPrice'] ?? 150),
+                    'unit' => $row['unit'] ?? 'Pcs',
+                    'expiryDate' => $row['expiryDate'] ?? '2028-12-31',
+                    'createdAt' => date('c')
+                ];
+            }
+        }
+        dnSaveWorkspace($dataDir, $sub, $ws);
+        echo json_encode(['success' => true, 'count' => count($items)]);
+        exit();
+    }
+
+    if ($action === 'add_catalog_treatment') {
+        $cat = [
+            'id' => 'cat_' . time() . '_' . rand(10, 99),
+            'name' => trim((string)($body['name'] ?? '')),
+            'category' => trim((string)($body['category'] ?? 'Clinical Treatment')),
+            'defaultCost' => floatval($body['defaultCost'] ?? 5000),
+            'defaultSessions' => max(1, intval($body['defaultSessions'] ?? 1))
+        ];
+        $ws['treatmentCatalog'][] = $cat;
+        dnSaveWorkspace($dataDir, $sub, $ws);
+        echo json_encode(['success' => true, 'item' => $cat]);
+        exit();
+    }
+
+    if ($action === 'delete_catalog_treatment') {
+        $catId = trim((string)($body['id'] ?? ($_GET['id'] ?? '')));
+        $ws['treatmentCatalog'] = array_values(array_filter($ws['treatmentCatalog'], function($c) use ($catId) {
+            return ($c['id'] ?? '') !== $catId;
+        }));
+        dnSaveWorkspace($dataDir, $sub, $ws);
+        echo json_encode(['success' => true, 'deletedId' => $catId]);
+        exit();
+    }
+
+    if ($action === 'bulk_treatments') {
+        $items = isset($body['items']) && is_array($body['items']) ? $body['items'] : [];
+        foreach ($items as $idx => $row) {
+            $name = trim((string)($row['name'] ?? ''));
+            if ($name === '') continue;
+            $exists = false;
+            foreach ($ws['treatmentCatalog'] as $c) {
+                if (strtolower((string)($c['name'] ?? '')) === strtolower($name)) { $exists = true; break; }
+            }
+            if (!$exists) {
+                $ws['treatmentCatalog'][] = [
+                    'id' => 'cat_' . time() . '_' . $idx,
+                    'name' => $name,
+                    'category' => $row['category'] ?? 'Clinical Treatment',
+                    'defaultCost' => floatval($row['defaultCost'] ?? 5000),
+                    'defaultSessions' => max(1, intval($row['defaultSessions'] ?? 1))
+                ];
+            }
+        }
+        dnSaveWorkspace($dataDir, $sub, $ws);
+        echo json_encode(['success' => true]);
+        exit();
+    }
+
+    // ----- DISCOUNTS & REFUNDS -----
+    if ($action === 'verify_pin_discount') {
+        $pin = trim((string)($body['pin'] ?? ''));
+        $expectedPin = trim((string)($tenant['adminPin'] ?? '1234'));
+        $actor = $body['staffName'] ?? 'Staff Cashier';
+        $staffId = $body['staffId'] ?? 'u_staff';
+        $patName = $body['patientName'] ?? 'Customer';
+        $discAmt = floatval($body['discountAmount'] ?? 0);
+
+        if ($pin === '' || !hash_equals($expectedPin, $pin)) {
+            array_unshift($ws['auditLogs'], [
+                'id' => 'aud_' . time() . '_' . rand(10, 99),
+                'action' => 'DISCOUNT_PIN_FAILED',
+                'receiptId' => 'PIN-DENIED',
+                'actor' => $actor,
+                'staffName' => $actor,
+                'staffId' => $staffId,
+                'approvingAdmin' => 'DENIED (Invalid PIN)',
+                'details' => "Invalid 4-Digit Admin PIN attempt for Rs. {$discAmt} discount on {$patName}.",
+                'timestamp' => date('c'),
+                'createdAt' => date('c')
+            ]);
+            dnSaveWorkspace($dataDir, $sub, $ws);
+            http_response_code(403);
+            echo json_encode(['success' => false, 'error' => 'Invalid 4-Digit Admin PIN! Attempt logged in Audit Trail.']);
+            exit();
+        }
+
+        $rec = [
+            'id' => 'disc_' . time() . '_' . rand(10, 99),
+            'staffId' => $staffId,
+            'staffName' => $actor,
+            'patientName' => $patName,
+            'cartTotal' => floatval($body['cartTotal'] ?? 0),
+            'discountRequested' => $discAmt,
+            'reason' => $body['reason'] ?? 'Admin PIN Discount',
+            'status' => 'APPROVED',
+            'approvalMethod' => 'ADMIN_PIN',
+            'approvedBy' => '4-Digit Admin PIN Verified',
+            'invoiceNumber' => 'Pending',
+            'createdAt' => date('c')
+        ];
+        array_unshift($ws['discountRequests'], $rec);
+        array_unshift($ws['auditLogs'], [
+            'id' => 'aud_' . time() . '_' . rand(10, 99),
+            'action' => 'DISCOUNT_PIN_APPROVED',
+            'receiptId' => 'Pending',
+            'actor' => $actor,
+            'staffName' => $actor,
+            'staffId' => $staffId,
+            'approvingAdmin' => '4-Digit Admin PIN Verified',
+            'details' => "Rs. {$discAmt} discount unlocked via Admin PIN for {$rec['patientName']}.",
+            'timestamp' => date('c'),
+            'createdAt' => date('c')
+        ]);
+        dnSaveWorkspace($dataDir, $sub, $ws);
+        echo json_encode(['success' => true, 'approved' => true, 'approvalRecord' => $rec]);
+        exit();
+    }
+
+    if ($action === 'request_remote_discount') {
+        $req = [
+            'id' => 'dreq_' . time() . '_' . rand(10, 99),
+            'staffId' => $body['staffId'] ?? 'u_staff',
+            'staffName' => $body['staffName'] ?? 'Staff Cashier',
+            'patientName' => $body['patientName'] ?? 'Customer',
+            'cartTotal' => floatval($body['cartTotal'] ?? 0),
+            'discountRequested' => floatval($body['discountAmount'] ?? 0),
+            'reason' => $body['reason'] ?? 'Staff Discount Request',
+            'status' => 'PENDING',
+            'approvalMethod' => 'REMOTE_WEBSOCKET',
+            'invoiceNumber' => 'Pending',
+            'createdAt' => date('c')
+        ];
+        array_unshift($ws['discountRequests'], $req);
+        dnSaveWorkspace($dataDir, $sub, $ws);
+        echo json_encode(['success' => true, 'request' => $req]);
+        exit();
+    }
+
+    if ($action === 'respond_discount_request') {
+        $reqId = trim((string)($body['id'] ?? ($body['requestId'] ?? '')));
+        $decision = strtoupper(trim((string)($body['decision'] ?? 'REJECT')));
+        $adminName = $body['adminName'] ?? 'Store Admin';
+        $updated = null;
+        foreach ($ws['discountRequests'] as &$dr) {
+            if (($dr['id'] ?? '') === $reqId) {
+                $dr['status'] = ($decision === 'APPROVE' || $decision === 'APPROVED') ? 'APPROVED' : 'REJECTED';
+                $dr['approvedBy'] = $adminName;
+                $dr['approvalMethod'] = $dr['approvalMethod'] ?? 'REMOTE_WEBSOCKET';
+                $dr['invoiceNumber'] = $dr['invoiceNumber'] ?? 'Pending';
+                $dr['respondedAt'] = date('c');
+                $updated = $dr;
+                break;
+            }
+        }
+        unset($dr);
+        if ($updated) {
+            array_unshift($ws['auditLogs'], [
+                'id' => 'aud_' . time() . '_' . rand(10, 99),
+                'action' => 'REMOTE_DISCOUNT_' . $updated['status'],
+                'receiptId' => $updated['invoiceNumber'] ?? 'Pending',
+                'actor' => $adminName,
+                'staffName' => $updated['staffName'] ?? 'Staff Cashier',
+                'staffId' => $updated['staffId'] ?? 'u_staff',
+                'approvingAdmin' => $adminName,
+                'details' => "Rs. {$updated['discountRequested']} discount for {$updated['patientName']} marked {$updated['status']}.",
+                'timestamp' => date('c'),
+                'createdAt' => date('c')
+            ]);
+            dnSaveWorkspace($dataDir, $sub, $ws);
+        }
+        echo json_encode(['success' => true, 'request' => $updated]);
+        exit();
+    }
+
+    if ($action === 'refund_sale') {
+        $saleId = trim((string)($body['id'] ?? ($_GET['id'] ?? '')));
+        $role = strtoupper(trim((string)($body['role'] ?? 'STAFF')));
+        $pin = trim((string)($body['adminPin'] ?? ''));
+        $actor = $body['actorName'] ?? 'User';
+        $actorId = $body['actorId'] ?? ($body['staffId'] ?? 'u_staff');
+        $expectedPin = trim((string)($tenant['adminPin'] ?? '1234'));
+
+        $authorized = in_array($role, ['CLINIC_ADMIN', 'STORE_ADMIN', 'SUPER_ADMIN'], true) || ($pin !== '' && hash_equals($expectedPin, $pin));
+        if (!$authorized) {
+            array_unshift($ws['auditLogs'], [
+                'id' => 'aud_' . time() . '_' . rand(10, 99),
+                'action' => 'UNAUTHORIZED_REFUND_BLOCKED',
+                'receiptId' => $saleId,
+                'actor' => $actor,
+                'staffName' => $actor,
+                'staffId' => $actorId,
+                'approvingAdmin' => 'BLOCKED (Admin Required)',
+                'details' => "Blocked staff refund attempt on sale {$saleId} without Admin authority.",
+                'timestamp' => date('c'),
+                'createdAt' => date('c')
+            ]);
+            dnSaveWorkspace($dataDir, $sub, $ws);
+            http_response_code(403);
+            echo json_encode(['success' => false, 'error' => 'Only Store/Clinic Admin can void or refund completed receipts. Logged in Audit Trail.']);
+            exit();
+        }
+
+        $refundedSale = null;
+        foreach ($ws['sales'] as &$s) {
+            if (($s['id'] ?? '') === $saleId) {
+                if (strtoupper((string)($s['status'] ?? '')) === 'REFUNDED') {
+                    echo json_encode(['success' => true, 'sale' => $s]);
+                    exit();
+                }
+                $s['status'] = 'REFUNDED';
+                $s['refundedAt'] = date('c');
+                $s['refundedBy'] = $actor;
+                $refundedSale = $s;
+                // Restore non-session inventory quantities
+                foreach ($s['items'] ?? [] as $item) {
+                    if (strtoupper((string)($item['type'] ?? '')) === 'SESSION') continue;
+                    $qty = floatval($item['qty'] ?? ($item['quantity'] ?? 1));
+                    foreach ($ws['inventory'] as &$inv) {
+                        if ((!empty($item['id']) && ($inv['id'] ?? '') === $item['id']) ||
+                            (!empty($item['barcode']) && ($inv['barcode'] ?? '') === $item['barcode'])) {
+                            $inv['quantity'] = floatval($inv['quantity'] ?? 0) + $qty;
+                            break;
+                        }
+                    }
+                    unset($inv);
+                }
+                if (is_array($ws['activeShift'] ?? null)) {
+                    $paid = floatval($s['amountPaidToday'] ?? 0);
+                    if (strtoupper((string)($s['paymentMethod'] ?? 'CASH')) === 'CASH') {
+                        $ws['activeShift']['totalCashCollected'] = max(0, floatval($ws['activeShift']['totalCashCollected'] ?? 0) - $paid);
+                    } else {
+                        $ws['activeShift']['totalDigitalCollected'] = max(0, floatval($ws['activeShift']['totalDigitalCollected'] ?? 0) - $paid);
+                    }
+                }
                 break;
             }
         }
         unset($s);
-        writeJsonFile($staffFile, $allStaff);
-        syncToSecondaryDataDirs('staff.json', $allStaff);
-        echo json_encode(['success' => true, 'user' => $updatedUser]);
+
+        $invRef = $refundedSale['invoiceNumber'] ?? $saleId;
+        array_unshift($ws['auditLogs'], [
+            'id' => 'aud_' . time() . '_' . rand(10, 99),
+            'action' => 'SALE_REFUNDED',
+            'receiptId' => $invRef,
+            'actor' => $actor,
+            'staffName' => $refundedSale['cashierName'] ?? $actor,
+            'staffId' => $refundedSale['cashierId'] ?? $actorId,
+            'approvingAdmin' => $actor,
+            'details' => 'Refunded invoice ' . $invRef . ' and restored stock.',
+            'timestamp' => date('c'),
+            'createdAt' => date('c')
+        ]);
+        dnSaveWorkspace($dataDir, $sub, $ws);
+        echo json_encode(['success' => true, 'sale' => $refundedSale]);
         exit();
     }
 
-    $tenants = getUnifiedTenants($tenantsFile);
-    $effectivePlans = getEffectivePricingPlans($dataDir);
-    $updatedTenant = null;
-    foreach ($tenants as &$t) {
-        if ((!empty($tenantId) && ($t['id'] ?? '') === $tenantId) ||
-            (!empty($subdomain) && strtolower($t['subdomain'] ?? '') === $subdomain)) {
-            $profCredChanged = false;
-            if (!empty($newName)) $t['adminName'] = $newName;
-            if (!empty($newUsername) && $newUsername !== trim($t['adminUsername'] ?? '')) {
-                $t['adminUsername'] = $newUsername;
-                $profCredChanged = true;
-            }
-            if (!empty($newPass) && $newPass !== (string)($t['adminPassword'] ?? '')) {
-                $t['adminPassword'] = $newPass;
-                $profCredChanged = true;
-            }
-            if ($profCredChanged) {
-                $t['forceLogoutAt'] = intval(round(microtime(true) * 1000));
-            }
-            normalizeTenantState($t, $effectivePlans);
-            $updatedTenant = $t;
-            break;
-        }
+    if ($action === 'delete_sale') {
+        $saleId = trim((string)($body['id'] ?? ($_GET['id'] ?? '')));
+        $ws['sales'] = array_values(array_filter($ws['sales'], function($s) use ($saleId) {
+            return ($s['id'] ?? '') !== $saleId;
+        }));
+        dnSaveWorkspace($dataDir, $sub, $ws);
+        echo json_encode(['success' => true, 'deletedId' => $saleId]);
+        exit();
     }
-    unset($t);
-    if ($updatedTenant) {
-        writeJsonFile($tenantsFile, $tenants);
-        syncToSecondaryDataDirs('tenants.json', $tenants);
-    }
-    echo json_encode(['success' => true, 'tenant' => $updatedTenant]);
-    exit();
 }
 
-if ($action === 'forgot_password') {
-    $resets = readUnifiedJson($passwordResetsFile, 'password_resets.json', []);
-    $req = [
-        'id' => 'pr_' . time() . '_' . rand(100, 999),
-        'identifier' => trim($body['identifier'] ?? ''),
-        'tenantId' => trim($body['tenantId'] ?? ''),
-        'tenantName' => trim($body['tenantName'] ?? ''),
-        'status' => 'PENDING',
-        'createdAt' => date('c')
-    ];
-    array_unshift($resets, $req);
-    $resets = array_slice($resets, 0, 50);
-    writeJsonFile($passwordResetsFile, $resets);
-    syncToSecondaryDataDirs('password_resets.json', $resets);
-    echo json_encode(['success' => true, 'request' => $req]);
-    exit();
-}
-
-if ($action === 'resolve_password_reset') {
-    $reqId = trim($body['id'] ?? '');
-    $resets = readUnifiedJson($passwordResetsFile, 'password_resets.json', []);
-    foreach ($resets as &$r) {
-        if (($r['id'] ?? '') === $reqId) {
-            $r['status'] = strtoupper($body['status'] ?? ($body['decision'] ?? 'RESOLVED'));
-            $r['resolvedBy'] = $body['resolvedBy'] ?? 'Super Admin';
-            $r['resolvedAt'] = date('c');
-            break;
-        }
-    }
-    unset($r);
-    writeJsonFile($passwordResetsFile, $resets);
-    syncToSecondaryDataDirs('password_resets.json', $resets);
-    echo json_encode(['success' => true]);
-    exit();
-}
-
-// Default response
-echo json_encode(['status' => 'online', 'service' => 'DigitalsNova Cloud Sync Engine', 'time' => date('c')]);
+// Default status ping
+echo json_encode([
+    'status' => 'online',
+    'service' => 'DigitalsNova Cloud Sync Engine',
+    'version' => '20261111v21',
+    'time' => date('c')
+]);
 exit();

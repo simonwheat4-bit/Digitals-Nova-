@@ -1,17 +1,23 @@
 // DigitalsNova Enterprise POS Offline Service Worker & PWA Cache (Root Scope)
-const CACHE_NAME = 'digitalsnova-pos-v20-offline';
+const CACHE_NAME = 'digitalsnova-pos-v21-offline';
 const PRECACHE_ASSETS = [
   './portal/',
   './portal/index.html',
   './portal/manifest.json',
+  './favicon.ico',
+  './portal/favicon.ico',
   './portal/icon.svg',
   './portal/icon-192.png',
   './portal/icon-512.png',
   './portal/icon-maskable-512.png',
   './assets/index-DNv15Live.js',
-  './assets/index-DNv15Live.js?v=20261111v20',
+  './assets/index-DNv15Live.js?v=20261111v21',
   './assets/index-Db2yxC1M.css',
-  './assets/index-Db2yxC1M.css?v=20261111v20'
+  './assets/index-Db2yxC1M.css?v=20261111v21',
+  './portal/assets/index-DNv15Live.js',
+  './portal/assets/index-DNv15Live.js?v=20261111v21',
+  './portal/assets/index-Db2yxC1M.css',
+  './portal/assets/index-Db2yxC1M.css?v=20261111v21'
 ];
 
 function fetchWithTimeout(req, ms) {
@@ -57,7 +63,7 @@ self.addEventListener('activate', (event) => {
       );
     }).then(() => self.clients.claim()).then(() =>
       self.clients.matchAll({ includeUncontrolled: true, type: 'window' }).then((clients) => {
-        clients.forEach((client) => client.postMessage({ type: 'SW_UPDATED', version: 'v20' }));
+        clients.forEach((client) => client.postMessage({ type: 'SW_UPDATED', version: 'v21' }));
       })
     )
   );
@@ -127,8 +133,10 @@ self.addEventListener('fetch', (event) => {
         caches.match(req).then((m) =>
           m ||
           caches.match(req, { ignoreSearch: true }) ||
-          (req.mode === 'navigate' && url.pathname.startsWith('/portal') ? caches.match('./portal/index.html', { ignoreSearch: true }) : undefined)
-        )
+          (req.mode === 'navigate' && (url.pathname.startsWith('/portal') || /^\/(super-admin|admin)(\/|$)/.test(url.pathname))
+            ? caches.match('./portal/index.html', { ignoreSearch: true })
+            : undefined)
+        ).then((res) => res || new Response('Offline', { status: 503, statusText: 'Offline', headers: { 'Content-Type': 'text/plain' } }))
       )
     );
     return;
@@ -150,7 +158,9 @@ self.addEventListener('fetch', (event) => {
           caches.open(CACHE_NAME).then((cache) => cache.put(req, clone));
         }
         return res;
-      }).catch(() => caches.match(req, { ignoreSearch: true }));
+      }).catch(() =>
+        caches.match(req, { ignoreSearch: true }).then((m) => m || new Response('Offline', { status: 503, statusText: 'Offline', headers: { 'Content-Type': 'text/plain' } }))
+      );
     })
   );
 });

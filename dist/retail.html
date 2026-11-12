@@ -14,6 +14,7 @@
   <meta property="og:title" content="Retail Marts & General Stores — DigitalsNova Enterprise Cloud Retail POS">
   <meta property="og:description" content="Power high-volume supermarket & retail checkout with DigitalsNova. Multi-customer Hold Bill buffer, 1-click Z-Report cash drawer balancing, SKU inventory control, and thermal printer engine.">
   <link rel="manifest" href="/manifest.json">
+  <link rel="icon" href="/favicon.ico" sizes="any">
   <link rel="icon" type="image/svg+xml" href="/icon.svg">
   <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
   <link rel="apple-touch-icon" sizes="192x192" href="/icon-192.png">
@@ -448,7 +449,7 @@
         <button class="btn-saas-secondary" onclick="openDownloadAppModal()" style="padding: 9px 16px; font-size: 13px;">
           <span>📲</span> Download App
         </button>
-        <a href="/portal/?sector=RETAIL_MART" class="btn-saas-login" style="padding: 9px 18px; font-size: 13px; background: rgba(0, 229, 255, 0.08); border: 1px solid rgba(0, 229, 255, 0.45); color: #00e5ff; border-radius: 9999px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; text-decoration: none;">
+        <a href="/portal/?store=huzaifacondomstore&sector=RETAIL_MART" class="btn-saas-login" style="padding: 9px 18px; font-size: 13px; background: rgba(0, 229, 255, 0.08); border: 1px solid rgba(0, 229, 255, 0.45); color: #00e5ff; border-radius: 9999px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; text-decoration: none;">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
           Login
         </a>
@@ -459,6 +460,41 @@
       </div>
     </div>
   </header>
+
+  <!-- Mobile Navigation Drawer -->
+  <div class="mobile-overlay"></div>
+  <aside class="mobile-nav-drawer" aria-label="Mobile Navigation Drawer">
+    <div>
+      <div class="drawer-header">
+        <a href="index.html" class="brand-logo">
+          <div class="logo-badge"><div class="logo-inner">DS</div></div>
+          <div class="brand-text"><h1 style="font-size: 16px;">DigitalSnove</h1></div>
+        </a>
+        <button class="drawer-close-btn" aria-label="Close menu">&times;</button>
+      </div>
+      <nav class="drawer-nav">
+        <a href="index.html">Home</a>
+        <a href="cloud-pos-saas.html" class="active" style="color: #00e5ff;">Cloud POS &amp; SaaS Portal</a>
+        <a href="#features" onclick="closeSectorDrawer()">Features</a>
+        <a href="#pricing" onclick="closeSectorDrawer()">Pricing</a>
+        <a href="services.html">All Agency Services</a>
+        <a href="about.html">About Us</a>
+        <a href="contact.html">Contact Us</a>
+      </nav>
+    </div>
+    <div style="padding: 20px 0; display: flex; flex-direction: column; gap: 10px;">
+      <button class="btn-saas-secondary" onclick="closeSectorDrawer(); openDownloadAppModal();" style="width: 100%; justify-content: center; padding: 12px;">
+        <span>📲</span> Download App
+      </button>
+      <a href="/portal/?store=huzaifacondomstore&sector=RETAIL_MART" class="btn-saas-login" onclick="closeSectorDrawer()" style="width: 100%; justify-content: center; padding: 12px; background: rgba(0, 229, 255, 0.1); border: 1px solid #00e5ff; color: #00e5ff; border-radius: 10px; font-weight: 700; display: flex; align-items: center; gap: 8px; font-size: 14px; text-decoration: none; box-sizing: border-box;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+        Login to Portal
+      </a>
+      <button class="btn-saas-primary" onclick="closeSectorDrawer(); openTrialModal('Retail Mart / General Store', 'TRIAL_3_DAYS');" style="width: 100%; justify-content: center;">
+        Start 3-Day Free Trial &rarr;
+      </button>
+    </div>
+  </aside>
 
   <!-- SECTOR HERO SECTION -->
   <section class="sector-hero">
@@ -860,7 +896,7 @@
         </a>
 
         <!-- Option 3: Open Online/Offline Software Directly -->
-        <a href="/portal/?sector=RETAIL_MART" class="download-card-opt">
+        <a href="/portal/?store=huzaifacondomstore&sector=RETAIL_MART" class="download-card-opt">
           <div>
             <div style="font-size: 24px; margin-bottom: 8px;">🌐</div>
             <h4 style="color: #fff; font-size: 15px; font-weight: 800; margin: 0 0 4px;">Open Software Right Now</h4>
@@ -875,7 +911,7 @@
         </a>
 
         <!-- Option 4: Mobile & Tablet App (Android Chrome WebAPK / iPhone Safari) -->
-        <a href="/portal/?sector=RETAIL_MART&action=install" class="download-card-opt" onclick="trackDownload('MOBILE_APP')">
+        <a href="/portal/?store=huzaifacondomstore&sector=RETAIL_MART&action=install" class="download-card-opt" onclick="trackDownload('MOBILE_APP')">
           <div>
             <div style="font-size: 24px; margin-bottom: 8px;">📱</div>
             <h4 style="color: #fff; font-size: 15px; font-weight: 800; margin: 0 0 4px;">Android &amp; iPhone App</h4>
@@ -912,6 +948,8 @@
           Instantly provision your isolated cloud tenant and 16-character license key. No credit card required.
         </p>
 
+        <div id="obErrorMsg" style="display: none; background: rgba(239,68,68,0.18); border: 1.5px solid #ef4444; color: #fca5a5; font-size: 13px; font-weight: 700; padding: 12px 14px; border-radius: 10px; margin-bottom: 14px; text-align: center;"></div>
+
         <form id="onboardingForm" onsubmit="handleOnboardingSubmit(event)">
           <div style="margin-bottom: 14px;">
             <label style="display: block; font-size: 12px; font-weight: 700; color: #cbd5e1; margin-bottom: 6px;">Full Name *</label>
@@ -931,11 +969,10 @@
             <div>
               <label style="display: block; font-size: 12px; font-weight: 700; color: #cbd5e1; margin-bottom: 6px;">Industry Vertical *</label>
               <select id="obType" style="width: 100%; padding: 12px 14px; background: #04091a; border: 1px solid #1c2b54; border-radius: 10px; color: #fff; font-size: 13px; outline: none; box-sizing: border-box;">
-                <option value="Retail Mart / General Store" selected>Retail Mart / General Store</option>
                 <option value="Clinic / Hospital">Clinic &amp; Hospital (HMS)</option>
                 <option value="Restaurants, Cafes & Food Outlets">Restaurants, Cafes &amp; Food Outlets</option>
                 <option value="Pharmacy & Medical Store">Pharmacy &amp; Medical Store</option>
-                <option value="Retail Mart / General Store">Retail Mart &amp; General Store</option>
+                <option value="Retail Mart / General Store" selected>Retail Mart &amp; General Store</option>
               </select>
             </div>
           </div>
@@ -1039,7 +1076,7 @@
           }
         } catch(e) {}
       }
-      window.location.href = '/portal/?sector=RETAIL_MART&action=install';
+      window.location.href = '/portal/?store=huzaifacondomstore&sector=RETAIL_MART&action=install&desktop=1';
     }
 
     function handleWindowsBatDownload(fileName) {
@@ -1156,6 +1193,8 @@
         modal.dataset.selectedBilling = currentPricingCycle || 'TRIAL_3_DAYS';
         document.getElementById('modalFormView').style.display = 'block';
         document.getElementById('modalSuccessView').style.display = 'none';
+        const obErr = document.getElementById('obErrorMsg');
+        if (obErr) { obErr.style.display = 'none'; obErr.innerText = ''; }
         const btn = document.getElementById('btnSubmitOnboarding');
         if (btn) { btn.disabled = false; btn.innerText = 'Activate Cloud Portal & Generate License →'; }
         const typeSelect = document.getElementById('obType');
@@ -1178,7 +1217,27 @@
       if (modal) modal.classList.remove('open');
     }
 
-    // Close modals on backdrop click or Escape key
+    function closeSectorDrawer() {
+      const drawer = document.querySelector('.mobile-nav-drawer');
+      const overlay = document.querySelector('.mobile-overlay');
+      if (drawer) drawer.classList.remove('open');
+      if (overlay) overlay.classList.remove('active');
+    }
+
+    const sectorMobileToggle = document.querySelector('.mobile-toggle');
+    const sectorDrawer = document.querySelector('.mobile-nav-drawer');
+    const sectorOverlay = document.querySelector('.mobile-overlay');
+    const sectorCloseBtn = document.querySelector('.drawer-close-btn');
+    if (sectorMobileToggle && sectorDrawer && sectorOverlay) {
+      sectorMobileToggle.addEventListener('click', () => {
+        sectorDrawer.classList.add('open');
+        sectorOverlay.classList.add('active');
+      });
+    }
+    if (sectorCloseBtn) sectorCloseBtn.addEventListener('click', closeSectorDrawer);
+    if (sectorOverlay) sectorOverlay.addEventListener('click', closeSectorDrawer);
+
+    // Close modals & drawer on backdrop click or Escape key
     document.querySelectorAll('.saas-modal-backdrop').forEach(modal => {
       modal.addEventListener('click', (e) => {
         if (e.target === modal) modal.classList.remove('open');
@@ -1188,6 +1247,7 @@
       if (e.key === 'Escape') {
         closeDownloadAppModal();
         closeTrialModal();
+        closeSectorDrawer();
       }
     });
 
@@ -1195,6 +1255,21 @@
     async function handleOnboardingSubmit(e) {
       e.preventDefault();
       const btn = document.getElementById('btnSubmitOnboarding');
+      const obErr = document.getElementById('obErrorMsg');
+      if (obErr) { obErr.style.display = 'none'; obErr.innerText = ''; }
+      const showObErr = (msg) => {
+        if (obErr) {
+          obErr.innerText = msg;
+          obErr.style.display = 'block';
+        } else {
+          alert(msg);
+        }
+        if (btn) {
+          btn.disabled = false;
+          btn.innerText = 'Activate Cloud Portal & Generate License →';
+        }
+      };
+
       btn.disabled = true;
       btn.innerText = 'Provisioning Cloud Store...';
 
@@ -1206,6 +1281,23 @@
       const password = document.getElementById('obPass').value;
 
       const sub = business.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 16) || ('store' + Math.floor(Math.random() * 8999 + 1000));
+      const cleanPhone = phone.replace(/[^0-9]/g, '');
+      const cleanEmail = email.toLowerCase().trim();
+
+      let existingLocal = [], deletedIds = [];
+      try { existingLocal = JSON.parse(localStorage.getItem('digitalsnova_registered_tenants') || '[]'); } catch {}
+      try { deletedIds = JSON.parse(localStorage.getItem('digitalsnova_deleted_tenant_ids') || '[]'); } catch {}
+      existingLocal = existingLocal.filter(t => !deletedIds.includes(t.id) && !deletedIds.includes((t.subdomain || '').toLowerCase()));
+      if (existingLocal.some(t => {
+        const tP = (t.phone || '').replace(/[^0-9]/g, '');
+        const tE = (t.email || t.adminUser?.email || '').trim().toLowerCase();
+        const tS = (t.subdomain || '').toLowerCase();
+        return (cleanPhone && tP && cleanPhone === tP) || (cleanEmail && tE && cleanEmail === tE) || (sub && tS && sub === tS);
+      })) {
+        showObErr('An account with this email, phone, or store subdomain already exists. Please sign in instead.');
+        return;
+      }
+
       const key = 'DNOV-' + Math.floor(1000 + Math.random()*9000) + '-' + Math.floor(1000 + Math.random()*9000) + '-' + Math.floor(1000 + Math.random()*9000);
 
       let sectorCode = 'RETAIL_MART';
@@ -1235,7 +1327,7 @@
         id: 'tenant_' + sub,
         name: business,
         subdomain: sub,
-        domain: sub + '.digitalsnova.com',
+        domain: 'digitalsnova.com/portal/?store=' + sub,
         businessType: type,
         business_type: type,
         vertical: sectorCode,
@@ -1283,46 +1375,62 @@
         }
       };
 
+      // Server-first duplicate/reserved validation BEFORE persisting locally or redirecting
+      let srvTenant = null;
       try {
-        const stored = JSON.parse(localStorage.getItem('digitalsnova_registered_tenants') || '[]').filter(t => t.subdomain !== sub && t.id !== newTenant.id);
-        stored.push(newTenant);
+        let res = await fetch('/api/sync.php?action=register_tenant', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newTenant)
+        });
+        if (res.status === 404) {
+          res = await fetch('./api/sync.php?action=register_tenant', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(newTenant)
+          });
+        }
+        const srvData = await res.json().catch(() => null);
+        if (!res.ok || !srvData || srvData.success === false) {
+          showObErr((srvData && srvData.error) || 'Account registration rejected (HTTP ' + res.status + '). Please verify details.');
+          return;
+        }
+        if (srvData.tenant) srvTenant = srvData.tenant;
+      } catch(netErr) {
+        console.warn('Offline fallback registration:', netErr);
+      }
+
+      const finalTenant = srvTenant || newTenant;
+      const finalSub = (finalTenant.subdomain || sub).toLowerCase();
+      try {
+        const stored = JSON.parse(localStorage.getItem('digitalsnova_registered_tenants') || '[]').filter(t => (t.subdomain || '').toLowerCase() !== finalSub && t.id !== finalTenant.id);
+        stored.push(finalTenant);
         localStorage.setItem('digitalsnova_registered_tenants', JSON.stringify(stored));
-        localStorage.setItem('digitalsnova_subdomain', sub);
+        localStorage.setItem('digitalsnova_subdomain', finalSub);
         localStorage.setItem('digitalsnova_active_sector', sectorCode);
         localStorage.setItem('digitalsnova_auth_user', JSON.stringify({
-          id: 'u_' + sub,
-          tenantId: newTenant.id,
+          id: 'u_' + finalSub,
+          tenantId: finalTenant.id,
           name: name,
           tenantName: business,
-          username: 'admin.' + sub,
+          username: (finalTenant.adminUsername || ('admin.' + finalSub)),
           role: adminRole,
-          subdomain: sub,
-          vertical: sectorCode
+          subdomain: finalSub,
+          vertical: sectorCode,
+          loggedInAt: Date.now(),
+          tenantForceLogoutAt: Number(finalTenant.forceLogoutAt || 0)
         }));
       } catch(err) {}
 
-      try {
-        await Promise.race([
-          fetch('/api/sync.php?action=register_tenant', {
-            method: 'POST',
-            keepalive: true,
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(newTenant)
-          }).catch(() => fetch('./api/sync.php?action=register_tenant', {
-            method: 'POST',
-            keepalive: true,
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(newTenant)
-          })),
-          new Promise(r => setTimeout(r, 4000))
-        ]);
-      } catch(err) {}
-
+      if (btn) {
+        btn.disabled = false;
+        btn.innerText = 'Activate Cloud Portal & Generate License →';
+      }
       document.getElementById('modalFormView').style.display = 'none';
       document.getElementById('modalSuccessView').style.display = 'block';
       document.getElementById('resLicense').innerText = key;
-      document.getElementById('resPortalUrl').innerText = 'https://digitalsnova.com/portal/?store=' + sub + '&sector=' + sectorCode;
-      document.getElementById('btnGoToStore').href = '/portal/?store=' + encodeURIComponent(sub) + '&sector=' + encodeURIComponent(sectorCode);
+      document.getElementById('resPortalUrl').innerText = 'https://digitalsnova.com/portal/?store=' + finalSub + '&sector=' + sectorCode;
+      document.getElementById('btnGoToStore').href = '/portal/?store=' + encodeURIComponent(finalSub) + '&sector=' + encodeURIComponent(sectorCode);
     }
   </script>
 </body>

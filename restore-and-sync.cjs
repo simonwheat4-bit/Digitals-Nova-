@@ -38,12 +38,6 @@ if (fs.existsSync('netlify-live.html')) {
   console.log('✓ Restored root index.html from agency-home.html');
 }
 
-// Keep root and portal PHP sync engines identical before copying
-if (fs.existsSync('api/sync.php') && fs.existsSync('portal/api')) {
-  fs.copyFileSync('api/sync.php', 'portal/api/sync.php');
-  console.log('✓ Mirrored api/sync.php -> portal/api/sync.php');
-}
-
 console.log('--- 2. Synchronizing to digitalsnove-hostinger-cpanel, public, and dist ---');
 const targetDirectories = ['digitalsnove-hostinger-cpanel', 'public', 'dist'];
 
@@ -71,7 +65,7 @@ targetDirectories.forEach(destDir => {
   if (fs.existsSync('manifest.json')) {
     fs.copyFileSync('manifest.json', path.join(destDir, 'manifest.json'));
   }
-  ['icon.svg', 'icon-192.png', 'icon-512.png', 'icon-maskable-512.png'].forEach(iconFile => {
+  ['icon.svg', 'icon-192.png', 'icon-512.png', 'icon-maskable-512.png', 'favicon.ico'].forEach(iconFile => {
     if (fs.existsSync(iconFile)) {
       fs.copyFileSync(iconFile, path.join(destDir, iconFile));
     }

@@ -6,7 +6,7 @@ echo   DIGITALSNOVA CLINIC ^& HOSPITAL HMS
 echo   Windows Desktop App Shortcut Installer ^& Standalone POS Launcher
 echo ==============================================================================
 echo.
-set "DN_URL=https://digitalsnova.com/portal/?sector=CLINIC_HMS"
+set "DN_URL=https://digitalsnova.com/portal/?store=clinic&sector=CLINIC_HMS&desktop=1"
 set "DN_LINK_NAME=Clinic HMS - DigitalsNova POS.lnk"
 set "DN_DESC=Hospital & Clinic Management System - OPD Tokens, EMR, Doctor Commissions."
 set "DN_BROWSER="
