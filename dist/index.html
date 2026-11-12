@@ -2556,6 +2556,152 @@ textarea.form-control {
 </head>
 <body>
 
+  <!-- TOP GLOBAL ANNOUNCEMENT BANNER -->
+  <aside id="dn-global-announcement" class="dn-announcement-bar" role="region" aria-label="Announcement">
+    <div class="dn-announcement-container">
+      <div class="dn-announcement-content">
+        <span class="dn-announcement-badge">⚡ ANNOUNCEMENT</span>
+        <span class="dn-announcement-text">DigitalSnove Enterprise Cloud POS &amp; HMS 2026: Single-Tenant Desktop Isolation &amp; Offline Auto-Sync is now Live!</span>
+      </div>
+      <div class="dn-announcement-actions">
+        <a href="https://digitalsnova.com" target="_blank" rel="noopener noreferrer" class="dn-announcement-btn" title="Open official DigitalsNova website in new tab">
+          Visit DigitalsNova.com
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+        </a>
+        <button type="button" id="dn-close-announcement" class="dn-announcement-close" aria-label="Dismiss announcement" title="Dismiss announcement">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+    </div>
+  </aside>
+  <style>
+    .dn-announcement-bar {
+      background: linear-gradient(90deg, #020617 0%, #0f172a 35%, #1e1b4b 70%, #0f172a 100%);
+      color: #f8fafc;
+      border-bottom: 1px solid rgba(59, 130, 246, 0.25);
+      position: relative;
+      z-index: 1000;
+      font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      font-size: 13px;
+      line-height: 1.4;
+      display: block;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.35);
+    }
+    .dn-announcement-container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 8px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .dn-announcement-content {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex: 1;
+      min-width: 260px;
+    }
+    .dn-announcement-badge {
+      display: inline-flex;
+      align-items: center;
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      color: #020617;
+      font-size: 10px;
+      font-weight: 900;
+      letter-spacing: 0.05em;
+      padding: 2px 8px;
+      border-radius: 9999px;
+      white-space: nowrap;
+      box-shadow: 0 1px 4px rgba(245, 158, 11, 0.35);
+    }
+    .dn-announcement-text {
+      font-weight: 600;
+      color: #e2e8f0;
+      letter-spacing: -0.01em;
+    }
+    .dn-announcement-actions {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+    .dn-announcement-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(59, 130, 246, 0.18);
+      color: #93c5fd;
+      border: 1px solid rgba(147, 197, 253, 0.35);
+      padding: 5px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+    .dn-announcement-btn:hover {
+      background: #2563eb;
+      color: #ffffff;
+      border-color: #3b82f6;
+      box-shadow: 0 2px 8px rgba(37, 99, 235, 0.4);
+      transform: translateY(-1px);
+    }
+    .dn-announcement-close {
+      background: transparent;
+      border: none;
+      color: #94a3b8;
+      width: 24px;
+      height: 24px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      padding: 0;
+    }
+    .dn-announcement-close:hover {
+      color: #ffffff;
+      background: rgba(255, 255, 255, 0.12);
+    }
+    @media (max-width: 640px) {
+      .dn-announcement-container {
+        padding: 6px 12px;
+      }
+      .dn-announcement-text {
+        font-size: 11px;
+      }
+      .dn-announcement-btn {
+        padding: 3px 8px;
+        font-size: 11px;
+      }
+    }
+  </style>
+  <script>
+    (function() {
+      try {
+        var banner = document.getElementById('dn-global-announcement');
+        if (!banner) return;
+        var dismissedKey = 'dn_announcement_dismissed_v21';
+        if (localStorage.getItem(dismissedKey) === 'true') {
+          banner.style.display = 'none';
+        }
+        var closeBtn = document.getElementById('dn-close-announcement');
+        if (closeBtn) {
+          closeBtn.addEventListener('click', function() {
+            banner.style.display = 'none';
+            try { localStorage.setItem(dismissedKey, 'true'); } catch(e) {}
+          });
+        }
+      } catch(e) {}
+    })();
+  </script>
+
+
   <!-- HEADER & NAVIGATION BAR (With Mega Menu) -->
   <header class="site-header">
     <div class="container nav-wrapper">
