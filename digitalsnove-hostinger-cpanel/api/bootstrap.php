@@ -628,7 +628,7 @@ function dnDeleteWorkspace($dataDir, $subdomain) {
     if (file_exists($p)) @unlink($p);
 }
 
-function dnSendGmailSmtp($toEmail, $subject, $htmlBody, $senderName = 'DigitalsNova Team') {
+function dnSendGmailSmtp($toEmail, $subject, $htmlBody, $senderName = 'DigitalsNova Official') {
     if (getenv('DIGITALSNOVA_SKIP_SMTP') === '1') {
         return true;
     }
@@ -636,6 +636,65 @@ function dnSendGmailSmtp($toEmail, $subject, $htmlBody, $senderName = 'DigitalsN
     $smtpPort = 465;
     $smtpUser = 'digitalsnovaofficial@gmail.com';
     $smtpPass = 'rfnygyzvohahoqde';
+
+    // 1. Build clean plain-text fallback for anti-spam deliverability
+    $cleanPlainText = strip_tags(preg_replace([
+        '/<style[^>]*>.*?<\/style>/is',
+        '/<script[^>]*>.*?<\/script>/is',
+        '/<br\s*\/?>/i',
+        '/<\/p>/i',
+        '/<\/tr>/i',
+        '/<\/div>/i',
+        '/<a[^>]+href=["\']([^"\']+)["\'][^>]*>(.*?)<\/a>/i'
+    ], [
+        '',
+        '',
+        "\r\n",
+        "\r\n\r\n",
+        "\r\n",
+        "\r\n",
+        '$2 ($1)'
+    ], $htmlBody));
+    $cleanPlainText = trim(html_entity_decode($cleanPlainText, ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+    if ($cleanPlainText === '') {
+        $cleanPlainText = $subject . "\r\nPlease view this email in an HTML-compatible client.";
+    }
+
+    // 2. Strict anti-spam headers and multipart/alternative MIME envelope
+    $boundary = "==_DigitalsNova_MIME_Boundary_" . md5(uniqid((string)time(), true));
+    $encodedSubject = '=?UTF-8?B?' . base64_encode($subject) . '?=';
+    $encodedSender = '=?UTF-8?B?' . base64_encode($senderName) . '?=';
+    $messageId = '<' . time() . '.' . bin2hex(random_bytes(8)) . '@digitalsnova.com>';
+    $dateHeader = date('r');
+
+    $headers = [
+        'MIME-Version: 1.0',
+        'From: ' . $encodedSender . ' <' . $smtpUser . '>',
+        'Reply-To: ' . $encodedSender . ' <' . $smtpUser . '>',
+        'Return-Path: <' . $smtpUser . '>',
+        'Sender: <' . $smtpUser . '>',
+        'To: <' . $toEmail . '>',
+        'Date: ' . $dateHeader,
+        'Subject: ' . $encodedSubject,
+        'Message-ID: ' . $messageId,
+        'Auto-Submitted: auto-generated',
+        'X-Mailer: DigitalsNova-Cloud-Engine/2.0',
+        'X-Auto-Response-Suppress: All',
+        'Content-Type: multipart/alternative; boundary="' . $boundary . '"'
+    ];
+
+    $bodyParts = [];
+    $bodyParts[] = "--" . $boundary;
+    $bodyParts[] = "Content-Type: text/plain; charset=UTF-8";
+    $bodyParts[] = "Content-Transfer-Encoding: 8bit\r\n";
+    $bodyParts[] = $cleanPlainText . "\r\n";
+    $bodyParts[] = "--" . $boundary;
+    $bodyParts[] = "Content-Type: text/html; charset=UTF-8";
+    $bodyParts[] = "Content-Transfer-Encoding: 8bit\r\n";
+    $bodyParts[] = $htmlBody . "\r\n";
+    $bodyParts[] = "--" . $boundary . "--";
+
+    $multipartPayload = implode("\r\n", $bodyParts);
 
     $context = stream_context_create([
         'ssl' => [
@@ -647,13 +706,7 @@ function dnSendGmailSmtp($toEmail, $subject, $htmlBody, $senderName = 'DigitalsN
 
     $socket = @stream_socket_client($smtpHost . ':' . $smtpPort, $errno, $errstr, 12, STREAM_CLIENT_CONNECT, $context);
     if (!$socket) {
-        $headers = [
-            'MIME-Version: 1.0',
-            'Content-type: text/html; charset=utf-8',
-            'From: ' . $senderName . ' <' . $smtpUser . '>',
-            'Reply-To: ' . $smtpUser
-        ];
-        return @mail($toEmail, $subject, $htmlBody, implode("\r\n", $headers));
+        return @mail($toEmail, $subject, $multipartPayload, implode("\r\n", $headers));
     }
 
     stream_set_timeout($socket, 12);
@@ -686,28 +739,12 @@ function dnSendGmailSmtp($toEmail, $subject, $htmlBody, $senderName = 'DigitalsN
     $send($socket, 'DATA');
     if (!$read($socket, 354)) { fclose($socket); return false; }
 
-    $encodedSubject = '=?UTF-8?B?' . base64_encode($subject) . '?=';
-    $encodedSender = '=?UTF-8?B?' . base64_encode($senderName) . '?=';
-    $messageId = '<' . time() . '.' . bin2hex(random_bytes(8)) . '@digitalsnova.com>';
-
-    $headers = [
-        'MIME-Version: 1.0',
-        'Content-Type: text/html; charset=UTF-8',
-        'Content-Transfer-Encoding: 8bit',
-        'From: ' . $encodedSender . ' <' . $smtpUser . '>',
-        'Reply-To: ' . $smtpUser,
-        'To: <' . $toEmail . '>',
-        'Date: ' . date('r'),
-        'Message-ID: ' . $messageId,
-        'Subject: ' . $encodedSubject,
-        'X-Mailer: DigitalsNova-Gmail-SMTP',
-        'X-Priority: 1 (Highest)'
-    ];
-
-    $payload = implode("\r\n", $headers) . "\r\n\r\n" . $htmlBody . "\r\n.";
+    $payload = implode("\r\n", $headers) . "\r\n\r\n" . $multipartPayload . "\r\n.";
     $send($socket, $payload);
     $sent = $read($socket, 250);
     $send($socket, 'QUIT');
     fclose($socket);
     return $sent;
 }
+
+
