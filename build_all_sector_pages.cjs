@@ -830,7 +830,7 @@ function generateSectorPageHtml(data) {
         <button class="btn-saas-secondary" onclick="openDownloadAppModal()" style="padding: 9px 16px; font-size: 13px;">
           <span>📲</span> Download App
         </button>
-        <a href="/portal/?store=${data.store}&sector=${data.sectorKey}" class="btn-saas-login" style="padding: 9px 18px; font-size: 13px; background: rgba(0, 229, 255, 0.08); border: 1px solid rgba(0, 229, 255, 0.45); color: #00e5ff; border-radius: 9999px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; text-decoration: none;">
+        <a href="/portal/?sector=${data.sectorKey}" class="btn-saas-login" style="padding: 9px 18px; font-size: 13px; background: rgba(0, 229, 255, 0.08); border: 1px solid rgba(0, 229, 255, 0.45); color: #00e5ff; border-radius: 9999px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; text-decoration: none;">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
           Login
         </a>
@@ -867,7 +867,7 @@ function generateSectorPageHtml(data) {
       <button class="btn-saas-secondary" onclick="closeSectorDrawer(); openDownloadAppModal();" style="width: 100%; justify-content: center; padding: 12px;">
         <span>📲</span> Download App
       </button>
-      <a href="/portal/?store=${data.store}&sector=${data.sectorKey}" class="btn-saas-login" onclick="closeSectorDrawer()" style="width: 100%; justify-content: center; padding: 12px; background: rgba(0, 229, 255, 0.1); border: 1px solid #00e5ff; color: #00e5ff; border-radius: 10px; font-weight: 700; display: flex; align-items: center; gap: 8px; font-size: 14px; text-decoration: none; box-sizing: border-box;">
+      <a href="/portal/?sector=${data.sectorKey}" class="btn-saas-login" onclick="closeSectorDrawer()" style="width: 100%; justify-content: center; padding: 12px; background: rgba(0, 229, 255, 0.1); border: 1px solid #00e5ff; color: #00e5ff; border-radius: 10px; font-weight: 700; display: flex; align-items: center; gap: 8px; font-size: 14px; text-decoration: none; box-sizing: border-box;">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
         Login to Portal
       </a>
@@ -1222,7 +1222,7 @@ function generateSectorPageHtml(data) {
         </a>
 
         <!-- Option 3: Open Online/Offline Software Directly -->
-        <a href="/portal/?store=${data.store}&sector=${data.sectorKey}" class="download-card-opt">
+        <a href="/portal/?sector=${data.sectorKey}&mode=register" class="download-card-opt">
           <div>
             <div style="font-size: 24px; margin-bottom: 8px;">🌐</div>
             <h4 style="color: #fff; font-size: 15px; font-weight: 800; margin: 0 0 4px;">Open Software Right Now</h4>
@@ -1237,7 +1237,7 @@ function generateSectorPageHtml(data) {
         </a>
 
         <!-- Option 4: Mobile & Tablet App (Android Chrome WebAPK / iPhone Safari) -->
-        <a href="/portal/?store=${data.store}&sector=${data.sectorKey}&action=install" class="download-card-opt" onclick="trackDownload('MOBILE_APP')">
+        <a href="/portal/?sector=${data.sectorKey}&action=install&mode=register" class="download-card-opt" onclick="trackDownload('MOBILE_APP')">
           <div>
             <div style="font-size: 24px; margin-bottom: 8px;">📱</div>
             <h4 style="color: #fff; font-size: 15px; font-weight: 800; margin: 0 0 4px;">Android &amp; iPhone App</h4>
@@ -1402,7 +1402,7 @@ function generateSectorPageHtml(data) {
           }
         } catch(e) {}
       }
-      window.location.href = '/portal/?store=${data.store}&sector=${data.sectorKey}&action=install&desktop=1';
+      window.location.href = '/portal/?sector=${data.sectorKey}&action=install&desktop=1&mode=register';
     }
 
     function handleWindowsBatDownload(fileName) {
@@ -1660,6 +1660,8 @@ function generateSectorPageHtml(data) {
         sector: sectorCode,
         storeType: sectorCode,
         phone: phone,
+        whatsappNumber: phone,
+        whatsappAutoDispatch: true,
         email: email,
         planType: activeCycle,
         planName: planName,

@@ -380,6 +380,9 @@ if ($action === 'register_tenant' || $action === 'register') {
         'portalUrl' => 'https://digitalsnova.com/portal/?store=' . $subdomain,
         'ownerName' => $ownerName,
         'phone' => $ownerPhone,
+        'whatsappNumber' => !empty($tenant['whatsappNumber']) ? trim((string)$tenant['whatsappNumber']) : $ownerPhone,
+        'whatsappAutoDispatch' => isset($tenant['whatsappAutoDispatch']) ? (bool)$tenant['whatsappAutoDispatch'] : true,
+        'smsEnabled' => isset($tenant['smsEnabled']) ? (bool)$tenant['smsEnabled'] : true,
         'email' => $ownerEmail,
         'businessType' => $businessType,
         'business_type' => $businessType,
@@ -498,6 +501,9 @@ if ($action === 'register_tenant' || $action === 'register') {
         'subdomain' => $subdomain,
         'ownerName' => $ownerName,
         'phone' => $ownerPhone,
+        'whatsappNumber' => !empty($tenant['whatsappNumber']) ? trim((string)$tenant['whatsappNumber']) : $ownerPhone,
+        'whatsappAutoDispatch' => isset($tenant['whatsappAutoDispatch']) ? (bool)$tenant['whatsappAutoDispatch'] : true,
+        'smsEnabled' => isset($tenant['smsEnabled']) ? (bool)$tenant['smsEnabled'] : true,
         'email' => $ownerEmail,
         'businessType' => $businessType,
         'vertical' => $vertical,
@@ -1464,7 +1470,7 @@ if ($action === 'update_tenant') {
     }
 
     $t = &$tenants[$matchedIndex];
-    $scalarFields = ['name', 'businessName', 'logoUrl', 'phone', 'address', 'email', 'receiptHeader', 'receiptFooter', 'smsApiUrl', 'smsApiKey', 'adminPin', 'planType', 'planName', 'activeLicenseKey', 'vertical', 'sector', 'storeType', 'businessType'];
+    $scalarFields = ['name', 'businessName', 'logoUrl', 'phone', 'whatsappNumber', 'address', 'email', 'receiptHeader', 'receiptFooter', 'smsApiUrl', 'smsApiKey', 'adminPin', 'planType', 'planName', 'activeLicenseKey', 'vertical', 'sector', 'storeType', 'businessType'];
     foreach ($scalarFields as $f) {
         if (array_key_exists($f, $updates) && $updates[$f] !== null) {
             $t[$f] = $updates[$f];
@@ -1472,6 +1478,7 @@ if ($action === 'update_tenant') {
     }
     if (isset($updates['name']) && !isset($updates['businessName'])) $t['businessName'] = $updates['name'];
     if (array_key_exists('smsEnabled', $updates)) $t['smsEnabled'] = (bool)$updates['smsEnabled'];
+    if (array_key_exists('whatsappAutoDispatch', $updates)) $t['whatsappAutoDispatch'] = (bool)$updates['whatsappAutoDispatch'];
     if (isset($updates['cycleDays']) && is_numeric($updates['cycleDays']) && intval($updates['cycleDays']) > 0) {
         $t['cycleDays'] = intval($updates['cycleDays']);
     }
@@ -2291,14 +2298,89 @@ if (in_array($action, $wsActions, true)) {
             }
         }
 
+        $storeDisplayName = !empty($tenant['name']) ? (string)$tenant['name'] : strtoupper($sub);
+        $bizWhatsapp = trim((string)($tenant['whatsappNumber'] ?? ($tenant['phone'] ?? '')));
+        $custPhone = trim((string)$saleRecord['patientPhone']);
+        $autoDispatchOn = (($tenant['whatsappAutoDispatch'] ?? ($tenant['smsEnabled'] ?? true)) !== false);
+
+        $itemLines = [];
+        foreach ($normItems as $ni) {
+            $iName = trim((string)($ni['name'] ?? 'Item'));
+            $iQty = $ni['qty'];
+            $iSub = number_format(floatval($ni['subtotal'] ?? 0));
+            $itemLines[] = "• {$iName} x{$iQty} = Rs. {$iSub}";
+        }
+        $waText = "*{$storeDisplayName}* - Digital Invoice\n"
+            . "Invoice: {$saleRecord['invoiceNumber']}\n"
+            . "Customer: {$saleRecord['patientName']}\n"
+            . "Items:\n" . implode("\n", $itemLines) . "\n"
+            . ($discAmt > 0 ? "Discount: -Rs. " . number_format($discAmt) . "\n" : '')
+            . "*Total Bill: Rs. " . number_format($netTotal) . "*\n"
+            . "Paid: Rs. " . number_format($paidToday)
+            . ($saleRecord['remainingLedgerBalance'] > 0 ? "\nBalance Due: Rs. " . number_format($saleRecord['remainingLedgerBalance']) : '')
+            . ($bizWhatsapp !== '' ? "\nStore WhatsApp: {$bizWhatsapp}" : '')
+            . "\n" . (!empty($tenant['receiptFooter']) ? (string)$tenant['receiptFooter'] : 'Thank you for your business!');
+
+        $digitsOnly = preg_replace('/[^0-9]/', '', $custPhone);
+        if (strlen($digitsOnly) === 11 && strpos($digitsOnly, '03') === 0) {
+            $digitsOnly = '92' . substr($digitsOnly, 1);
+        } elseif (strlen($digitsOnly) === 10 && strpos($digitsOnly, '3') === 0) {
+            $digitsOnly = '92' . $digitsOnly;
+        }
+        $waLink = ($digitsOnly !== '' && strlen($digitsOnly) >= 10)
+            ? ('https://wa.me/' . $digitsOnly . '?text=' . rawurlencode($waText))
+            : '';
+
         $smsText = "Receipt {$saleRecord['invoiceNumber']}: Rs. " . number_format($netTotal) . " (Paid: Rs. " . number_format($paidToday) . ($saleRecord['remainingLedgerBalance'] > 0 ? ", Due: Rs. " . number_format($saleRecord['remainingLedgerBalance']) : '') . "). Thank you!";
+        $smsStatus = ($autoDispatchOn && $custPhone !== '') ? 'AUTO_DISPATCHED' : 'QUEUED';
+        $gwUrl = trim((string)($tenant['smsApiUrl'] ?? ''));
+        $gwKey = trim((string)($tenant['smsApiKey'] ?? ''));
+        if ($autoDispatchOn && $gwUrl !== '' && preg_match('#^https?://#i', $gwUrl) && $custPhone !== '') {
+            $gwPayload = json_encode([
+                'to' => $digitsOnly !== '' ? $digitsOnly : $custPhone,
+                'recipientPhone' => $custPhone,
+                'fromWhatsapp' => $bizWhatsapp,
+                'storeName' => $storeDisplayName,
+                'invoiceNumber' => $saleRecord['invoiceNumber'],
+                'netTotal' => $netTotal,
+                'paidToday' => $paidToday,
+                'message' => $waText,
+                'apiKey' => $gwKey
+            ]);
+            if (function_exists('curl_init')) {
+                $ch = @curl_init($gwUrl);
+                if ($ch) {
+                    @curl_setopt($ch, CURLOPT_POST, true);
+                    @curl_setopt($ch, CURLOPT_POSTFIELDS, $gwPayload);
+                    @curl_setopt($ch, CURLOPT_HTTPHEADER, array_filter([
+                        'Content-Type: application/json',
+                        $gwKey !== '' ? ('Authorization: Bearer ' . $gwKey) : null
+                    ]));
+                    @curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                    @curl_setopt($ch, CURLOPT_TIMEOUT, 3);
+                    @curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 2);
+                    @curl_exec($ch);
+                    $httpCode = @curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                    @curl_close($ch);
+                    if ($httpCode >= 200 && $httpCode < 300) {
+                        $smsStatus = 'GATEWAY_SENT';
+                    }
+                }
+            }
+        }
+
         $smsLog = [
             'id' => 'sms_' . time() . '_' . rand(10, 99),
-            'to' => $saleRecord['patientPhone'],
-            'recipientPhone' => $saleRecord['patientPhone'],
+            'to' => $custPhone,
+            'recipientPhone' => $custPhone,
+            'fromWhatsapp' => $bizWhatsapp,
             'patientName' => $saleRecord['patientName'],
-            'message' => $smsText,
-            'status' => 'QUEUED',
+            'invoiceNumber' => $saleRecord['invoiceNumber'],
+            'message' => $waText,
+            'shortMessage' => $smsText,
+            'whatsappLink' => $waLink,
+            'channel' => 'WHATSAPP_AUTO_BILLING',
+            'status' => $smsStatus,
             'timestamp' => date('c'),
             'createdAt' => date('c')
         ];

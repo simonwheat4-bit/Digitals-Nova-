@@ -65,9 +65,10 @@ function safeCmdQuoted(str) {
   return String(str || '').replace(/["%]/g, '').trim();
 }
 
-function buildWindowsSetupBat({ url, title, shortName, desc }) {
+function buildWindowsSetupBat({ url, title, shortName, desc, profileFolder }) {
   const safeTitleCmd = escCmdUnquoted(title);
   const safeShortCmd = escCmdUnquoted(shortName);
+  const safeProfileFolder = safeCmdQuoted(profileFolder || shortName.replace(/[^a-zA-Z0-9_-]/g, ''));
   const lines = [
     '@echo off',
     'setlocal EnableExtensions',
@@ -80,6 +81,8 @@ function buildWindowsSetupBat({ url, title, shortName, desc }) {
     `set "DN_URL=${safeCmdQuoted(url)}"`,
     `set "DN_LINK_NAME=${safeCmdQuoted(shortName)} - DigitalsNova POS.lnk"`,
     `set "DN_DESC=${safeCmdQuoted(desc)}"`,
+    `set "DN_PROFILE=%LOCALAPPDATA%\\DigitalsNova\\${safeProfileFolder}"`,
+    'if not exist "%DN_PROFILE%" mkdir "%DN_PROFILE%" >nul 2>&1',
     'set "DN_BROWSER="',
     'if exist "%ProgramFiles%\\Google\\Chrome\\Application\\chrome.exe" set "DN_BROWSER=%ProgramFiles%\\Google\\Chrome\\Application\\chrome.exe"',
     'if not defined DN_BROWSER if exist "%ProgramFiles(x86)%\\Google\\Chrome\\Application\\chrome.exe" set "DN_BROWSER=%ProgramFiles(x86)%\\Google\\Chrome\\Application\\chrome.exe"',
@@ -97,19 +100,20 @@ function buildWindowsSetupBat({ url, title, shortName, desc }) {
     '  echo Set oEnv = oWS.Environment^("Process"^)',
     '  echo sUrl = oEnv^("DN_URL"^)',
     '  echo sBrowser = oEnv^("DN_BROWSER"^)',
+    '  echo sProfile = oEnv^("DN_PROFILE"^)',
     '  echo sLink = oEnv^("DN_LINK_NAME"^)',
     '  echo sDesc = oEnv^("DN_DESC"^)',
     '  echo sDesktop = oWS.SpecialFolders^("Desktop"^)',
     '  echo sPrograms = oWS.SpecialFolders^("Programs"^)',
     '  echo Set oL1 = oWS.CreateShortcut^(sDesktop ^& "\\" ^& sLink^)',
     '  echo oL1.TargetPath = sBrowser',
-    '  echo oL1.Arguments = "--app=" ^& Chr^(34^) ^& sUrl ^& Chr^(34^) ^& " --start-maximized"',
+    '  echo oL1.Arguments = "--app=" ^& Chr^(34^) ^& sUrl ^& Chr^(34^) ^& " --user-data-dir=" ^& Chr^(34^) ^& sProfile ^& Chr^(34^) ^& " --start-maximized"',
     '  echo oL1.Description = sDesc',
     '  echo oL1.IconLocation = sBrowser ^& ",0"',
     '  echo oL1.Save',
     '  echo Set oL2 = oWS.CreateShortcut^(sPrograms ^& "\\" ^& sLink^)',
     '  echo oL2.TargetPath = sBrowser',
-    '  echo oL2.Arguments = "--app=" ^& Chr^(34^) ^& sUrl ^& Chr^(34^) ^& " --start-maximized"',
+    '  echo oL2.Arguments = "--app=" ^& Chr^(34^) ^& sUrl ^& Chr^(34^) ^& " --user-data-dir=" ^& Chr^(34^) ^& sProfile ^& Chr^(34^) ^& " --start-maximized"',
     '  echo oL2.Description = sDesc',
     '  echo oL2.IconLocation = sBrowser ^& ",0"',
     '  echo oL2.Save',
@@ -117,8 +121,8 @@ function buildWindowsSetupBat({ url, title, shortName, desc }) {
     'cscript //nologo "%VBS%" >nul 2>&1',
     'if defined VBS if exist "%VBS%" del /f /q "%VBS%" >nul 2>&1',
     ':launch_app',
-    `echo [2/2] Launching ${safeShortCmd} in standalone Desktop App Mode...`,
-    'start "" "%DN_BROWSER%" --app="%DN_URL%" --start-maximized',
+    `echo [2/2] Launching ${safeShortCmd} in standalone Desktop App Mode (Isolated Registration Profile)...`,
+    'start "" "%DN_BROWSER%" --app="%DN_URL%" --user-data-dir="%DN_PROFILE%" --start-maximized',
     'goto :done',
     ':open_default',
     'echo Chrome or Microsoft Edge not found in standard folders. Opening default browser...',
@@ -133,12 +137,13 @@ function buildWindowsSetupBat({ url, title, shortName, desc }) {
 }
 
 sectors.forEach(sec => {
-  const url = `https://digitalsnova.com/portal/?store=${sec.store}&sector=${sec.key}&desktop=1`;
+  const url = `https://digitalsnova.com/portal/?sector=${sec.key}&desktop=1&mode=register`;
   const batScript = buildWindowsSetupBat({
     url,
     title: sec.title,
     shortName: sec.shortName,
-    desc: sec.desc
+    desc: sec.desc,
+    profileFolder: sec.fileName
   });
 
   targetDirs.forEach(dest => {
