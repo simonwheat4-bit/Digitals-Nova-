@@ -103,6 +103,12 @@ self.addEventListener('fetch', (event) => {
   if (req.method !== 'GET') return;
 
   const url = new URL(req.url);
+  // Prevent any browser window from loading sw.js directly as a navigation page
+  if (req.mode === 'navigate' && url.pathname.endsWith('sw.js')) {
+    event.respondWith(Response.redirect('/portal/', 302));
+    return;
+  }
+
 
   // Never intercept downloadable setup packages
   if (url.pathname.includes('/downloads/')) {

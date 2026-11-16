@@ -137,7 +137,7 @@ function buildWindowsSetupBat({ url, title, shortName, desc, profileFolder }) {
 }
 
 sectors.forEach(sec => {
-  const url = `https://digitalsnova.com/portal/?sector=${sec.key}&desktop=1&mode=register`;
+  const url = `https://digitalsnova.com/portal/index.html?sector=${sec.key}&desktop=1&mode=register`;
   const batScript = buildWindowsSetupBat({
     url,
     title: sec.title,
