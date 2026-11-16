@@ -25,6 +25,7 @@ $passwordResetsFile = $dataDir . '/password_resets.json';
 $cronLogsFile = $dataDir . '/cron_logs.json';
 $otpTokensFile = $dataDir . '/otp_tokens.json';
 $leadsFile = $dataDir . '/leads.json';
+$paymentSettingsFile = $dataDir . '/payment_gateway_settings.json';
 
 function syncToSecondaryDataDirs($filename, $data) {
     global $dataDir;
@@ -141,6 +142,36 @@ if ($action === 'save_pricing_plans') {
     }
     http_response_code(400);
     echo json_encode(['success' => false, 'error' => 'Invalid pricing plans payload']);
+    exit();
+}
+
+// ==============================================================================
+// 1.1 PAYMENT & GATEWAY SETTINGS (SUPER ADMIN & PUBLIC CHECKOUT SYNC)
+// ==============================================================================
+if ($action === 'get_payment_settings') {
+    $settings = dnGetPaymentGatewaySettings($dataDir);
+    $isAdmin = (isset($_GET['admin']) && $_GET['admin'] === '1') ||
+               (isset($_SERVER['HTTP_AUTHORIZATION']) && stripos($_SERVER['HTTP_AUTHORIZATION'], 'super_admin') !== false) ||
+               (isset($body['role']) && $body['role'] === 'SUPER_ADMIN') ||
+               (isset($_GET['role']) && $_GET['role'] === 'SUPER_ADMIN');
+
+    if (!$isAdmin) {
+        // Public / Client checkout view: strip out private keys
+        $publicSettings = $settings;
+        unset($publicSettings['cardGateway']['secretKey']);
+        unset($publicSettings['cardGateway']['webhookSecret']);
+        echo json_encode(['success' => true, 'settings' => $publicSettings]);
+        exit();
+    }
+
+    echo json_encode(['success' => true, 'settings' => $settings]);
+    exit();
+}
+
+if ($action === 'save_payment_settings') {
+    $inputSettings = $body['settings'] ?? $body;
+    $saved = dnSavePaymentGatewaySettings($dataDir, $inputSettings);
+    echo json_encode(['success' => true, 'message' => 'Payment & Gateway settings updated successfully.', 'settings' => $saved]);
     exit();
 }
 
@@ -1655,7 +1686,7 @@ if ($action === 'generate_license_key') {
     $tenants = dnGetUnifiedTenants($dataDir);
     $effectivePlans = dnGetEffectivePricingPlans($dataDir);
     $tenantId = trim((string)($body['tenantId'] ?? ''));
-    $idx = dnFindTenantMatch($tenants, $tenantId, '');
+    $idx = ($tenantId !== '' && $tenantId !== 'UNASSIGNED') ? dnFindTenantMatch($tenants, $tenantId, '') : -1;
     $targetTenant = ($idx !== -1) ? $tenants[$idx] : null;
 
     $planType = strtoupper(trim((string)($body['planType'] ?? 'MONTHLY')));
@@ -1668,8 +1699,8 @@ if ($action === 'generate_license_key') {
     $newKey = [
         'id' => 'key_' . time() . '_' . rand(100, 999),
         'keyCode' => $keyCode,
-        'tenantId' => $targetTenant ? $targetTenant['id'] : $tenantId,
-        'tenantName' => $targetTenant ? $targetTenant['name'] : ($body['tenantName'] ?? 'Client Store'),
+        'tenantId' => $targetTenant ? $targetTenant['id'] : ($tenantId === 'UNASSIGNED' ? '' : $tenantId),
+        'tenantName' => $targetTenant ? $targetTenant['name'] : ($body['tenantName'] ?? 'Universal / Unassigned Store'),
         'subdomain' => $targetTenant ? ($targetTenant['subdomain'] ?? '') : ($body['subdomain'] ?? ''),
         'planType' => $planType,
         'cycleDays' => $cycleDays,

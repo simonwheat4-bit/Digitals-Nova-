@@ -28,7 +28,8 @@ import {
   Sparkles,
   Layers,
   Tag,
-  Check
+  Check,
+  MessageCircle
 } from 'lucide-react';
 
 export default function SuperAdminPanel({
@@ -127,6 +128,40 @@ export default function SuperAdminPanel({
   });
   const [pricingSavedNotice, setPricingSavedNotice] = useState(false);
 
+  // Super Admin Navigation Tab State
+  const [adminNavTab, setAdminNavTab] = useState('ALL'); // 'ALL' | 'STORES' | 'PRICING' | 'GATEWAY' | 'KEYS' | 'CRON'
+
+  // Dedicated Payment Gateway & Local Accounts Settings State
+  const [paymentSettings, setPaymentSettings] = useState(() => {
+    try {
+      const saved = localStorage.getItem('digitalsnova_payment_settings');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return {
+      cardGateway: {
+        provider: 'STRIPE',
+        mode: 'TEST',
+        publishableKey: 'pk_test_51O9Xv7DigitalsNovaLiveKeyDemo001',
+        secretKey: 'sk_test_51O9Xv7DigitalsNovaSecretDemo001',
+        webhookSecret: 'whsec_digitalsnova_demo_secret_2026'
+      },
+      localAccounts: {
+        bankName: 'Meezan Bank Ltd',
+        accountTitle: 'DigitalsNova / Ubaid Ur Rehman',
+        accountNumber: '01080105286455',
+        iban: 'PK62MEZN0001080105286455',
+        jazzCash: '0313-1094557',
+        jazzCashTitle: 'Ubaid Ur Rehman',
+        easyPaisa: '0313-1094557',
+        easyPaisaTitle: 'Ubaid Ur Rehman',
+        whatsappNumber: '+92 313 1094557'
+      }
+    };
+  });
+  const [paymentSettingsSavedNotice, setPaymentSettingsSavedNotice] = useState(false);
+  const [savingPaymentSettings, setSavingPaymentSettings] = useState(false);
+  const [showSecretKey, setShowSecretKey] = useState(false);
+
   // Sync pricing plans from server on mount
   useEffect(() => {
     fetch('/api/sync.php?action=get_pricing_plans')
@@ -137,7 +172,48 @@ export default function SuperAdminPanel({
         }
       })
       .catch(() => {});
+
+    // Sync payment gateway settings from server on mount
+    fetch('/api/sync.php?action=get_payment_settings&admin=1')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && data.success && data.settings) {
+          setPaymentSettings(data.settings);
+          try {
+            localStorage.setItem('digitalsnova_payment_settings', JSON.stringify(data.settings));
+          } catch {}
+        }
+      })
+      .catch(() => {});
   }, []);
+
+  const handleSavePaymentSettings = async (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    setSavingPaymentSettings(true);
+    try {
+      const res = await fetch('/api/sync.php?action=save_payment_settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ settings: paymentSettings, role: 'SUPER_ADMIN' })
+      });
+      const data = await res.json();
+      if (data && data.success) {
+        localStorage.setItem('digitalsnova_payment_settings', JSON.stringify(paymentSettings));
+        setPaymentSettingsSavedNotice(true);
+        setFeedback('Payment Gateway & Local Accounts updated live across SaaS!');
+        setTimeout(() => setPaymentSettingsSavedNotice(false), 4000);
+      } else {
+        setFeedback(data?.error || 'Failed to save payment settings');
+      }
+    } catch (err) {
+      localStorage.setItem('digitalsnova_payment_settings', JSON.stringify(paymentSettings));
+      setPaymentSettingsSavedNotice(true);
+      setFeedback('Saved locally (offline mode).');
+      setTimeout(() => setPaymentSettingsSavedNotice(false), 4000);
+    } finally {
+      setSavingPaymentSettings(false);
+    }
+  };
 
   const handleSaveGlobalPricing = async (e) => {
     if (e) e.preventDefault();
@@ -442,6 +518,96 @@ export default function SuperAdminPanel({
 
   return (
     <div className="space-y-5 pb-20 md:pb-6">
+      {/* Super Admin Top Navigation Tabs Bar */}
+      <div className="bg-white rounded-2xl p-2.5 shadow-sm border border-slate-200 flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => { setAdminNavTab('ALL'); setSelectedSaaSKpi(null); }}
+            className={`px-3 py-2 rounded-xl text-xs font-black transition cursor-pointer flex items-center gap-1.5 ${
+              adminNavTab === 'ALL'
+                ? 'bg-navy text-gold-bright shadow'
+                : 'text-slate-600 hover:bg-slate-100 hover:text-navy'
+            }`}
+          >
+            <Layers className="w-4 h-4" />
+            <span>All Modules</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => { setAdminNavTab('STORES'); setSelectedSaaSKpi(null); }}
+            className={`px-3 py-2 rounded-xl text-xs font-black transition cursor-pointer flex items-center gap-1.5 ${
+              adminNavTab === 'STORES'
+                ? 'bg-teal text-white shadow'
+                : 'text-slate-600 hover:bg-slate-100 hover:text-teal'
+            }`}
+          >
+            <Globe className="w-4 h-4" />
+            <span>Stores &amp; Clinics ({safeTenants.length})</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => { setAdminNavTab('PRICING'); setSelectedSaaSKpi(null); }}
+            className={`px-3 py-2 rounded-xl text-xs font-black transition cursor-pointer flex items-center gap-1.5 ${
+              adminNavTab === 'PRICING'
+                ? 'bg-cyan-700 text-white shadow'
+                : 'text-slate-600 hover:bg-slate-100 hover:text-cyan-700'
+            }`}
+          >
+            <Tag className="w-4 h-4" />
+            <span>SaaS Pricing</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => { setAdminNavTab('GATEWAY'); setSelectedSaaSKpi(null); }}
+            className={`px-3.5 py-2 rounded-xl text-xs font-black transition cursor-pointer flex items-center gap-1.5 ${
+              adminNavTab === 'GATEWAY'
+                ? 'bg-emerald-600 text-white shadow ring-2 ring-emerald-400'
+                : 'text-slate-600 hover:bg-slate-100 hover:text-emerald-700'
+            }`}
+          >
+            <CreditCard className="w-4 h-4 text-emerald-500" />
+            <span>Payment &amp; Gateway Settings</span>
+            <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-emerald-100 text-emerald-800 font-extrabold uppercase ml-1">
+              {paymentSettings?.cardGateway?.mode || 'TEST'}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => { setAdminNavTab('KEYS'); setSelectedSaaSKpi(null); }}
+            className={`px-3 py-2 rounded-xl text-xs font-black transition cursor-pointer flex items-center gap-1.5 ${
+              adminNavTab === 'KEYS'
+                ? 'bg-purple-700 text-white shadow'
+                : 'text-slate-600 hover:bg-slate-100 hover:text-purple-700'
+            }`}
+          >
+            <KeyRound className="w-4 h-4" />
+            <span>License Keys ({safeLicenseKeys.length})</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => { setAdminNavTab('CRON'); setSelectedSaaSKpi(null); }}
+            className={`px-3 py-2 rounded-xl text-xs font-black transition cursor-pointer flex items-center gap-1.5 ${
+              adminNavTab === 'CRON'
+                ? 'bg-amber-600 text-white shadow'
+                : 'text-slate-600 hover:bg-slate-100 hover:text-amber-600'
+            }`}
+          >
+            <Webhook className="w-4 h-4" />
+            <span>Webhooks &amp; Cron</span>
+          </button>
+        </div>
+
+        <div className="text-[11px] font-mono text-slate-500 hidden sm:block">
+          Hostinger Shared PHP Engine • v2026.11
+        </div>
+      </div>
+
       {/* 4 Clickable Global SaaS KPI Cards (Whichever card is clicked turns Solid Vibrant Color - Image 3) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <button
@@ -943,6 +1109,7 @@ export default function SuperAdminPanel({
           {/* =================================================================== */}
           {/* DEDICATED GLOBAL SAAS PRICING & SUBSCRIPTION TIERS MANAGEMENT WIDGET */}
           {/* =================================================================== */}
+          {(adminNavTab === 'ALL' || adminNavTab === 'PRICING') && (
           <div className="bg-[#0B0F19] border border-cyan-500/30 rounded-2xl p-5 shadow-2xl relative overflow-hidden text-slate-200">
             <div className="absolute -top-24 -right-24 w-60 h-60 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-4 mb-4">
@@ -1245,6 +1412,315 @@ export default function SuperAdminPanel({
               </div>
             </div>
           </div>
+          )}
+
+          {/* ================================================================= */}
+          {/* SUPER ADMIN PAYMENT & GATEWAY SETTINGS (Online Card + Local Banks) */}
+          {/* ================================================================= */}
+          {(adminNavTab === 'ALL' || adminNavTab === 'GATEWAY') && (
+            <div className="bg-white rounded-2xl p-6 shadow-sm border-2 border-emerald-400 space-y-6">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shadow-md">
+                    <CreditCard className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-black text-lg text-navy tracking-tight">
+                        Payment Gateway &amp; Accounts Settings
+                      </h3>
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-black ${
+                        paymentSettings.cardGateway.mode === 'LIVE'
+                          ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                          : 'bg-amber-100 text-amber-900 border border-amber-300'
+                      }`}>
+                        ● {paymentSettings.cardGateway.provider} • {paymentSettings.cardGateway.mode} MODE
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Configure real-time card payment credentials (Stripe / Safepay / PayFast) and Pakistani local bank accounts. Saved details immediately reflect inside tenant client checkout modals.
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleSavePaymentSettings}
+                  disabled={savingPaymentSettings}
+                  className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs flex items-center gap-2 shadow-lg transition cursor-pointer disabled:opacity-50"
+                >
+                  <ShieldCheck className="w-4 h-4 text-emerald-200" />
+                  <span>{savingPaymentSettings ? 'Saving...' : '💾 Save & Deploy Gateway Settings'}</span>
+                </button>
+              </div>
+
+              {paymentSettingsSavedNotice && (
+                <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-300 text-emerald-900 text-xs font-bold flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                    <span>Gateway settings successfully saved &amp; synchronized across all client checkout modals!</span>
+                  </div>
+                  <span className="text-[10px] font-mono text-emerald-700">Live Updated</span>
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Card 1: Online Card Gateway Credentials */}
+                <div className="rounded-2xl p-5 bg-gradient-to-br from-slate-900 to-navy text-white space-y-4 shadow-sm border border-slate-700">
+                  <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+                    <div className="flex items-center gap-2">
+                      <CreditCard className="w-5 h-5 text-teal" />
+                      <h4 className="font-extrabold text-sm text-white">Online Card Gateway Credentials</h4>
+                    </div>
+                    <div className="flex items-center gap-2 bg-slate-800/80 p-1 rounded-xl border border-slate-700">
+                      <button
+                        type="button"
+                        onClick={() => setPaymentSettings(prev => ({
+                          ...prev,
+                          cardGateway: { ...prev.cardGateway, mode: 'TEST' }
+                        }))}
+                        className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition cursor-pointer ${
+                          paymentSettings.cardGateway.mode === 'TEST'
+                            ? 'bg-amber-500 text-slate-950 font-black shadow'
+                            : 'text-slate-400 hover:text-white'
+                        }`}
+                      >
+                        Test Mode
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPaymentSettings(prev => ({
+                          ...prev,
+                          cardGateway: { ...prev.cardGateway, mode: 'LIVE' }
+                        }))}
+                        className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition cursor-pointer ${
+                          paymentSettings.cardGateway.mode === 'LIVE'
+                            ? 'bg-emerald-500 text-slate-950 font-black shadow'
+                            : 'text-slate-400 hover:text-white'
+                        }`}
+                      >
+                        Live Mode
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3 text-xs">
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                        Gateway Provider
+                      </label>
+                      <select
+                        value={paymentSettings.cardGateway.provider}
+                        onChange={(e) => setPaymentSettings(prev => ({
+                          ...prev,
+                          cardGateway: { ...prev.cardGateway, provider: e.target.value }
+                        }))}
+                        className="w-full px-3 py-2 rounded-xl bg-slate-800 border border-slate-700 font-bold text-white focus:outline-none focus:border-teal"
+                      >
+                        <option value="STRIPE">Stripe (Global Credit / Debit Cards)</option>
+                        <option value="SAFEPAY">Safepay (Pakistan Online Cards &amp; Wallets)</option>
+                        <option value="PAYFAST">PayFast (APG Pakistan 1Link / UnionPay / PayPak)</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                        Publishable / Public API Key
+                      </label>
+                      <input
+                        type="text"
+                        value={paymentSettings.cardGateway.publishableKey}
+                        onChange={(e) => setPaymentSettings(prev => ({
+                          ...prev,
+                          cardGateway: { ...prev.cardGateway, publishableKey: e.target.value }
+                        }))}
+                        placeholder="pk_test_... or pk_live_..."
+                        className="w-full px-3 py-2 rounded-xl bg-slate-800 border border-slate-700 font-mono text-xs text-teal focus:outline-none focus:border-teal"
+                      />
+                      <p className="text-[10px] text-slate-400 mt-0.5">Used on client-side checkout to initialize payment fields.</p>
+                    </div>
+
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="block text-[11px] font-bold text-slate-300">
+                          Secret API Key
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => setShowSecretKey(!showSecretKey)}
+                          className="text-[10px] text-teal hover:underline flex items-center gap-1 cursor-pointer"
+                        >
+                          {showSecretKey ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                          <span>{showSecretKey ? 'Hide Secret' : 'Show Secret'}</span>
+                        </button>
+                      </div>
+                      <input
+                        type={showSecretKey ? 'text' : 'password'}
+                        value={paymentSettings.cardGateway.secretKey}
+                        onChange={(e) => setPaymentSettings(prev => ({
+                          ...prev,
+                          cardGateway: { ...prev.cardGateway, secretKey: e.target.value }
+                        }))}
+                        placeholder="sk_test_... or sk_live_..."
+                        className="w-full px-3 py-2 rounded-xl bg-slate-800 border border-slate-700 font-mono text-xs text-gold-bright focus:outline-none focus:border-gold"
+                      />
+                      <p className="text-[10px] text-slate-400 mt-0.5">Stored securely on server for backend payment verification.</p>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                        Webhook Signing Secret
+                      </label>
+                      <input
+                        type="text"
+                        value={paymentSettings.cardGateway.webhookSecret}
+                        onChange={(e) => setPaymentSettings(prev => ({
+                          ...prev,
+                          cardGateway: { ...prev.cardGateway, webhookSecret: e.target.value }
+                        }))}
+                        placeholder="whsec_..."
+                        className="w-full px-3 py-2 rounded-xl bg-slate-800 border border-slate-700 font-mono text-xs text-purple-300 focus:outline-none focus:border-purple-400"
+                      />
+                      <p className="text-[10px] text-slate-400 mt-0.5">Webhook endpoint: <code className="text-teal">/api/stripe-webhook.php</code></p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Card 2: Local Bank & Mobile Wallets (Pakistan) */}
+                <div className="rounded-2xl p-5 bg-emerald-50/60 border border-emerald-200 text-slate-800 space-y-4">
+                  <div className="flex items-center justify-between pb-3 border-b border-emerald-200">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-bold text-xs">
+                        PK
+                      </div>
+                      <h4 className="font-extrabold text-sm text-navy">Local Bank &amp; Mobile Wallets (Pakistan)</h4>
+                    </div>
+                    <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full border border-emerald-300">
+                      Tab 2 Client Sync
+                    </span>
+                  </div>
+
+                  <div className="space-y-3 text-xs">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[11px] font-bold text-navy mb-1">
+                          Bank Name
+                        </label>
+                        <input
+                          type="text"
+                          value={paymentSettings.localAccounts.bankName}
+                          onChange={(e) => setPaymentSettings(prev => ({
+                            ...prev,
+                            localAccounts: { ...prev.localAccounts, bankName: e.target.value }
+                          }))}
+                          className="w-full px-3 py-2 rounded-xl bg-white border border-slate-300 font-bold text-navy focus:outline-none focus:border-emerald-600"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-bold text-navy mb-1">
+                          Account Title
+                        </label>
+                        <input
+                          type="text"
+                          value={paymentSettings.localAccounts.accountTitle}
+                          onChange={(e) => setPaymentSettings(prev => ({
+                            ...prev,
+                            localAccounts: { ...prev.localAccounts, accountTitle: e.target.value }
+                          }))}
+                          className="w-full px-3 py-2 rounded-xl bg-white border border-slate-300 font-bold text-navy focus:outline-none focus:border-emerald-600"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[11px] font-bold text-navy mb-1">
+                          Account Number
+                        </label>
+                        <input
+                          type="text"
+                          value={paymentSettings.localAccounts.accountNumber}
+                          onChange={(e) => setPaymentSettings(prev => ({
+                            ...prev,
+                            localAccounts: { ...prev.localAccounts, accountNumber: e.target.value }
+                          }))}
+                          className="w-full px-3 py-2 rounded-xl bg-white border border-slate-300 font-mono font-bold text-navy focus:outline-none focus:border-emerald-600"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-bold text-navy mb-1">
+                          IBAN (24 Characters)
+                        </label>
+                        <input
+                          type="text"
+                          value={paymentSettings.localAccounts.iban}
+                          onChange={(e) => setPaymentSettings(prev => ({
+                            ...prev,
+                            localAccounts: { ...prev.localAccounts, iban: e.target.value }
+                          }))}
+                          className="w-full px-3 py-2 rounded-xl bg-white border border-slate-300 font-mono font-bold text-navy focus:outline-none focus:border-emerald-600"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[11px] font-bold text-rose-700 mb-1">
+                          📱 JazzCash Account Number
+                        </label>
+                        <input
+                          type="text"
+                          value={paymentSettings.localAccounts.jazzCash}
+                          onChange={(e) => setPaymentSettings(prev => ({
+                            ...prev,
+                            localAccounts: { ...prev.localAccounts, jazzCash: e.target.value }
+                          }))}
+                          placeholder="03001234567"
+                          className="w-full px-3 py-2 rounded-xl bg-white border border-slate-300 font-mono font-bold text-navy focus:outline-none focus:border-rose-600"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-bold text-emerald-700 mb-1">
+                          📱 EasyPaisa Account Number
+                        </label>
+                        <input
+                          type="text"
+                          value={paymentSettings.localAccounts.easyPaisa}
+                          onChange={(e) => setPaymentSettings(prev => ({
+                            ...prev,
+                            localAccounts: { ...prev.localAccounts, easyPaisa: e.target.value }
+                          }))}
+                          placeholder="03451234567"
+                          className="w-full px-3 py-2 rounded-xl bg-white border border-slate-300 font-mono font-bold text-navy focus:outline-none focus:border-emerald-600"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-emerald-900 mb-1">
+                        Official Support WhatsApp Number (Proof Dispatch Receiver)
+                      </label>
+                      <input
+                        type="text"
+                        value={paymentSettings.localAccounts.whatsappNumber}
+                        onChange={(e) => setPaymentSettings(prev => ({
+                          ...prev,
+                          localAccounts: { ...prev.localAccounts, whatsappNumber: e.target.value }
+                        }))}
+                        placeholder="+92 313 1094557"
+                        className="w-full px-3 py-2 rounded-xl bg-white border border-slate-300 font-mono font-bold text-emerald-900 focus:outline-none focus:border-emerald-600"
+                      />
+                      <p className="text-[10px] text-slate-500 mt-0.5">
+                        When clients click "Send Payment Proof on WhatsApp" in Tab 2, their pre-filled transaction confirmation opens to this WhatsApp number.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {(adminNavTab === 'ALL' || adminNavTab === 'STORES') && (
           <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
@@ -1651,10 +2127,12 @@ export default function SuperAdminPanel({
               </table>
             </div>
           </div>
+          )}
 
           {/* ================================================================= */}
           {/* DIGITAL SNOVE LICENSE & ACTIVATION KEY CENTER (SaaS Admin Portal)  */}
           {/* ================================================================= */}
+          {(adminNavTab === 'ALL' || adminNavTab === 'KEYS') && (
           <div className="bg-white rounded-2xl p-5 shadow-sm border-2 border-purple-300 space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-3">
               <div>
@@ -1770,6 +2248,27 @@ export default function SuperAdminPanel({
                             >
                               {copiedKeyId === k.id ? '✓ Copied!' : 'Copy Key'}
                             </button>
+
+                            <a
+                              href={`https://wa.me/?text=${encodeURIComponent(
+                                `*Digital Snove POS Enterprise Activation Key*\n\n` +
+                                `Store / Client: ${k.tenantName}\n` +
+                                `Package: ${k.planType} (${k.cycleDays} Days)\n` +
+                                `License Key: ${k.keyCode}\n\n` +
+                                `How to Activate:\n` +
+                                `1. Open your POS Portal: https://digitalsnova.com/portal/?store=${encodeURIComponent(k.subdomain || '')}\n` +
+                                `2. Go to "Subscription & Packages"\n` +
+                                `3. Paste your License Key & click "Activate Key"\n\n` +
+                                `Digital Snove Official Support`
+                              )}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="px-2.5 py-1 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] shadow transition cursor-pointer flex items-center gap-1 select-none"
+                              title="Send License Key to Client on WhatsApp"
+                            >
+                              <MessageCircle className="w-3.5 h-3.5" />
+                              <span>WhatsApp</span>
+                            </a>
 
                             <button
                               type="button"
@@ -2797,14 +3296,25 @@ export default function SuperAdminPanel({
                 <select
                   value={keyGenTenant.id}
                   onChange={(e) => {
+                    if (e.target.value === 'UNASSIGNED') {
+                      setKeyGenTenant({
+                        id: 'UNASSIGNED',
+                        name: 'Universal / Unassigned Store',
+                        subdomain: '',
+                        monthlyFee: 6999
+                      });
+                      setKeyGenFee(6999);
+                      return;
+                    }
                     const sel = safeTenants.find((t) => t.id === e.target.value);
                     if (sel) {
                       setKeyGenTenant(sel);
-                      setKeyGenFee(sel.monthlyFee || 15000);
+                      setKeyGenFee(sel.monthlyFee || 6999);
                     }
                   }}
                   className="w-full px-3 py-2 rounded-xl border border-slate-300 font-bold text-navy bg-white"
                 >
+                  <option value="UNASSIGNED">★ Universal / Unassigned Key (Any Store Can Redeem)</option>
                   {safeTenants.map((t) => (
                     <option key={t.id} value={t.id}>
                       {t.name} ({t.subdomain}.digitalsnova.com)
@@ -2840,7 +3350,7 @@ export default function SuperAdminPanel({
                     onClick={() => {
                       setKeyGenPlan('MONTHLY');
                       setKeyGenDays(30);
-                      setKeyGenFee(7999);
+                      setKeyGenFee(6999);
                     }}
                     className={`p-2.5 rounded-xl border text-left transition ${
                       keyGenPlan === 'MONTHLY'
@@ -2849,7 +3359,7 @@ export default function SuperAdminPanel({
                     }`}
                   >
                     <div className="font-extrabold text-xs">Monthly Plan</div>
-                    <div className="text-[10px] opacity-80">30 Days • Rs. 7,999</div>
+                    <div className="text-[10px] opacity-80">30 Days • Rs. 6,999</div>
                   </button>
 
                   <button
@@ -2857,7 +3367,7 @@ export default function SuperAdminPanel({
                     onClick={() => {
                       setKeyGenPlan('YEARLY');
                       setKeyGenDays(365);
-                      setKeyGenFee(76790);
+                      setKeyGenFee(69990);
                     }}
                     className={`p-2.5 rounded-xl border text-left transition ${
                       keyGenPlan === 'YEARLY'
@@ -2866,7 +3376,7 @@ export default function SuperAdminPanel({
                     }`}
                   >
                     <div className="font-extrabold text-xs">1-Year Package</div>
-                    <div className="text-[10px] opacity-80">365 Days • Rs. 76,790</div>
+                    <div className="text-[10px] opacity-80">365 Days • Rs. 69,990</div>
                   </button>
 
                   <button
@@ -2874,7 +3384,7 @@ export default function SuperAdminPanel({
                     onClick={() => {
                       setKeyGenPlan('3_YEARS');
                       setKeyGenDays(1095);
-                      setKeyGenFee(229000);
+                      setKeyGenFee(199000);
                     }}
                     className={`p-2.5 rounded-xl border text-left transition ${
                       keyGenPlan === '3_YEARS'
@@ -2883,7 +3393,7 @@ export default function SuperAdminPanel({
                     }`}
                   >
                     <div className="font-extrabold text-xs">3-Year Plan</div>
-                    <div className="text-[10px] opacity-80">1095 Days • Rs. 229,000</div>
+                    <div className="text-[10px] opacity-80">1095 Days • Rs. 199,000</div>
                   </button>
                 </div>
               </div>

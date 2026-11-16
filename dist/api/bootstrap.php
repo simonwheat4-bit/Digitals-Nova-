@@ -151,7 +151,8 @@ function dnEnsureInitialData($dataDir) {
         'platform_brand.json',
         'password_resets.json',
         'cron_logs.json',
-        'remote_config.json'
+        'remote_config.json',
+        'payment_gateway_settings.json'
     ];
     foreach ($seedDirs as $sd) {
         if (!is_dir($sd) || realpath($sd) === $dataDir) {
@@ -337,6 +338,57 @@ function dnGetDefaultRemoteConfig() {
         'globalNoticeActive' => false,
         'updatedAt' => ''
     ];
+}
+
+function dnGetDefaultPaymentGatewaySettings() {
+    return [
+        'cardGateway' => [
+            'provider' => 'STRIPE',
+            'mode' => 'TEST',
+            'publishableKey' => 'pk_test_51O9Xv7DigitalsNovaLiveKeyDemo001',
+            'secretKey' => 'sk_test_51O9Xv7DigitalsNovaSecretDemo001',
+            'webhookSecret' => 'whsec_digitalsnova_demo_secret_2026'
+        ],
+        'localAccounts' => [
+            'bankName' => 'Meezan Bank Ltd',
+            'accountTitle' => 'DigitalsNova / Ubaid Ur Rehman',
+            'accountNumber' => '01080105286455',
+            'iban' => 'PK62MEZN0001080105286455',
+            'jazzCash' => '0313-1094557',
+            'jazzCashTitle' => 'Ubaid Ur Rehman',
+            'easyPaisa' => '0313-1094557',
+            'easyPaisaTitle' => 'Ubaid Ur Rehman',
+            'whatsappNumber' => '+92 313 1094557'
+        ],
+        'updatedAt' => date('c')
+    ];
+}
+
+function dnGetPaymentGatewaySettings($dataDir) {
+    $filePath = $dataDir . '/payment_gateway_settings.json';
+    $settings = dnReadUnifiedJson($filePath, 'payment_gateway_settings.json', null);
+    $defaults = dnGetDefaultPaymentGatewaySettings();
+    if (!is_array($settings)) {
+        return $defaults;
+    }
+    return [
+        'cardGateway' => array_merge($defaults['cardGateway'], is_array($settings['cardGateway'] ?? null) ? $settings['cardGateway'] : []),
+        'localAccounts' => array_merge($defaults['localAccounts'], is_array($settings['localAccounts'] ?? null) ? $settings['localAccounts'] : []),
+        'updatedAt' => $settings['updatedAt'] ?? date('c')
+    ];
+}
+
+function dnSavePaymentGatewaySettings($dataDir, $settings) {
+    $filePath = $dataDir . '/payment_gateway_settings.json';
+    $current = dnGetPaymentGatewaySettings($dataDir);
+    $merged = [
+        'cardGateway' => array_merge($current['cardGateway'], is_array($settings['cardGateway'] ?? null) ? $settings['cardGateway'] : []),
+        'localAccounts' => array_merge($current['localAccounts'], is_array($settings['localAccounts'] ?? null) ? $settings['localAccounts'] : []),
+        'updatedAt' => date('c')
+    ];
+    dnWriteJsonFile($filePath, $merged);
+    dnSyncToSecondaryDataDirs('payment_gateway_settings.json', $merged, $dataDir);
+    return $merged;
 }
 
 function dnGetSuperAdmin($dataDir) {
