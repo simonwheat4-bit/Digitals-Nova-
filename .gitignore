@@ -11,3 +11,4 @@ verify-*.cjs
 screenshot-*.cjs
 *.ps1
 scratch/
+*.bak.js

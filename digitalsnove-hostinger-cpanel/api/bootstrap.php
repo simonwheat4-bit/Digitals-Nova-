@@ -358,7 +358,33 @@ function dnGetDefaultPaymentGatewaySettings() {
             'jazzCashTitle' => 'Ubaid Ur Rehman',
             'easyPaisa' => '0313-1094557',
             'easyPaisaTitle' => 'Ubaid Ur Rehman',
-            'whatsappNumber' => '+92 313 1094557'
+            'whatsappNumber' => '+92 313 1094557',
+            'customMethods' => [
+                [
+                    'id' => 'pm_meezan',
+                    'name' => 'Meezan Bank Ltd',
+                    'title' => 'DigitalsNova / Ubaid Ur Rehman',
+                    'number' => '01080105286455',
+                    'iban' => 'PK62MEZN0001080105286455',
+                    'note' => '24/7 Instant Online Transfer (IBFT)'
+                ],
+                [
+                    'id' => 'pm_jazzcash',
+                    'name' => 'JazzCash',
+                    'title' => 'Ubaid Ur Rehman',
+                    'number' => '0313-1094557',
+                    'iban' => '',
+                    'note' => 'Instant Mobile Wallet Transfer'
+                ],
+                [
+                    'id' => 'pm_easypaisa',
+                    'name' => 'EasyPaisa',
+                    'title' => 'Ubaid Ur Rehman',
+                    'number' => '0313-1094557',
+                    'iban' => '',
+                    'note' => 'Instant Mobile Wallet Transfer'
+                ]
+            ]
         ],
         'updatedAt' => date('c')
     ];
@@ -371,9 +397,15 @@ function dnGetPaymentGatewaySettings($dataDir) {
     if (!is_array($settings)) {
         return $defaults;
     }
+    $local = array_merge($defaults['localAccounts'], is_array($settings['localAccounts'] ?? null) ? $settings['localAccounts'] : []);
+    if (isset($settings['localAccounts']['customMethods']) && is_array($settings['localAccounts']['customMethods'])) {
+        $local['customMethods'] = $settings['localAccounts']['customMethods'];
+    } elseif (empty($local['customMethods'])) {
+        $local['customMethods'] = $defaults['localAccounts']['customMethods'];
+    }
     return [
         'cardGateway' => array_merge($defaults['cardGateway'], is_array($settings['cardGateway'] ?? null) ? $settings['cardGateway'] : []),
-        'localAccounts' => array_merge($defaults['localAccounts'], is_array($settings['localAccounts'] ?? null) ? $settings['localAccounts'] : []),
+        'localAccounts' => $local,
         'updatedAt' => $settings['updatedAt'] ?? date('c')
     ];
 }
@@ -381,9 +413,14 @@ function dnGetPaymentGatewaySettings($dataDir) {
 function dnSavePaymentGatewaySettings($dataDir, $settings) {
     $filePath = $dataDir . '/payment_gateway_settings.json';
     $current = dnGetPaymentGatewaySettings($dataDir);
+    $incomingLocal = is_array($settings['localAccounts'] ?? null) ? $settings['localAccounts'] : [];
+    $mergedLocal = array_merge($current['localAccounts'], $incomingLocal);
+    if (isset($incomingLocal['customMethods']) && is_array($incomingLocal['customMethods'])) {
+        $mergedLocal['customMethods'] = $incomingLocal['customMethods'];
+    }
     $merged = [
         'cardGateway' => array_merge($current['cardGateway'], is_array($settings['cardGateway'] ?? null) ? $settings['cardGateway'] : []),
-        'localAccounts' => array_merge($current['localAccounts'], is_array($settings['localAccounts'] ?? null) ? $settings['localAccounts'] : []),
+        'localAccounts' => $mergedLocal,
         'updatedAt' => date('c')
     ];
     dnWriteJsonFile($filePath, $merged);

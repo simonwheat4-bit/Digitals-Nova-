@@ -15,7 +15,33 @@
     "jazzCashTitle": "Ubaid Ur Rehman",
     "easyPaisa": "0313-1094557",
     "easyPaisaTitle": "Ubaid Ur Rehman",
-    "whatsappNumber": "+92 313 1094557"
+    "whatsappNumber": "+92 313 1094557",
+    "customMethods": [
+      {
+        "id": "pm_meezan",
+        "name": "Meezan Bank Ltd",
+        "title": "DigitalsNova / Ubaid Ur Rehman",
+        "number": "01080105286455",
+        "iban": "PK62MEZN0001080105286455",
+        "note": "24/7 Instant Online Transfer (IBFT)"
+      },
+      {
+        "id": "pm_jazzcash",
+        "name": "JazzCash",
+        "title": "Ubaid Ur Rehman",
+        "number": "0313-1094557",
+        "iban": "",
+        "note": "Instant Mobile Wallet Transfer"
+      },
+      {
+        "id": "pm_easypaisa",
+        "name": "EasyPaisa",
+        "title": "Ubaid Ur Rehman",
+        "number": "0313-1094557",
+        "iban": "",
+        "note": "Instant Mobile Wallet Transfer"
+      }
+    ]
   },
-  "updatedAt": "2026-11-16T12:00:00Z"
+  "updatedAt": "2026-11-17T12:00:00Z"
 }

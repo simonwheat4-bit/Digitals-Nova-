@@ -154,13 +154,91 @@ export default function SuperAdminPanel({
         jazzCashTitle: 'Ubaid Ur Rehman',
         easyPaisa: '0313-1094557',
         easyPaisaTitle: 'Ubaid Ur Rehman',
-        whatsappNumber: '+92 313 1094557'
+        whatsappNumber: '+92 313 1094557',
+        customMethods: [
+          {
+            id: 'pm_meezan',
+            name: 'Meezan Bank Ltd',
+            title: 'DigitalsNova / Ubaid Ur Rehman',
+            number: '01080105286455',
+            iban: 'PK62MEZN0001080105286455',
+            note: '24/7 Instant Online Transfer (IBFT)'
+          },
+          {
+            id: 'pm_jazzcash',
+            name: 'JazzCash',
+            title: 'Ubaid Ur Rehman',
+            number: '0313-1094557',
+            iban: '',
+            note: 'Instant Mobile Wallet Transfer'
+          },
+          {
+            id: 'pm_easypaisa',
+            name: 'EasyPaisa',
+            title: 'Ubaid Ur Rehman',
+            number: '0313-1094557',
+            iban: '',
+            note: 'Instant Mobile Wallet Transfer'
+          }
+        ]
       }
     };
   });
   const [paymentSettingsSavedNotice, setPaymentSettingsSavedNotice] = useState(false);
   const [savingPaymentSettings, setSavingPaymentSettings] = useState(false);
   const [showSecretKey, setShowSecretKey] = useState(false);
+
+  const handleAddCustomPaymentMethod = () => {
+    setPaymentSettings(prev => {
+      const currentMethods = prev?.localAccounts?.customMethods || [];
+      const newMethod = {
+        id: 'pm_' + Date.now(),
+        name: '',
+        title: '',
+        number: '',
+        iban: '',
+        note: ''
+      };
+      return {
+        ...prev,
+        localAccounts: {
+          ...prev.localAccounts,
+          customMethods: [...currentMethods, newMethod]
+        }
+      };
+    });
+  };
+
+  const handleUpdateCustomPaymentMethod = (id, field, value) => {
+    setPaymentSettings(prev => {
+      const currentMethods = (prev?.localAccounts?.customMethods || []).map(m => {
+        if (m.id === id) {
+          return { ...m, [field]: value };
+        }
+        return m;
+      });
+      return {
+        ...prev,
+        localAccounts: {
+          ...prev.localAccounts,
+          customMethods: currentMethods
+        }
+      };
+    });
+  };
+
+  const handleRemoveCustomPaymentMethod = (id) => {
+    setPaymentSettings(prev => {
+      const currentMethods = (prev?.localAccounts?.customMethods || []).filter(m => m.id !== id);
+      return {
+        ...prev,
+        localAccounts: {
+          ...prev.localAccounts,
+          customMethods: currentMethods
+        }
+      };
+    });
+  };
 
   // Sync pricing plans from server on mount
   useEffect(() => {
@@ -1586,123 +1664,138 @@ export default function SuperAdminPanel({
                   </div>
                 </div>
 
-                {/* Card 2: Local Bank & Mobile Wallets (Pakistan) */}
+                {/* Card 2: Custom Payment Accounts & Wallets */}
                 <div className="rounded-2xl p-5 bg-emerald-50/60 border border-emerald-200 text-slate-800 space-y-4">
-                  <div className="flex items-center justify-between pb-3 border-b border-emerald-200">
+                  <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-emerald-200">
                     <div className="flex items-center gap-2">
                       <div className="w-7 h-7 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-bold text-xs">
                         PK
                       </div>
-                      <h4 className="font-extrabold text-sm text-navy">Local Bank &amp; Mobile Wallets (Pakistan)</h4>
+                      <div>
+                        <h4 className="font-extrabold text-sm text-navy">Custom Payment Accounts / Wallets</h4>
+                        <p className="text-[10px] text-slate-500">Meezan, JazzCash, EasyPaisa, SadaPay, NayaPay &amp; Bank Transfer</p>
+                      </div>
                     </div>
-                    <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full border border-emerald-300">
-                      Tab 2 Client Sync
-                    </span>
+                    <button
+                      type="button"
+                      onClick={handleAddCustomPaymentMethod}
+                      className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-[11px] flex items-center gap-1.5 shadow transition cursor-pointer"
+                    >
+                      <PlusCircle className="w-3.5 h-3.5 text-emerald-200" />
+                      <span>+ Add Payment Method</span>
+                    </button>
                   </div>
 
-                  <div className="space-y-3 text-xs">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-[11px] font-bold text-navy mb-1">
-                          Bank Name
-                        </label>
-                        <input
-                          type="text"
-                          value={paymentSettings.localAccounts.bankName}
-                          onChange={(e) => setPaymentSettings(prev => ({
-                            ...prev,
-                            localAccounts: { ...prev.localAccounts, bankName: e.target.value }
-                          }))}
-                          className="w-full px-3 py-2 rounded-xl bg-white border border-slate-300 font-bold text-navy focus:outline-none focus:border-emerald-600"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[11px] font-bold text-navy mb-1">
-                          Account Title
-                        </label>
-                        <input
-                          type="text"
-                          value={paymentSettings.localAccounts.accountTitle}
-                          onChange={(e) => setPaymentSettings(prev => ({
-                            ...prev,
-                            localAccounts: { ...prev.localAccounts, accountTitle: e.target.value }
-                          }))}
-                          className="w-full px-3 py-2 rounded-xl bg-white border border-slate-300 font-bold text-navy focus:outline-none focus:border-emerald-600"
-                        />
-                      </div>
-                    </div>
+                  <div className="space-y-3 text-xs max-h-[460px] overflow-y-auto pr-1">
+                    {(paymentSettings?.localAccounts?.customMethods || []).map((method, idx) => (
+                      <div key={method.id || idx} className="p-3.5 rounded-xl bg-white border border-emerald-200 space-y-2.5 shadow-2xs">
+                        <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                          <span className="font-extrabold text-navy text-xs flex items-center gap-1.5">
+                            <span className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-800 font-mono text-[10px] flex items-center justify-center font-black">
+                              {idx + 1}
+                            </span>
+                            <span>{method.name || 'New Payment Account'}</span>
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveCustomPaymentMethod(method.id)}
+                            className="text-red-500 hover:text-red-700 p-1 rounded-lg hover:bg-red-50 text-[10px] font-bold flex items-center gap-1 cursor-pointer"
+                            title="Remove this payment method"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            <span>Remove</span>
+                          </button>
+                        </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-[11px] font-bold text-navy mb-1">
-                          Account Number
-                        </label>
-                        <input
-                          type="text"
-                          value={paymentSettings.localAccounts.accountNumber}
-                          onChange={(e) => setPaymentSettings(prev => ({
-                            ...prev,
-                            localAccounts: { ...prev.localAccounts, accountNumber: e.target.value }
-                          }))}
-                          className="w-full px-3 py-2 rounded-xl bg-white border border-slate-300 font-mono font-bold text-navy focus:outline-none focus:border-emerald-600"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[11px] font-bold text-navy mb-1">
-                          IBAN (24 Characters)
-                        </label>
-                        <input
-                          type="text"
-                          value={paymentSettings.localAccounts.iban}
-                          onChange={(e) => setPaymentSettings(prev => ({
-                            ...prev,
-                            localAccounts: { ...prev.localAccounts, iban: e.target.value }
-                          }))}
-                          className="w-full px-3 py-2 rounded-xl bg-white border border-slate-300 font-mono font-bold text-navy focus:outline-none focus:border-emerald-600"
-                        />
-                      </div>
-                    </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                          <div>
+                            <label className="block text-[10px] font-bold text-slate-600 mb-0.5">
+                              Method / Bank Name *
+                            </label>
+                            <input
+                              type="text"
+                              value={method.name || ''}
+                              onChange={(e) => handleUpdateCustomPaymentMethod(method.id, 'name', e.target.value)}
+                              placeholder="e.g. Meezan Bank, JazzCash, SadaPay"
+                              className="w-full px-2.5 py-1.5 rounded-lg bg-slate-50 border border-slate-300 font-bold text-navy text-xs focus:bg-white focus:outline-none focus:border-emerald-600"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] font-bold text-slate-600 mb-0.5">
+                              Account Title *
+                            </label>
+                            <input
+                              type="text"
+                              value={method.title || ''}
+                              onChange={(e) => handleUpdateCustomPaymentMethod(method.id, 'title', e.target.value)}
+                              placeholder="e.g. DigitalsNova / Ubaid Ur Rehman"
+                              className="w-full px-2.5 py-1.5 rounded-lg bg-slate-50 border border-slate-300 font-bold text-navy text-xs focus:bg-white focus:outline-none focus:border-emerald-600"
+                            />
+                          </div>
+                        </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-[11px] font-bold text-rose-700 mb-1">
-                          📱 JazzCash Account Number
-                        </label>
-                        <input
-                          type="text"
-                          value={paymentSettings.localAccounts.jazzCash}
-                          onChange={(e) => setPaymentSettings(prev => ({
-                            ...prev,
-                            localAccounts: { ...prev.localAccounts, jazzCash: e.target.value }
-                          }))}
-                          placeholder="03001234567"
-                          className="w-full px-3 py-2 rounded-xl bg-white border border-slate-300 font-mono font-bold text-navy focus:outline-none focus:border-rose-600"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[11px] font-bold text-emerald-700 mb-1">
-                          📱 EasyPaisa Account Number
-                        </label>
-                        <input
-                          type="text"
-                          value={paymentSettings.localAccounts.easyPaisa}
-                          onChange={(e) => setPaymentSettings(prev => ({
-                            ...prev,
-                            localAccounts: { ...prev.localAccounts, easyPaisa: e.target.value }
-                          }))}
-                          placeholder="03451234567"
-                          className="w-full px-3 py-2 rounded-xl bg-white border border-slate-300 font-mono font-bold text-navy focus:outline-none focus:border-emerald-600"
-                        />
-                      </div>
-                    </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                          <div>
+                            <label className="block text-[10px] font-bold text-slate-600 mb-0.5">
+                              Account # / Mobile Wallet # *
+                            </label>
+                            <input
+                              type="text"
+                              value={method.number || ''}
+                              onChange={(e) => handleUpdateCustomPaymentMethod(method.id, 'number', e.target.value)}
+                              placeholder="e.g. 01080105286455 or 0313-1094557"
+                              className="w-full px-2.5 py-1.5 rounded-lg bg-slate-50 border border-slate-300 font-mono font-bold text-navy text-xs focus:bg-white focus:outline-none focus:border-emerald-600"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] font-bold text-slate-600 mb-0.5">
+                              IBAN (24 Chars, Optional)
+                            </label>
+                            <input
+                              type="text"
+                              value={method.iban || ''}
+                              onChange={(e) => handleUpdateCustomPaymentMethod(method.id, 'iban', e.target.value)}
+                              placeholder="e.g. PK62MEZN0001080105286455"
+                              className="w-full px-2.5 py-1.5 rounded-lg bg-slate-50 border border-slate-300 font-mono text-slate-700 text-xs focus:bg-white focus:outline-none focus:border-emerald-600"
+                            />
+                          </div>
+                        </div>
 
-                    <div>
+                        <div>
+                          <label className="block text-[10px] font-bold text-slate-600 mb-0.5">
+                            Transfer Note / Instructions (Optional)
+                          </label>
+                          <input
+                            type="text"
+                            value={method.note || ''}
+                            onChange={(e) => handleUpdateCustomPaymentMethod(method.id, 'note', e.target.value)}
+                            placeholder="e.g. 24/7 Instant Online Transfer (IBFT) or App to App"
+                            className="w-full px-2.5 py-1.5 rounded-lg bg-slate-50 border border-slate-300 text-slate-700 text-xs focus:bg-white focus:outline-none focus:border-emerald-600"
+                          />
+                        </div>
+                      </div>
+                    ))}
+
+                    {(!paymentSettings?.localAccounts?.customMethods || paymentSettings.localAccounts.customMethods.length === 0) && (
+                      <div className="p-4 rounded-xl bg-white border border-dashed border-emerald-300 text-center space-y-2">
+                        <p className="text-xs text-slate-500 font-medium">No custom payment accounts configured yet.</p>
+                        <button
+                          type="button"
+                          onClick={handleAddCustomPaymentMethod}
+                          className="px-3 py-1.5 rounded-xl bg-emerald-600 text-white font-bold text-xs"
+                        >
+                          + Add First Account
+                        </button>
+                      </div>
+                    )}
+
+                    <div className="pt-2 border-t border-emerald-200">
                       <label className="block text-[11px] font-bold text-emerald-900 mb-1">
                         Official Support WhatsApp Number (Proof Dispatch Receiver)
                       </label>
                       <input
                         type="text"
-                        value={paymentSettings.localAccounts.whatsappNumber}
+                        value={paymentSettings?.localAccounts?.whatsappNumber || ''}
                         onChange={(e) => setPaymentSettings(prev => ({
                           ...prev,
                           localAccounts: { ...prev.localAccounts, whatsappNumber: e.target.value }
