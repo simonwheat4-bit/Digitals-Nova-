@@ -1502,6 +1502,88 @@ app.post('/api/treatments', (req, res) => {
   res.json({ treatment: newTreatment, sale: createdSale, smsLog: smsRecord });
 });
 
+app.put('/api/treatments/:id', (req, res) => {
+  const tenant = resolveTenant(req);
+  const treatment = db.treatments.find((t) => t.id === req.params.id && t.tenantId === tenant.id);
+  if (!treatment) return res.status(404).json({ error: 'Treatment ledger not found.' });
+
+  const { patientName, patientPhone, title, totalCost, totalSessions, notes, actorName, reason } = req.body;
+  const previousState = {
+    patientName: treatment.patientName,
+    patientPhone: treatment.patientPhone,
+    title: treatment.title,
+    totalCost: treatment.totalCost,
+    totalSessions: treatment.totalSessions,
+    remainingBalance: treatment.remainingBalance
+  };
+
+  if (patientName !== undefined) treatment.patientName = String(patientName).trim();
+  if (patientPhone !== undefined) treatment.patientPhone = String(patientPhone).trim();
+  if (title !== undefined) treatment.title = String(title).trim();
+  if (totalCost !== undefined && !isNaN(Number(totalCost))) treatment.totalCost = Math.max(0, Number(totalCost));
+  if (totalSessions !== undefined && !isNaN(Number(totalSessions))) treatment.totalSessions = Math.max(1, Number(totalSessions));
+  if (notes !== undefined) treatment.notes = String(notes).trim();
+
+  treatment.remainingBalance = Math.max(0, treatment.totalCost - (treatment.paidAmount || 0));
+  treatment.isEdited = true;
+  treatment.lastEditedAt = new Date().toISOString();
+
+  const actor = actorName || 'Staff/Admin';
+  const editReason = reason || 'Treatment Ledger correction';
+  const editRecord = {
+    editedAt: new Date().toISOString(),
+    editedBy: actor,
+    reason: editReason,
+    previous: previousState,
+    new: {
+      patientName: treatment.patientName,
+      patientPhone: treatment.patientPhone,
+      title: treatment.title,
+      totalCost: treatment.totalCost,
+      totalSessions: treatment.totalSessions,
+      remainingBalance: treatment.remainingBalance
+    }
+  };
+  treatment.editHistory = treatment.editHistory || [];
+  treatment.editHistory.push(editRecord);
+
+  if (treatment.patientId) {
+    const pat = db.patients.find((p) => p.id === treatment.patientId);
+    if (pat) {
+      if (patientName !== undefined) pat.name = treatment.patientName;
+      if (patientPhone !== undefined) pat.phone = treatment.patientPhone;
+    }
+  }
+
+  const auditLog = {
+    id: `aud_${Date.now()}_${Math.floor(Math.random() * 999)}`,
+    tenantId: tenant.id,
+    action: 'PATIENT_LEDGER_EDITED',
+    receiptId: treatment.id,
+    staffName: actor,
+    staffId: actor,
+    approvingAdmin: actor,
+    details: `Patient Treatment Ledger #${treatment.id} (${treatment.patientName}) was edited by ${actor}. Cost: Rs. ${previousState.totalCost} -> Rs. ${treatment.totalCost}. Reason: ${editReason}`,
+    timestamp: new Date().toISOString(),
+    editDetails: editRecord
+  };
+  db.auditLogs.unshift(auditLog);
+
+  saveDB(db);
+  res.json({ treatment, auditLog });
+});
+
+app.post('/api/treatments/catalog/bulk-delete', (req, res) => {
+  const tenant = resolveTenant(req);
+  const { ids } = req.body;
+  if (Array.isArray(ids) && ids.length > 0) {
+    const idSet = new Set(ids);
+    db.treatmentCatalog = db.treatmentCatalog.filter((tc) => !(tc.tenantId === tenant.id && idSet.has(tc.id)));
+    saveDB(db);
+  }
+  res.json({ success: true, deletedIds: ids });
+});
+
 app.post('/api/treatments/:id/pay-session', (req, res) => {
   const tenant = resolveTenant(req);
   const treatment = db.treatments.find((t) => t.id === req.params.id && t.tenantId === tenant.id);
@@ -1799,6 +1881,86 @@ app.post('/api/discounts/:id/respond', (req, res) => {
 // ============================================================================
 // 7. POS CHECKOUT, AUTO STOCK DEDUCTION (ALL INVENTORY ITEMS), WALK-IN DETAILS
 // ============================================================================
+app.put('/api/sales/:id', (req, res) => {
+  const tenant = resolveTenant(req);
+  const sale = db.sales.find((s) => s.id === req.params.id && s.tenantId === tenant.id);
+  if (!sale) return res.status(404).json({ error: 'Invoice not found.' });
+
+  const { patientName, patientPhone, walkInName, walkInPhone, items, discountAmount, amountPaidToday, notes, paymentMethod, actorName, reason } = req.body;
+  const previousState = {
+    patientName: sale.patientName,
+    patientPhone: sale.patientPhone,
+    netTotal: sale.netTotal,
+    amountPaidToday: sale.amountPaidToday,
+    remainingLedgerBalance: sale.remainingLedgerBalance
+  };
+
+  if (patientName !== undefined) sale.patientName = String(patientName).trim();
+  if (patientPhone !== undefined) sale.patientPhone = String(patientPhone).trim();
+  if (walkInName !== undefined) sale.walkInName = String(walkInName).trim();
+  if (walkInPhone !== undefined) sale.walkInPhone = String(walkInPhone).trim();
+  if (paymentMethod !== undefined) sale.paymentMethod = String(paymentMethod).trim();
+  if (notes !== undefined) sale.notes = String(notes).trim();
+
+  if (Array.isArray(items) && items.length > 0) {
+    let subTotal = 0;
+    sale.items = items.map((it) => {
+      const qty = Math.max(1, Number(it.qty || it.quantity || 1));
+      const unitPrice = Number(it.unitPrice || it.price || 0);
+      const subtotal = Math.round(qty * unitPrice);
+      subTotal += subtotal;
+      return { ...it, qty, quantity: qty, unitPrice, subtotal };
+    });
+    sale.subTotal = subTotal;
+    const disc = discountAmount !== undefined ? Math.max(0, Number(discountAmount)) : (sale.discountAmount || 0);
+    sale.discountAmount = disc;
+    sale.netTotal = Math.max(0, subTotal - disc);
+  }
+
+  if (amountPaidToday !== undefined && !isNaN(Number(amountPaidToday))) {
+    sale.amountPaidToday = Math.max(0, Number(amountPaidToday));
+  }
+  sale.remainingLedgerBalance = Math.max(0, (sale.netTotal || 0) - (sale.amountPaidToday || 0));
+
+  sale.isEdited = true;
+  sale.lastEditedAt = new Date().toISOString();
+
+  const actor = actorName || 'Staff/Admin';
+  const editReason = reason || 'Invoice/Bill correction';
+  const editRecord = {
+    editedAt: new Date().toISOString(),
+    editedBy: actor,
+    reason: editReason,
+    previous: previousState,
+    new: {
+      patientName: sale.patientName,
+      patientPhone: sale.patientPhone,
+      netTotal: sale.netTotal,
+      amountPaidToday: sale.amountPaidToday,
+      remainingLedgerBalance: sale.remainingLedgerBalance
+    }
+  };
+  sale.editHistory = sale.editHistory || [];
+  sale.editHistory.push(editRecord);
+
+  const auditLog = {
+    id: `aud_${Date.now()}_${Math.floor(Math.random() * 999)}`,
+    tenantId: tenant.id,
+    action: 'INVOICE_EDITED',
+    receiptId: sale.invoiceNumber || sale.id,
+    staffName: actor,
+    staffId: actor,
+    approvingAdmin: actor,
+    details: `Invoice #${sale.invoiceNumber} was edited by ${actor}. Net: Rs. ${previousState.netTotal} -> Rs. ${sale.netTotal}. Reason: ${editReason}`,
+    timestamp: new Date().toISOString(),
+    editDetails: editRecord
+  };
+  db.auditLogs.unshift(auditLog);
+
+  saveDB(db);
+  res.json({ sale, auditLog });
+});
+
 app.post('/api/sales/checkout', (req, res) => {
   const tenant = resolveTenant(req);
   const sub = computeSubscriptionStatus(tenant);

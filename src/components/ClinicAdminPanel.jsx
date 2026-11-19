@@ -63,6 +63,7 @@ export default function ClinicAdminPanel({
   onDeleteStaff,
   onAddCatalogTreatment,
   onDeleteCatalogTreatment,
+  onBulkDeleteCatalogTreatments = null,
   onRespondDiscountRequest,
   onResolvePasswordReset,
   onAdminRefundSale,
@@ -147,6 +148,9 @@ export default function ClinicAdminPanel({
   const [hideFinancialMetrics, setHideFinancialMetrics] = useState(() => {
     return localStorage.getItem('digitalsnova_hide_financials') !== 'false';
   });
+
+  // Bulk Selection & Delete State for Treatment Packages Catalog
+  const [selectedCatalogIds, setSelectedCatalogIds] = useState([]);
 
   const toggleFinancialPrivacy = () => {
     setHideFinancialMetrics((prev) => {
@@ -1212,6 +1216,14 @@ export default function ClinicAdminPanel({
                           {t.patientCode}
                         </span>
                         <span className="font-extrabold text-sm text-navy ml-2">{t.patientName}</span>
+                        {t.isEdited && (
+                          <span
+                            className="inline-flex items-center gap-1 font-mono text-[10px] bg-amber-500 text-white font-extrabold px-1.5 py-0.5 rounded ml-2 shadow-xs"
+                            title={`Edited: ${t.editReason || t.editedReason || 'Modified record'}`}
+                          >
+                            ✏️ EDITED
+                          </span>
+                        )}
                         <span className="font-mono text-xs text-slate-600 ml-2">({t.patientPhone})</span>
                         <div className="font-bold text-xs text-teal mt-1">
                           {t.title} • Started:{' '}
@@ -1495,7 +1507,17 @@ export default function ClinicAdminPanel({
                             return (
                               <tr key={t.id}>
                                 <td className="py-2.5 px-2">
-                                  <div className="font-bold text-navy">{t.patientName}</div>
+                                  <div className="font-bold text-navy flex items-center gap-1.5">
+                                    <span>{t.patientName}</span>
+                                    {t.isEdited && (
+                                      <span
+                                        className="font-mono text-[9px] bg-amber-500 text-white font-extrabold px-1.5 py-0.2 rounded shadow-xs"
+                                        title={`Edited: ${t.editReason || t.editedReason || 'Modified record'}`}
+                                      >
+                                        ✏️ EDITED
+                                      </span>
+                                    )}
+                                  </div>
                                   <div className="font-mono text-[10px] text-slate-500">
                                     {t.patientPhone} • {t.patientCode}
                                   </div>
@@ -1585,6 +1607,14 @@ export default function ClinicAdminPanel({
                         <div>
                           <span className="font-mono font-bold text-navy">{s.invoiceNumber}</span> •{' '}
                           <span className="font-bold">{s.patientName}</span> •{' '}
+                          {s.isEdited && (
+                            <span
+                              className="inline-flex items-center gap-1 font-mono text-[10px] bg-amber-500 text-white font-extrabold px-1.5 py-0.5 rounded mr-1.5 shadow-xs"
+                              title={`Edited: ${s.editReason || s.editedReason || 'Modified record'}`}
+                            >
+                              ✏️ EDITED
+                            </span>
+                          )}
                           <span className="text-slate-600">
                             {(s.items || []).map((i) => `${i.name} x${i.qty}`).join(', ')}
                           </span>{' '}
@@ -2201,34 +2231,103 @@ export default function ClinicAdminPanel({
           </div>
 
           <div className="md:col-span-7 bg-white rounded-2xl p-5 shadow-sm border border-slate-200">
-            <h3 className="font-extrabold text-sm text-navy mb-3">
-              Active Treatment Packages Catalog ({treatmentCatalog.length})
-            </h3>
-            <div className="space-y-2">
-              {treatmentCatalog.map((c) => (
-                <div
-                  key={c.id}
-                  className="p-3 rounded-xl border border-slate-200 flex items-center justify-between text-xs hover:bg-ice/30"
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="selectAllCatalogTreatments"
+                  checked={treatmentCatalog.length > 0 && selectedCatalogIds.length === treatmentCatalog.length}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      setSelectedCatalogIds(treatmentCatalog.map((c) => c.id));
+                    } else {
+                      setSelectedCatalogIds([]);
+                    }
+                  }}
+                  className="w-4 h-4 rounded text-teal accent-teal cursor-pointer"
+                />
+                <label
+                  htmlFor="selectAllCatalogTreatments"
+                  className="font-extrabold text-sm text-navy cursor-pointer select-none"
                 >
-                  <div>
-                    <div className="font-extrabold text-navy">{c.name}</div>
-                    <div className="text-[11px] text-slate-500">
-                      {c.category} • Default Cost:{' '}
-                      <strong className="font-mono text-teal">
-                        Rs. {Number(c.defaultCost).toLocaleString()}
-                      </strong>{' '}
-                      ({c.defaultSessions} Sessions)
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => onDeleteCatalogTreatment(c.id)}
-                    className="p-1.5 rounded-lg text-slate-400 hover:text-alert hover:bg-red-50"
+                  Active Treatment Packages Catalog ({treatmentCatalog.length})
+                </label>
+              </div>
+              {selectedCatalogIds.length > 0 && (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (
+                      !window.confirm(
+                        `Are you sure you want to bulk delete ${selectedCatalogIds.length} selected treatment package(s)?`
+                      )
+                    ) {
+                      return;
+                    }
+                    try {
+                      if (onBulkDeleteCatalogTreatments) {
+                        await onBulkDeleteCatalogTreatments(selectedCatalogIds);
+                      } else {
+                        for (const id of selectedCatalogIds) {
+                          await onDeleteCatalogTreatment(id);
+                        }
+                      }
+                      setToast(`Deleted ${selectedCatalogIds.length} treatment packages successfully!`);
+                      setSelectedCatalogIds([]);
+                    } catch (err) {
+                      setToast(`Error: ${err.message}`);
+                    }
+                  }}
+                  className="px-3 py-1.5 rounded-xl bg-alert hover:bg-red-600 text-white font-bold text-xs flex items-center gap-1.5 shadow transition cursor-pointer"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Bulk Delete Selected ({selectedCatalogIds.length})</span>
+                </button>
+              )}
+            </div>
+            <div className="space-y-2">
+              {treatmentCatalog.map((c) => {
+                const isSelected = selectedCatalogIds.includes(c.id);
+                return (
+                  <div
+                    key={c.id}
+                    className={`p-3 rounded-xl border flex items-center justify-between text-xs transition ${
+                      isSelected ? 'border-teal bg-teal/5 shadow-xs' : 'border-slate-200 hover:bg-ice/30'
+                    }`}
                   >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              ))}
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => {
+                          setSelectedCatalogIds((prev) =>
+                            prev.includes(c.id) ? prev.filter((id) => id !== c.id) : [...prev, c.id]
+                          );
+                        }}
+                        className="w-4 h-4 rounded text-teal accent-teal cursor-pointer"
+                      />
+                      <div>
+                        <div className="font-extrabold text-navy">{c.name}</div>
+                        <div className="text-[11px] text-slate-500">
+                          {c.category} • Default Cost:{' '}
+                          <strong className="font-mono text-teal">
+                            Rs. {Number(c.defaultCost).toLocaleString()}
+                          </strong>{' '}
+                          ({c.defaultSessions} Sessions)
+                        </div>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => onDeleteCatalogTreatment(c.id)}
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-alert hover:bg-red-50"
+                      title="Delete package"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
@@ -2407,22 +2506,44 @@ export default function ClinicAdminPanel({
               Logs Staff ID, Timestamp, Discount Requested, Approving Admin, and Exact Receipt ID
             </p>
             <div className="space-y-2 max-h-[420px] overflow-y-auto">
-              {auditLogs.map((log) => (
-                <div key={log.id} className="p-3 rounded-xl bg-ice/30 border border-slate-200 text-xs">
-                  <div className="flex items-center justify-between font-bold text-navy">
-                    <span>{log.action}</span>
-                    <span className="font-mono text-[10px] bg-navy text-gold px-2 py-0.5 rounded">
-                      Receipt: {log.receiptId}
-                    </span>
+              {auditLogs.map((log) => {
+                const isEditedLog = log.action === 'INVOICE_EDITED' || log.action === 'PATIENT_LEDGER_EDITED';
+                return (
+                  <div
+                    key={log.id}
+                    className={`p-3 rounded-xl border text-xs transition ${
+                      isEditedLog
+                        ? 'bg-amber-50/70 border-amber-300 shadow-sm'
+                        : 'bg-ice/30 border-slate-200'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between font-bold text-navy">
+                      <div className="flex items-center gap-2">
+                        {isEditedLog && (
+                          <span className="font-mono text-[10px] bg-amber-500 text-white font-extrabold px-2 py-0.5 rounded shadow-xs">
+                            ✏️ RECORD EDITED
+                          </span>
+                        )}
+                        <span>{log.action}</span>
+                      </div>
+                      <span className="font-mono text-[10px] bg-navy text-gold px-2 py-0.5 rounded">
+                        {log.receiptId ? `Receipt: ${log.receiptId}` : `ID: ${log.id || 'N/A'}`}
+                      </span>
+                    </div>
+                    <p className="text-slate-700 mt-1">{log.details}</p>
+                    {log.reason && (
+                      <div className="mt-1.5 p-2 rounded-lg bg-amber-100/90 border border-amber-200 text-amber-900 font-semibold text-[11px]">
+                        <strong>Edit Reason:</strong> {log.reason}
+                      </div>
+                    )}
+                    <div className="text-[10px] text-slate-500 font-mono mt-1 flex flex-wrap gap-3">
+                      <span>Staff: {log.staffName} ({log.staffId})</span>
+                      <span>Approver: {log.approvingAdmin}</span>
+                      <span>Time: {new Date(log.timestamp).toLocaleString()}</span>
+                    </div>
                   </div>
-                  <p className="text-slate-700 mt-1">{log.details}</p>
-                  <div className="text-[10px] text-slate-500 font-mono mt-1 flex flex-wrap gap-3">
-                    <span>Staff: {log.staffName} ({log.staffId})</span>
-                    <span>Approver: {log.approvingAdmin}</span>
-                    <span>Time: {new Date(log.timestamp).toLocaleString()}</span>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 

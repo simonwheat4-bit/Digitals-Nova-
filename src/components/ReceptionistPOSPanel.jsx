@@ -37,7 +37,8 @@ import {
   RotateCcw,
   DollarSign,
   Tag,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Edit2
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 
@@ -69,7 +70,9 @@ export default function ReceptionistPOSPanel({
   onUnparkCart,
   onOpenShift,
   onCloseShift,
-  onBulkAddProducts
+  onBulkAddProducts,
+  onUpdateTreatment = null,
+  onUpdateSale = null
 }) {
   const sector = getBusinessSector(tenant);
   const isRestaurant = isRestaurantBusiness(tenant);
@@ -171,6 +174,127 @@ export default function ReceptionistPOSPanel({
   const [sessionPayAmount, setSessionPayAmount] = useState('');
   const [sessionPayNotes, setSessionPayNotes] = useState('');
   const [sessionPayDate, setSessionPayDate] = useState(new Date().toISOString().slice(0, 16));
+
+  // Edit Treatment Ledger Modal State & Handlers
+  const [editingTreatment, setEditingTreatment] = useState(null);
+  const [editTreatmentForm, setEditTreatmentForm] = useState({
+    patientName: '',
+    patientPhone: '',
+    title: '',
+    totalCost: '',
+    totalSessions: '',
+    reason: ''
+  });
+  const [savingEditTreatment, setSavingEditTreatment] = useState(false);
+
+  const openEditTreatment = (trt) => {
+    setEditingTreatment(trt);
+    setEditTreatmentForm({
+      patientName: trt.patientName || '',
+      patientPhone: trt.patientPhone || '',
+      title: trt.title || '',
+      totalCost: String(trt.totalCost || 0),
+      totalSessions: String(trt.totalSessions || 1),
+      reason: ''
+    });
+  };
+
+  const handleSaveEditTreatment = async (e) => {
+    e.preventDefault();
+    if (!editTreatmentForm.reason.trim()) {
+      alert('Please provide a reason for editing this patient ledger (required for security audit log).');
+      return;
+    }
+    setSavingEditTreatment(true);
+    try {
+      const newTotalCost = Number(editTreatmentForm.totalCost) || 0;
+      const paid = Number(editingTreatment.paidAmount) || 0;
+      const newRemaining = Math.max(0, newTotalCost - paid);
+      const updated = {
+        ...editingTreatment,
+        patientName: editTreatmentForm.patientName.trim(),
+        patientPhone: editTreatmentForm.patientPhone.trim(),
+        title: editTreatmentForm.title.trim(),
+        totalCost: newTotalCost,
+        remainingBalance: newRemaining,
+        totalSessions: Number(editTreatmentForm.totalSessions) || 1,
+        isEdited: true,
+        editedAt: new Date().toISOString(),
+        editReason: editTreatmentForm.reason.trim(),
+        status: newRemaining <= 0 ? 'COMPLETED' : 'IN_PROGRESS'
+      };
+      if (onUpdateTreatment) {
+        await onUpdateTreatment(updated, editTreatmentForm.reason.trim());
+      }
+      setStatusBanner({
+        type: 'success',
+        text: `Patient treatment ledger updated successfully! Audit trail recorded for Admin.`
+      });
+      setEditingTreatment(null);
+    } catch (err) {
+      alert(`Error updating ledger: ${err.message}`);
+    } finally {
+      setSavingEditTreatment(false);
+    }
+  };
+
+  // Edit Sale / Customer Bill Modal State & Handlers
+  const [editingSale, setEditingSale] = useState(null);
+  const [editSaleForm, setEditSaleForm] = useState({
+    patientName: '',
+    patientPhone: '',
+    paymentMethod: 'CASH',
+    amountPaidToday: '',
+    netTotal: '',
+    reason: ''
+  });
+  const [savingEditSale, setSavingEditSale] = useState(false);
+
+  const openEditSale = (s) => {
+    setEditingSale(s);
+    setEditSaleForm({
+      patientName: s.patientName || '',
+      patientPhone: s.patientPhone || '',
+      paymentMethod: s.paymentMethod || 'CASH',
+      amountPaidToday: String(s.amountPaidToday ?? s.netTotal ?? 0),
+      netTotal: String(s.netTotal || 0),
+      reason: ''
+    });
+  };
+
+  const handleSaveEditSale = async (e) => {
+    e.preventDefault();
+    if (!editSaleForm.reason.trim()) {
+      alert('Please provide a reason for editing this customer bill (required for security audit log).');
+      return;
+    }
+    setSavingEditSale(true);
+    try {
+      const updated = {
+        ...editingSale,
+        patientName: editSaleForm.patientName.trim(),
+        patientPhone: editSaleForm.patientPhone.trim(),
+        paymentMethod: editSaleForm.paymentMethod,
+        amountPaidToday: Number(editSaleForm.amountPaidToday) || 0,
+        netTotal: Number(editSaleForm.netTotal) || 0,
+        isEdited: true,
+        editedAt: new Date().toISOString(),
+        editReason: editSaleForm.reason.trim()
+      };
+      if (onUpdateSale) {
+        await onUpdateSale(updated, editSaleForm.reason.trim());
+      }
+      setStatusBanner({
+        type: 'success',
+        text: `Bill #${editingSale.invoiceNumber || editingSale.id} updated successfully! Audit trail recorded for Admin.`
+      });
+      setEditingSale(null);
+    } catch (err) {
+      alert(`Error updating bill: ${err.message}`);
+    } finally {
+      setSavingEditSale(false);
+    }
+  };
 
   // Customer / Patient Detail Modal (when clicking an invoice or patient)
   const [inspectedCustomerModal, setInspectedCustomerModal] = useState(null);
@@ -2270,6 +2394,15 @@ export default function ReceptionistPOSPanel({
                           <span className="text-xs font-mono text-slate-600 font-semibold">
                             ({trt.patientPhone})
                           </span>
+                          {trt.isEdited && (
+                            <span
+                              className="text-[10px] bg-amber-100 text-amber-800 border border-amber-300 font-extrabold px-2 py-0.5 rounded-md flex items-center gap-1 shadow-xs"
+                              title={`Edited on ${trt.editedAt ? new Date(trt.editedAt).toLocaleString() : ''}: ${trt.editReason || 'Details modified'}`}
+                            >
+                              <Edit2 className="w-3 h-3 text-amber-600" />
+                              <span>EDITED</span>
+                            </span>
+                          )}
                           <span className="text-[11px] bg-ice px-2 py-0.5 rounded-md text-navy font-semibold flex items-center gap-1">
                             <Calendar className="w-3 h-3 text-teal" />
                             <span>Started: {new Date(trt.createdAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}</span>
@@ -2317,6 +2450,16 @@ export default function ReceptionistPOSPanel({
                             FULLY PAID
                           </span>
                         )}
+
+                        <button
+                          type="button"
+                          onClick={() => openEditTreatment(trt)}
+                          className="px-3 py-2 rounded-xl border border-slate-300 hover:border-navy bg-white hover:bg-slate-50 text-navy font-bold text-xs flex items-center gap-1.5 shadow-xs transition cursor-pointer"
+                          title="Edit patient details or treatment ledger"
+                        >
+                          <Edit2 className="w-3.5 h-3.5 text-teal" />
+                          <span>Edit Ledger</span>
+                        </button>
                       </div>
                     </div>
 
@@ -3005,6 +3148,14 @@ export default function ReceptionistPOSPanel({
                       >
                         <div className="font-extrabold text-navy group-hover:text-teal group-hover:underline flex items-center gap-1">
                           <span>{s.patientName}</span>
+                          {s.isEdited && (
+                            <span
+                              className="font-mono text-[9px] bg-amber-500 text-white font-extrabold px-1.5 py-0.2 rounded shadow-xs"
+                              title={`Edited: ${s.editReason || 'Details modified'}`}
+                            >
+                              ✏️ EDITED
+                            </span>
+                          )}
                           <Eye className="w-3.5 h-3.5 text-teal" />
                         </div>
                         <div className="text-[10px] font-mono text-slate-500">
@@ -3039,6 +3190,16 @@ export default function ReceptionistPOSPanel({
                       >
                         <Printer className="w-3 h-3 text-gold" />
                         <span>Reprint</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => openEditSale(s)}
+                        className="px-2.5 py-1 rounded-lg border border-slate-300 hover:border-navy bg-white hover:bg-slate-50 text-navy font-semibold text-[11px] flex items-center gap-1 cursor-pointer transition shadow-xs"
+                        title="Edit customer invoice / bill"
+                      >
+                        <Edit2 className="w-3 h-3 text-teal" />
+                        <span>Edit Bill</span>
                       </button>
 
                       <button
@@ -4322,6 +4483,304 @@ export default function ReceptionistPOSPanel({
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* EDIT PATIENT TREATMENT LEDGER MODAL (ADMIN AUDIT LOGGED) */}
+      {editingTreatment && (
+        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-lg w-full border-2 border-navy shadow-2xl overflow-hidden my-6">
+            <div className="bg-navy text-white px-5 py-4 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-gold text-navy font-bold">
+                  <Edit2 className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-sm text-white">
+                    Edit Patient Treatment Ledger ({editingTreatment.patientCode})
+                  </h3>
+                  <p className="text-[11px] text-ice/80">
+                    Modifications will be permanently recorded in Admin Security Audit Log
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditingTreatment(null)}
+                className="p-1.5 rounded-lg text-white/70 hover:text-white hover:bg-white/10"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEditTreatment} className="p-5 space-y-3.5 text-xs">
+              <div className="p-2.5 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 flex items-start gap-2">
+                <ShieldAlert className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                <div className="text-[11px]">
+                  <strong>Audit Protected:</strong> Changes made here update the patient's record, recalculate live balances, and alert the Clinic Admin.
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 uppercase text-[10px] mb-1">
+                  Patient Full Name:
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editTreatmentForm.patientName}
+                  onChange={(e) => setEditTreatmentForm({ ...editTreatmentForm, patientName: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:border-teal outline-none font-bold text-xs"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 uppercase text-[10px] mb-1">
+                  Patient Phone Number:
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editTreatmentForm.patientPhone}
+                  onChange={(e) => setEditTreatmentForm({ ...editTreatmentForm, patientPhone: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:border-teal outline-none font-bold text-xs font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 uppercase text-[10px] mb-1">
+                  Treatment / Package Name:
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editTreatmentForm.title}
+                  onChange={(e) => setEditTreatmentForm({ ...editTreatmentForm, title: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:border-teal outline-none font-bold text-xs"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-slate-700 uppercase text-[10px] mb-1">
+                    Total Agreed Cost (Rs.):
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    required
+                    value={editTreatmentForm.totalCost}
+                    onChange={(e) => setEditTreatmentForm({ ...editTreatmentForm, totalCost: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:border-teal outline-none font-bold text-xs font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 uppercase text-[10px] mb-1">
+                    Total Package Sessions:
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    required
+                    value={editTreatmentForm.totalSessions}
+                    onChange={(e) => setEditTreatmentForm({ ...editTreatmentForm, totalSessions: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:border-teal outline-none font-bold text-xs font-mono"
+                  />
+                </div>
+              </div>
+
+              {/* Live recalculation helper */}
+              <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
+                <div className="flex justify-between text-[11px] text-slate-600">
+                  <span>Paid so far:</span>
+                  <span className="font-mono font-bold text-emerald-700">Rs. {Number(editingTreatment.paidAmount || 0).toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between text-xs font-bold text-navy">
+                  <span>New Remaining Due:</span>
+                  <span className="font-mono text-teal">
+                    Rs. {Math.max(0, (Number(editTreatmentForm.totalCost) || 0) - Number(editingTreatment.paidAmount || 0)).toLocaleString()}
+                  </span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 uppercase text-[10px] mb-1">
+                  Reason for Edit (Required for Admin Audit Log):
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Typo in patient phone number / Agreed discount negotiation"
+                  value={editTreatmentForm.reason}
+                  onChange={(e) => setEditTreatmentForm({ ...editTreatmentForm, reason: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl border-2 border-amber-300 focus:border-amber-500 outline-none font-bold text-xs text-slate-800"
+                />
+              </div>
+
+              <div className="flex items-center gap-2 pt-2 border-t border-slate-200">
+                <button
+                  type="submit"
+                  disabled={savingEditTreatment}
+                  className="flex-1 py-2.5 rounded-xl bg-navy hover:bg-navy-light text-gold font-extrabold text-xs flex items-center justify-center gap-1.5 shadow transition cursor-pointer disabled:opacity-50"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>{savingEditTreatment ? 'Saving & Logging...' : 'Update Treatment Ledger'}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEditingTreatment(null)}
+                  className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs cursor-pointer"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* EDIT CUSTOMER BILL / INVOICE MODAL (ADMIN AUDIT LOGGED) */}
+      {editingSale && (
+        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-lg w-full border-2 border-navy shadow-2xl overflow-hidden my-6">
+            <div className="bg-navy text-white px-5 py-4 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-gold text-navy font-bold">
+                  <Edit2 className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-sm text-white">
+                    Edit Customer Bill / Invoice #{editingSale.invoiceNumber || editingSale.id}
+                  </h3>
+                  <p className="text-[11px] text-ice/80">
+                    Modifications will be permanently recorded in Admin Security Audit Log
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditingSale(null)}
+                className="p-1.5 rounded-lg text-white/70 hover:text-white hover:bg-white/10"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEditSale} className="p-5 space-y-3.5 text-xs">
+              <div className="p-2.5 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 flex items-start gap-2">
+                <ShieldAlert className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                <div className="text-[11px]">
+                  <strong>Audit Protected:</strong> Changes made here will update the invoice record and generate a security log entry visible to Admin.
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 uppercase text-[10px] mb-1">
+                  Customer / Patient Name:
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editSaleForm.patientName}
+                  onChange={(e) => setEditSaleForm({ ...editSaleForm, patientName: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:border-teal outline-none font-bold text-xs"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 uppercase text-[10px] mb-1">
+                  Customer Phone Number:
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editSaleForm.patientPhone}
+                  onChange={(e) => setEditSaleForm({ ...editSaleForm, patientPhone: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:border-teal outline-none font-bold text-xs font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 uppercase text-[10px] mb-1">
+                  Payment Method:
+                </label>
+                <select
+                  value={editSaleForm.paymentMethod}
+                  onChange={(e) => setEditSaleForm({ ...editSaleForm, paymentMethod: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:border-teal outline-none font-bold text-xs"
+                >
+                  <option value="CASH">Cash Payment</option>
+                  <option value="CARD">Debit / Credit Card</option>
+                  <option value="BANK_TRANSFER">Bank Transfer (IBAN / Online)</option>
+                  <option value="EASYPAISA">EasyPaisa</option>
+                  <option value="JAZZCASH">JazzCash</option>
+                  <option value="NAYAPAY">NayaPay</option>
+                  <option value="SADAPAY">SadaPay</option>
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-slate-700 uppercase text-[10px] mb-1">
+                    Net Bill Total (Rs.):
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    required
+                    value={editSaleForm.netTotal}
+                    onChange={(e) => setEditSaleForm({ ...editSaleForm, netTotal: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:border-teal outline-none font-bold text-xs font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 uppercase text-[10px] mb-1">
+                    Amount Paid Today (Rs.):
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    required
+                    value={editSaleForm.amountPaidToday}
+                    onChange={(e) => setEditSaleForm({ ...editSaleForm, amountPaidToday: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:border-teal outline-none font-bold text-xs font-mono"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 uppercase text-[10px] mb-1">
+                  Reason for Edit (Required for Admin Audit Log):
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Phone number typo / Payment method correction / Bill amount adjusted"
+                  value={editSaleForm.reason}
+                  onChange={(e) => setEditSaleForm({ ...editSaleForm, reason: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl border-2 border-amber-300 focus:border-amber-500 outline-none font-bold text-xs text-slate-800"
+                />
+              </div>
+
+              <div className="flex items-center gap-2 pt-2 border-t border-slate-200">
+                <button
+                  type="submit"
+                  disabled={savingEditSale}
+                  className="flex-1 py-2.5 rounded-xl bg-navy hover:bg-navy-light text-gold font-extrabold text-xs flex items-center justify-center gap-1.5 shadow transition cursor-pointer disabled:opacity-50"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>{savingEditSale ? 'Saving & Logging...' : 'Update Customer Bill'}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEditingSale(null)}
+                  className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs cursor-pointer"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

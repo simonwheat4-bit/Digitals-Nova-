@@ -1495,9 +1495,41 @@ if ($action === 'update_tenant') {
     $matchedIndex = dnFindTenantMatch($tenants, $targetId, $targetSub);
 
     if ($matchedIndex === -1) {
-        http_response_code(404);
-        echo json_encode(['success' => false, 'error' => 'Tenant not found']);
-        exit();
+        $resolvedSub = $targetSub !== '' ? $targetSub : dnSanitizeSubdomain($targetId);
+        $resolvedId = $targetId !== '' ? $targetId : ('tenant_' . $resolvedSub);
+        $cleanStoreName = trim((string)($updates['name'] ?? ($updates['businessName'] ?? ucwords(str_replace(['_', '-'], ' ', $resolvedSub)))));
+        if ($cleanStoreName === '') $cleanStoreName = 'Client Clinic & Store';
+
+        $newTenantObj = [
+            'id' => $resolvedId,
+            'subdomain' => $resolvedSub,
+            'name' => $cleanStoreName,
+            'businessName' => $cleanStoreName,
+            'logoUrl' => (string)($updates['logoUrl'] ?? ''),
+            'phone' => (string)($updates['phone'] ?? ''),
+            'whatsappNumber' => (string)($updates['whatsappNumber'] ?? ($updates['phone'] ?? '')),
+            'address' => (string)($updates['address'] ?? ''),
+            'email' => (string)($updates['email'] ?? ''),
+            'receiptHeader' => (string)($updates['receiptHeader'] ?? ''),
+            'receiptFooter' => (string)($updates['receiptFooter'] ?? ''),
+            'adminPin' => (string)($updates['adminPin'] ?? '1234'),
+            'adminUsername' => (string)($updates['adminUsername'] ?? ('admin.' . $resolvedSub)),
+            'adminName' => (string)($updates['adminName'] ?? $cleanStoreName),
+            'vertical' => (string)($updates['vertical'] ?? ($updates['sector'] ?? 'CLINIC_HMS')),
+            'sector' => (string)($updates['sector'] ?? ($updates['vertical'] ?? 'CLINIC_HMS')),
+            'planType' => (string)($updates['planType'] ?? 'TRIAL_3_DAYS'),
+            'planName' => (string)($updates['planName'] ?? '3-Day Free Trial'),
+            'cycleDays' => intval($updates['cycleDays'] ?? 3),
+            'billingCycleDay' => 1,
+            'monthlyFee' => 4999,
+            'subscriptionExpiry' => date('c', strtotime('+3 days')),
+            'manualBlocked' => false,
+            'isDeleted' => false,
+            'createdAt' => date('c'),
+            'updatedAt' => date('c')
+        ];
+        $tenants[] = $newTenantObj;
+        $matchedIndex = count($tenants) - 1;
     }
 
     $t = &$tenants[$matchedIndex];
@@ -2155,12 +2187,11 @@ if ($action === 'sync_offline_inventory') {
 // 12. ISOLATED TENANT WORKSPACE ERP / POS / HMS MUTATION ENDPOINTS
 // ==============================================================================
 $wsActions = [
-    'checkout_sale', 'park_cart', 'unpark_cart', 'open_shift', 'close_shift',
-    'create_patient', 'delete_patient', 'create_treatment', 'pay_treatment_session', 'delete_treatment',
+    'checkout_sale', 'edit_sale', 'refund_sale', 'delete_sale', 'park_cart', 'unpark_cart', 'open_shift', 'close_shift',
+    'create_patient', 'delete_patient', 'create_treatment', 'edit_treatment', 'pay_treatment_session', 'delete_treatment',
     'add_stock', 'update_stock', 'delete_stock', 'bulk_inventory', 'bulk_treatments',
-    'add_catalog_treatment', 'delete_catalog_treatment',
-    'verify_pin_discount', 'request_remote_discount', 'respond_discount_request',
-    'refund_sale', 'delete_sale'
+    'add_catalog_treatment', 'delete_catalog_treatment', 'bulk_delete_catalog_treatments',
+    'verify_pin_discount', 'request_remote_discount', 'respond_discount_request'
 ];
 
 if (in_array($action, $wsActions, true)) {
@@ -3278,6 +3309,214 @@ if (in_array($action, $wsActions, true)) {
         }));
         dnSaveWorkspace($dataDir, $sub, $ws);
         echo json_encode(['success' => true, 'deletedId' => $saleId]);
+        exit();
+    }
+
+    // ----- EDIT SALE / INVOICE (BILL CORRECTION WITH AUDIT TRAIL) -----
+    if ($action === 'edit_sale') {
+        $saleId = trim((string)($body['id'] ?? ($_GET['id'] ?? '')));
+        $foundIdx = -1;
+        foreach ($ws['sales'] as $sidx => $s) {
+            if (($s['id'] ?? '') === $saleId) {
+                $foundIdx = $sidx;
+                break;
+            }
+        }
+        if ($foundIdx === -1) {
+            http_response_code(404);
+            echo json_encode(['success' => false, 'error' => 'Invoice not found to edit.']);
+            exit();
+        }
+
+        $s = &$ws['sales'][$foundIdx];
+        $previousState = [
+            'patientName' => $s['patientName'] ?? '',
+            'patientPhone' => $s['patientPhone'] ?? '',
+            'netTotal' => $s['netTotal'] ?? 0,
+            'amountPaidToday' => $s['amountPaidToday'] ?? 0,
+            'remainingLedgerBalance' => $s['remainingLedgerBalance'] ?? 0
+        ];
+
+        if (isset($body['patientName'])) $s['patientName'] = trim((string)$body['patientName']);
+        if (isset($body['patientPhone'])) $s['patientPhone'] = trim((string)$body['patientPhone']);
+        if (isset($body['walkInName'])) $s['walkInName'] = trim((string)$body['walkInName']);
+        if (isset($body['walkInPhone'])) $s['walkInPhone'] = trim((string)$body['walkInPhone']);
+        if (isset($body['paymentMethod'])) $s['paymentMethod'] = trim((string)$body['paymentMethod']);
+        if (isset($body['notes'])) $s['notes'] = trim((string)$body['notes']);
+
+        if (isset($body['items']) && is_array($body['items'])) {
+            $subTotal = 0;
+            $normItems = [];
+            foreach ($body['items'] as $it) {
+                $qty = max(1, floatval($it['qty'] ?? ($it['quantity'] ?? 1)));
+                $unitPrice = floatval($it['unitPrice'] ?? ($it['price'] ?? 0));
+                $lineTotal = round($qty * $unitPrice, 2);
+                $subTotal += $lineTotal;
+                $normItems[] = array_merge($it, [
+                    'qty' => $qty,
+                    'quantity' => $qty,
+                    'unitPrice' => $unitPrice,
+                    'subtotal' => $lineTotal
+                ]);
+            }
+            $s['items'] = $normItems;
+            $s['subTotal'] = $subTotal;
+            $discAmt = max(0, floatval($body['discountAmount'] ?? ($s['discountAmount'] ?? 0)));
+            $s['discountAmount'] = $discAmt;
+            $s['netTotal'] = max(0, round($subTotal - $discAmt, 2));
+        }
+
+        if (isset($body['amountPaidToday'])) {
+            $s['amountPaidToday'] = floatval($body['amountPaidToday']);
+        }
+        $s['remainingLedgerBalance'] = max(0, floatval($s['netTotal'] ?? 0) - floatval($s['amountPaidToday'] ?? 0));
+
+        $s['isEdited'] = true;
+        $s['lastEditedAt'] = date('c');
+        $actor = trim((string)($body['actorName'] ?? ($body['cashierName'] ?? 'Staff/Admin')));
+        $reason = trim((string)($body['reason'] ?? 'Invoice/Bill correction'));
+
+        $editRecord = [
+            'editedAt' => date('c'),
+            'editedBy' => $actor,
+            'reason' => $reason,
+            'previous' => $previousState,
+            'new' => [
+                'patientName' => $s['patientName'] ?? '',
+                'patientPhone' => $s['patientPhone'] ?? '',
+                'netTotal' => $s['netTotal'] ?? 0,
+                'amountPaidToday' => $s['amountPaidToday'] ?? 0,
+                'remainingLedgerBalance' => $s['remainingLedgerBalance'] ?? 0
+            ]
+        ];
+        if (!isset($s['editHistory']) || !is_array($s['editHistory'])) {
+            $s['editHistory'] = [];
+        }
+        $s['editHistory'][] = $editRecord;
+
+        $auditLog = [
+            'id' => 'aud_' . time() . '_' . rand(100, 999),
+            'action' => 'INVOICE_EDITED',
+            'receiptId' => $s['invoiceNumber'] ?? $saleId,
+            'staffName' => $actor,
+            'staffId' => $actor,
+            'approvingAdmin' => $actor,
+            'details' => "Invoice #{$s['invoiceNumber']} was edited by {$actor}. Net: Rs. {$previousState['netTotal']} -> Rs. {$s['netTotal']}. Reason: {$reason}",
+            'timestamp' => date('c'),
+            'editDetails' => $editRecord
+        ];
+        if (!isset($ws['auditLogs']) || !is_array($ws['auditLogs'])) {
+            $ws['auditLogs'] = [];
+        }
+        array_unshift($ws['auditLogs'], $auditLog);
+
+        dnSaveWorkspace($dataDir, $sub, $ws);
+        echo json_encode(['success' => true, 'sale' => $s, 'auditLog' => $auditLog]);
+        exit();
+    }
+
+    // ----- EDIT TREATMENT LEDGER / PATIENT (MULTI-SESSION BILL CORRECTION) -----
+    if ($action === 'edit_treatment') {
+        $trtId = trim((string)($body['id'] ?? ($_GET['id'] ?? '')));
+        $foundIdx = -1;
+        foreach ($ws['treatments'] as $tidx => $t) {
+            if (($t['id'] ?? '') === $trtId) {
+                $foundIdx = $tidx;
+                break;
+            }
+        }
+        if ($foundIdx === -1) {
+            http_response_code(404);
+            echo json_encode(['success' => false, 'error' => 'Treatment ledger not found to edit.']);
+            exit();
+        }
+
+        $t = &$ws['treatments'][$foundIdx];
+        $previousState = [
+            'patientName' => $t['patientName'] ?? '',
+            'patientPhone' => $t['patientPhone'] ?? '',
+            'title' => $t['title'] ?? '',
+            'totalCost' => $t['totalCost'] ?? 0,
+            'totalSessions' => $t['totalSessions'] ?? 1,
+            'remainingBalance' => $t['remainingBalance'] ?? 0
+        ];
+
+        if (isset($body['patientName'])) $t['patientName'] = trim((string)$body['patientName']);
+        if (isset($body['patientPhone'])) $t['patientPhone'] = trim((string)$body['patientPhone']);
+        if (isset($body['title'])) $t['title'] = trim((string)$body['title']);
+        if (isset($body['totalCost']) && is_numeric($body['totalCost'])) $t['totalCost'] = max(0, floatval($body['totalCost']));
+        if (isset($body['totalSessions']) && is_numeric($body['totalSessions'])) $t['totalSessions'] = max(1, intval($body['totalSessions']));
+        if (isset($body['notes'])) $t['notes'] = trim((string)$body['notes']);
+
+        $t['remainingBalance'] = max(0, floatval($t['totalCost'] ?? 0) - floatval($t['paidAmount'] ?? 0));
+        $t['isEdited'] = true;
+        $t['lastEditedAt'] = date('c');
+        $actor = trim((string)($body['actorName'] ?? ($body['cashierName'] ?? 'Staff/Admin')));
+        $reason = trim((string)($body['reason'] ?? 'Treatment Ledger correction'));
+
+        $editRecord = [
+            'editedAt' => date('c'),
+            'editedBy' => $actor,
+            'reason' => $reason,
+            'previous' => $previousState,
+            'new' => [
+                'patientName' => $t['patientName'] ?? '',
+                'patientPhone' => $t['patientPhone'] ?? '',
+                'title' => $t['title'] ?? '',
+                'totalCost' => $t['totalCost'] ?? 0,
+                'totalSessions' => $t['totalSessions'] ?? 1,
+                'remainingBalance' => $t['remainingBalance'] ?? 0
+            ]
+        ];
+        if (!isset($t['editHistory']) || !is_array($t['editHistory'])) {
+            $t['editHistory'] = [];
+        }
+        $t['editHistory'][] = $editRecord;
+
+        // Also update patient profile if name or phone changed
+        if (!empty($t['patientId'])) {
+            foreach ($ws['patients'] as &$p) {
+                if (($p['id'] ?? '') === $t['patientId']) {
+                    if (isset($body['patientName'])) $p['name'] = $t['patientName'];
+                    if (isset($body['patientPhone'])) $p['phone'] = $t['patientPhone'];
+                    break;
+                }
+            }
+            unset($p);
+        }
+
+        $auditLog = [
+            'id' => 'aud_' . time() . '_' . rand(100, 999),
+            'action' => 'PATIENT_LEDGER_EDITED',
+            'receiptId' => $trtId,
+            'staffName' => $actor,
+            'staffId' => $actor,
+            'approvingAdmin' => $actor,
+            'details' => "Patient Treatment Ledger #{$trtId} ({$t['patientName']}) was edited by {$actor}. Cost: Rs. {$previousState['totalCost']} -> Rs. {$t['totalCost']}. Sessions: {$previousState['totalSessions']} -> {$t['totalSessions']}. Reason: {$reason}",
+            'timestamp' => date('c'),
+            'editDetails' => $editRecord
+        ];
+        if (!isset($ws['auditLogs']) || !is_array($ws['auditLogs'])) {
+            $ws['auditLogs'] = [];
+        }
+        array_unshift($ws['auditLogs'], $auditLog);
+
+        dnSaveWorkspace($dataDir, $sub, $ws);
+        echo json_encode(['success' => true, 'treatment' => $t, 'auditLog' => $auditLog]);
+        exit();
+    }
+
+    // ----- BULK DELETE TREATMENT PACKAGES CATALOG -----
+    if ($action === 'bulk_delete_catalog_treatments') {
+        $ids = isset($body['ids']) && is_array($body['ids']) ? $body['ids'] : [];
+        if (!empty($ids)) {
+            $idSet = array_flip($ids);
+            $ws['treatmentCatalog'] = array_values(array_filter($ws['treatmentCatalog'], function($tc) use ($idSet) {
+                return !isset($idSet[$tc['id'] ?? '']);
+            }));
+            dnSaveWorkspace($dataDir, $sub, $ws);
+        }
+        echo json_encode(['success' => true, 'deletedIds' => $ids]);
         exit();
     }
 }
