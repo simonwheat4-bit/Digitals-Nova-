@@ -62,6 +62,7 @@ export default function ClinicAdminPanel({
   onToggleStaff,
   onDeleteStaff,
   onAddCatalogTreatment,
+  onUpdateCatalogTreatment = null,
   onDeleteCatalogTreatment,
   onBulkDeleteCatalogTreatments = null,
   onRespondDiscountRequest,
@@ -151,6 +152,48 @@ export default function ClinicAdminPanel({
 
   // Bulk Selection & Delete State for Treatment Packages Catalog
   const [selectedCatalogIds, setSelectedCatalogIds] = useState([]);
+
+  // Edit Treatment Package in Catalog State & Handlers
+  const [editingCatalogTreatment, setEditingCatalogTreatment] = useState(null);
+  const [editCatalogForm, setEditCatalogForm] = useState({
+    name: '',
+    category: 'Clinical Treatment',
+    defaultCost: '',
+    defaultSessions: ''
+  });
+  const [savingCatalogTreatment, setSavingCatalogTreatment] = useState(false);
+
+  const openEditCatalogTreatment = (cat) => {
+    setEditingCatalogTreatment(cat);
+    setEditCatalogForm({
+      name: cat.name || '',
+      category: cat.category || 'Clinical Treatment',
+      defaultCost: String(cat.defaultCost || 5000),
+      defaultSessions: String(cat.defaultSessions || 1)
+    });
+  };
+
+  const handleSaveCatalogTreatment = async (e) => {
+    e.preventDefault();
+    setSavingCatalogTreatment(true);
+    try {
+      const payload = {
+        name: editCatalogForm.name.trim(),
+        category: editCatalogForm.category.trim(),
+        defaultCost: Number(editCatalogForm.defaultCost) || 0,
+        defaultSessions: Math.max(1, Number(editCatalogForm.defaultSessions) || 1)
+      };
+      if (onUpdateCatalogTreatment) {
+        await onUpdateCatalogTreatment(editingCatalogTreatment.id, payload);
+      }
+      setToast(`Updated package "${payload.name}" successfully!`);
+      setEditingCatalogTreatment(null);
+    } catch (err) {
+      setToast(`Error: ${err.message}`);
+    } finally {
+      setSavingCatalogTreatment(false);
+    }
+  };
 
   const toggleFinancialPrivacy = () => {
     setHideFinancialMetrics((prev) => {
@@ -2317,18 +2360,134 @@ export default function ClinicAdminPanel({
                         </div>
                       </div>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => onDeleteCatalogTreatment(c.id)}
-                      className="p-1.5 rounded-lg text-slate-400 hover:text-alert hover:bg-red-50"
-                      title="Delete package"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                                        <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => openEditCatalogTreatment(c)}
+                        className="px-2.5 py-1 rounded-lg bg-teal/10 hover:bg-teal text-teal hover:text-white font-extrabold text-[11px] flex items-center gap-1 transition cursor-pointer"
+                        title="Edit package details and pricing"
+                      >
+                        <Edit2 className="w-3 h-3" />
+                        <span>Edit</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => onDeleteCatalogTreatment(c.id)}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-alert hover:bg-red-50 cursor-pointer"
+                        title="Delete package"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
                 );
               })}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* EDIT TREATMENT PACKAGE MODAL */}
+      {editingCatalogTreatment && (
+        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-md w-full border-2 border-teal shadow-2xl overflow-hidden my-6">
+            <div className="bg-teal text-white px-5 py-4 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-gold text-navy font-bold">
+                  <Edit2 className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-sm text-white">
+                    Edit Treatment Package
+                  </h3>
+                  <p className="text-[11px] text-teal-100">
+                    Update package pricing, name and session defaults
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditingCatalogTreatment(null)}
+                className="p-1.5 rounded-lg text-white/70 hover:text-white hover:bg-white/10"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveCatalogTreatment} className="p-5 space-y-3.5 text-xs">
+              <div>
+                <label className="block font-bold text-slate-700 uppercase text-[10px] mb-1">
+                  Package / Treatment Name:
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editCatalogForm.name}
+                  onChange={(e) => setEditCatalogForm({ ...editCatalogForm, name: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:border-teal outline-none font-bold text-xs"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 uppercase text-[10px] mb-1">
+                  Category:
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editCatalogForm.category}
+                  onChange={(e) => setEditCatalogForm({ ...editCatalogForm, category: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:border-teal outline-none font-bold text-xs"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-slate-700 uppercase text-[10px] mb-1">
+                    Default Package Cost (Rs.):
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    required
+                    value={editCatalogForm.defaultCost}
+                    onChange={(e) => setEditCatalogForm({ ...editCatalogForm, defaultCost: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:border-teal outline-none font-bold text-xs font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 uppercase text-[10px] mb-1">
+                    Default Sessions:
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    required
+                    value={editCatalogForm.defaultSessions}
+                    onChange={(e) => setEditCatalogForm({ ...editCatalogForm, defaultSessions: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:border-teal outline-none font-bold text-xs font-mono"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 pt-2 border-t border-slate-200">
+                <button
+                  type="submit"
+                  disabled={savingCatalogTreatment}
+                  className="flex-1 py-2.5 rounded-xl bg-teal hover:bg-teal-dark text-white font-extrabold text-xs flex items-center justify-center gap-1.5 shadow transition cursor-pointer disabled:opacity-50"
+                >
+                  <Check className="w-4 h-4" />
+                  <span>{savingCatalogTreatment ? 'Saving...' : 'Save Package Changes'}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEditingCatalogTreatment(null)}
+                  className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs cursor-pointer"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

@@ -2190,7 +2190,7 @@ $wsActions = [
     'checkout_sale', 'edit_sale', 'refund_sale', 'delete_sale', 'park_cart', 'unpark_cart', 'open_shift', 'close_shift',
     'create_patient', 'delete_patient', 'create_treatment', 'edit_treatment', 'pay_treatment_session', 'delete_treatment',
     'add_stock', 'update_stock', 'delete_stock', 'bulk_inventory', 'bulk_treatments',
-    'add_catalog_treatment', 'delete_catalog_treatment', 'bulk_delete_catalog_treatments',
+    'add_catalog_treatment', 'update_catalog_treatment', 'delete_catalog_treatment', 'bulk_delete_catalog_treatments',
     'verify_pin_discount', 'request_remote_discount', 'respond_discount_request'
 ];
 
@@ -2962,6 +2962,145 @@ if (in_array($action, $wsActions, true)) {
         exit();
     }
 
+    if ($action === 'edit_treatment') {
+        $trId = trim((string)($body['id'] ?? ($_GET['id'] ?? '')));
+        $actor = trim((string)($body['actorName'] ?? ($body['actor'] ?? 'Staff/Admin')));
+        $reason = trim((string)($body['reason'] ?? ($body['editReason'] ?? 'Ledger details corrected by Staff/Admin')));
+        if ($reason === '') $reason = 'Ledger details corrected by Staff/Admin';
+
+        $updated = null;
+        $prevSnapshot = null;
+        foreach ($ws['treatments'] as &$tr) {
+            if (($tr['id'] ?? '') === $trId) {
+                $prevSnapshot = [
+                    'patientName' => $tr['patientName'] ?? '',
+                    'patientPhone' => $tr['patientPhone'] ?? '',
+                    'title' => $tr['title'] ?? '',
+                    'totalCost' => floatval($tr['totalCost'] ?? 0),
+                    'totalSessions' => intval($tr['totalSessions'] ?? 1),
+                    'remainingBalance' => floatval($tr['remainingBalance'] ?? 0)
+                ];
+
+                if (isset($body['patientName'])) $tr['patientName'] = trim((string)$body['patientName']);
+                if (isset($body['patientPhone'])) $tr['patientPhone'] = trim((string)$body['patientPhone']);
+                if (isset($body['title'])) $tr['title'] = trim((string)$body['title']);
+                if (isset($body['notes'])) $tr['notes'] = trim((string)$body['notes']);
+                if (isset($body['totalCost']) && is_numeric($body['totalCost'])) {
+                    $tr['totalCost'] = max(0, floatval($body['totalCost']));
+                }
+                if (isset($body['totalSessions']) && is_numeric($body['totalSessions'])) {
+                    $tr['totalSessions'] = max(1, intval($body['totalSessions']));
+                }
+
+                $paid = floatval($tr['paidAmount'] ?? 0);
+                $tr['remainingBalance'] = max(0, round(floatval($tr['totalCost'] ?? 0) - $paid, 2));
+                $tr['status'] = ($tr['remainingBalance'] <= 0) ? 'COMPLETED' : 'IN_PROGRESS';
+                $tr['isEdited'] = true;
+                $tr['lastEditedAt'] = date('c');
+                $tr['lastEditedBy'] = $actor;
+                $tr['editReason'] = $reason;
+
+                if (!isset($tr['editHistory']) || !is_array($tr['editHistory'])) {
+                    $tr['editHistory'] = [];
+                }
+                $tr['editHistory'][] = [
+                    'editedAt' => date('c'),
+                    'editedBy' => $actor,
+                    'reason' => $reason,
+                    'previous' => $prevSnapshot,
+                    'new' => [
+                        'patientName' => $tr['patientName'],
+                        'patientPhone' => $tr['patientPhone'],
+                        'title' => $tr['title'],
+                        'totalCost' => $tr['totalCost'],
+                        'totalSessions' => $tr['totalSessions'],
+                        'remainingBalance' => $tr['remainingBalance']
+                    ]
+                ];
+                $updated = $tr;
+                break;
+            }
+        }
+        unset($tr);
+
+        if (!$updated) {
+            http_response_code(404);
+            echo json_encode(['success' => false, 'error' => 'Treatment record not found.']);
+            exit();
+        }
+
+        // Also update linked patient name/phone in ws['patients']
+        if (!empty($updated['patientId'])) {
+            foreach ($ws['patients'] as &$p) {
+                if (($p['id'] ?? '') === $updated['patientId'] || ($p['code'] ?? '') === ($updated['patientCode'] ?? '')) {
+                    if (!empty($updated['patientName'])) $p['name'] = $updated['patientName'];
+                    if (!empty($updated['patientPhone'])) $p['phone'] = $updated['patientPhone'];
+                    break;
+                }
+            }
+            unset($p);
+        }
+
+        // Audit Log
+        if (!isset($ws['auditLogs']) || !is_array($ws['auditLogs'])) $ws['auditLogs'] = [];
+        array_unshift($ws['auditLogs'], [
+            'id' => 'aud_' . time() . '_' . rand(10, 99),
+            'action' => 'TREATMENT_LEDGER_EDITED',
+            'actor' => $actor,
+            'staffName' => $actor,
+            'details' => "Treatment Ledger ({$updated['title']} for {$updated['patientName']}) edited by {$actor}. Reason: {$reason}. Agreed Cost: Rs. {$updated['totalCost']} | Remaining: Rs. {$updated['remainingBalance']}",
+            'timestamp' => date('c'),
+            'createdAt' => date('c')
+        ]);
+        $ws['auditLogs'] = array_slice($ws['auditLogs'], 0, 300);
+
+        dnSaveWorkspace($dataDir, $sub, $ws);
+        echo json_encode(['success' => true, 'treatment' => $updated]);
+        exit();
+    }
+
+    if ($action === 'edit_sale') {
+        $saleId = trim((string)($body['id'] ?? ($_GET['id'] ?? '')));
+        $actor = trim((string)($body['actorName'] ?? ($body['actor'] ?? 'Staff/Admin')));
+        $reason = trim((string)($body['reason'] ?? 'Sale invoice details corrected'));
+        $updated = null;
+        foreach ($ws['sales'] as &$sRec) {
+            if (($sRec['id'] ?? '') === $saleId || ($sRec['invoiceNumber'] ?? '') === $saleId) {
+                if (isset($body['patientName'])) $sRec['patientName'] = trim((string)$body['patientName']);
+                if (isset($body['patientPhone'])) $sRec['patientPhone'] = trim((string)$body['patientPhone']);
+                if (isset($body['notes'])) $sRec['notes'] = trim((string)$body['notes']);
+                $sRec['isEdited'] = true;
+                $sRec['lastEditedAt'] = date('c');
+                $sRec['lastEditedBy'] = $actor;
+                $sRec['editReason'] = $reason;
+                $updated = $sRec;
+                break;
+            }
+        }
+        unset($sRec);
+
+        if (!$updated) {
+            http_response_code(404);
+            echo json_encode(['success' => false, 'error' => 'Sale record not found.']);
+            exit();
+        }
+
+        if (!isset($ws['auditLogs']) || !is_array($ws['auditLogs'])) $ws['auditLogs'] = [];
+        array_unshift($ws['auditLogs'], [
+            'id' => 'aud_' . time() . '_' . rand(10, 99),
+            'action' => 'SALE_INVOICE_EDITED',
+            'actor' => $actor,
+            'details' => "Invoice #{$updated['invoiceNumber']} edited by {$actor}. Reason: {$reason}",
+            'timestamp' => date('c'),
+            'createdAt' => date('c')
+        ]);
+        $ws['auditLogs'] = array_slice($ws['auditLogs'], 0, 300);
+
+        dnSaveWorkspace($dataDir, $sub, $ws);
+        echo json_encode(['success' => true, 'sale' => $updated]);
+        exit();
+    }
+
     if ($action === 'delete_treatment') {
         $trId = trim((string)($body['id'] ?? ($_GET['id'] ?? '')));
         $ws['treatments'] = array_values(array_filter($ws['treatments'], function($tr) use ($trId) {
@@ -3077,6 +3216,38 @@ if (in_array($action, $wsActions, true)) {
         $ws['treatmentCatalog'][] = $cat;
         dnSaveWorkspace($dataDir, $sub, $ws);
         echo json_encode(['success' => true, 'item' => $cat]);
+        exit();
+    }
+
+    if ($action === 'update_catalog_treatment') {
+        $catId = trim((string)($body['id'] ?? ($_GET['id'] ?? '')));
+        $name = trim((string)($body['name'] ?? ''));
+        $category = trim((string)($body['category'] ?? 'Clinical Treatment'));
+        $defaultCost = floatval($body['defaultCost'] ?? 5000);
+        $defaultSessions = max(1, intval($body['defaultSessions'] ?? 1));
+
+        $updated = null;
+        if (!isset($ws['treatmentCatalog']) || !is_array($ws['treatmentCatalog'])) $ws['treatmentCatalog'] = [];
+        foreach ($ws['treatmentCatalog'] as &$cat) {
+            if (($cat['id'] ?? '') === $catId) {
+                if ($name !== '') $cat['name'] = $name;
+                $cat['category'] = $category;
+                $cat['defaultCost'] = $defaultCost;
+                $cat['defaultSessions'] = $defaultSessions;
+                $updated = $cat;
+                break;
+            }
+        }
+        unset($cat);
+
+        if (!$updated) {
+            http_response_code(404);
+            echo json_encode(['success' => false, 'error' => 'Catalog treatment not found.']);
+            exit();
+        }
+
+        dnSaveWorkspace($dataDir, $sub, $ws);
+        echo json_encode(['success' => true, 'item' => $updated]);
         exit();
     }
 

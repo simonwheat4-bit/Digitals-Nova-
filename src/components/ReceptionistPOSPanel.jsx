@@ -55,6 +55,7 @@ export default function ReceptionistPOSPanel({
   onCreateTreatment,
   onPayTreatmentSession,
   onAddStock,
+  onUpdateStock = null,
   onVerifyPinDiscount,
   onRequestRemoteDiscount,
   onCheckoutSale,
@@ -201,10 +202,7 @@ export default function ReceptionistPOSPanel({
 
   const handleSaveEditTreatment = async (e) => {
     e.preventDefault();
-    if (!editTreatmentForm.reason.trim()) {
-      alert('Please provide a reason for editing this patient ledger (required for security audit log).');
-      return;
-    }
+    const reasonText = editTreatmentForm.reason.trim() || 'Ledger details corrected by Staff/Admin';
     setSavingEditTreatment(true);
     try {
       const newTotalCost = Number(editTreatmentForm.totalCost) || 0;
@@ -220,11 +218,11 @@ export default function ReceptionistPOSPanel({
         totalSessions: Number(editTreatmentForm.totalSessions) || 1,
         isEdited: true,
         editedAt: new Date().toISOString(),
-        editReason: editTreatmentForm.reason.trim(),
+        editReason: reasonText,
         status: newRemaining <= 0 ? 'COMPLETED' : 'IN_PROGRESS'
       };
       if (onUpdateTreatment) {
-        await onUpdateTreatment(updated, editTreatmentForm.reason.trim());
+        await onUpdateTreatment(updated, reasonText);
       }
       setStatusBanner({
         type: 'success',
@@ -264,10 +262,7 @@ export default function ReceptionistPOSPanel({
 
   const handleSaveEditSale = async (e) => {
     e.preventDefault();
-    if (!editSaleForm.reason.trim()) {
-      alert('Please provide a reason for editing this customer bill (required for security audit log).');
-      return;
-    }
+    const reasonText = editSaleForm.reason.trim() || 'Customer bill details updated by Staff/Admin';
     setSavingEditSale(true);
     try {
       const updated = {
@@ -279,10 +274,10 @@ export default function ReceptionistPOSPanel({
         netTotal: Number(editSaleForm.netTotal) || 0,
         isEdited: true,
         editedAt: new Date().toISOString(),
-        editReason: editSaleForm.reason.trim()
+        editReason: reasonText
       };
       if (onUpdateSale) {
-        await onUpdateSale(updated, editSaleForm.reason.trim());
+        await onUpdateSale(updated, reasonText);
       }
       setStatusBanner({
         type: 'success',
@@ -293,6 +288,64 @@ export default function ReceptionistPOSPanel({
       alert(`Error updating bill: ${err.message}`);
     } finally {
       setSavingEditSale(false);
+    }
+  };
+
+  // Edit Stock Item in POS (Correct mistake in product name, price, stock, etc.)
+  const [editingStockItem, setEditingStockItem] = useState(null);
+  const [editStockForm, setEditStockForm] = useState({
+    name: '',
+    category: '',
+    barcode: '',
+    supplier: '',
+    purchasePrice: '',
+    sellingPrice: '',
+    quantity: '',
+    expiryDate: ''
+  });
+  const [savingEditStock, setSavingEditStock] = useState(false);
+
+  const openEditStock = (item) => {
+    setEditingStockItem(item);
+    setEditStockForm({
+      name: item.name || '',
+      category: item.category || 'General',
+      barcode: item.barcode || '',
+      supplier: item.supplier || '',
+      purchasePrice: String(item.purchasePrice || 0),
+      sellingPrice: String(item.sellingPrice || 0),
+      quantity: String(item.quantity || 0),
+      expiryDate: item.expiryDate || ''
+    });
+  };
+
+  const handleSaveEditStock = async (e) => {
+    e.preventDefault();
+    setSavingEditStock(true);
+    try {
+      const updated = {
+        ...editingStockItem,
+        name: editStockForm.name.trim(),
+        category: editStockForm.category.trim(),
+        barcode: editStockForm.barcode.trim(),
+        supplier: editStockForm.supplier.trim(),
+        purchasePrice: Number(editStockForm.purchasePrice) || 0,
+        sellingPrice: Number(editStockForm.sellingPrice) || 0,
+        quantity: Number(editStockForm.quantity) || 0,
+        expiryDate: editStockForm.expiryDate
+      };
+      if (onUpdateStock) {
+        await onUpdateStock(editingStockItem.id, updated);
+      }
+      setStatusBanner({
+        type: 'success',
+        text: `Product "${updated.name}" updated successfully!`
+      });
+      setEditingStockItem(null);
+    } catch (err) {
+      alert(`Error updating product: ${err.message}`);
+    } finally {
+      setSavingEditStock(false);
     }
   };
 
@@ -3015,6 +3068,7 @@ export default function ReceptionistPOSPanel({
                         <th className="py-2.5 px-3">Portion & Station</th>
                         <th className="py-2.5 px-3">Menu Price</th>
                         <th className="py-2.5 px-3">Status</th>
+                        <th className="py-2.5 px-3 text-center">Action</th>
                       </tr>
                     </thead>
                   ) : (
@@ -3025,6 +3079,7 @@ export default function ReceptionistPOSPanel({
                         <th className="py-2 px-2">Cost / Sale</th>
                         <th className="py-2 px-2">Live Stock Qty</th>
                         <th className="py-2 px-2">Expiry Date</th>
+                        <th className="py-2 px-2 text-center">Action</th>
                       </tr>
                     </thead>
                   )}
@@ -3063,6 +3118,17 @@ export default function ReceptionistPOSPanel({
                                 Ready to Serve ({i.quantity || 100})
                               </span>
                             </td>
+                            <td className="py-2.5 px-3 text-center">
+                              <button
+                                type="button"
+                                onClick={() => openEditStock(i)}
+                                className="px-2.5 py-1 rounded-lg bg-amber-100 hover:bg-amber-600 text-amber-900 hover:text-white font-extrabold text-[11px] inline-flex items-center gap-1 transition cursor-pointer"
+                                title="Edit Dish Details & Price"
+                              >
+                                <Edit2 className="w-3 h-3" />
+                                <span>Edit</span>
+                              </button>
+                            </td>
                           </tr>
                         );
                       }
@@ -3087,6 +3153,17 @@ export default function ReceptionistPOSPanel({
                             </span>
                           </td>
                           <td className="py-2.5 px-2 font-mono text-xs">{i.expiryDate}</td>
+                          <td className="py-2.5 px-2 text-center">
+                            <button
+                              type="button"
+                              onClick={() => openEditStock(i)}
+                              className="px-2.5 py-1 rounded-lg bg-teal/10 hover:bg-teal text-teal hover:text-white font-extrabold text-[11px] inline-flex items-center gap-1 transition cursor-pointer"
+                              title="Edit product stock, prices and name"
+                            >
+                              <Edit2 className="w-3 h-3" />
+                              <span>Edit</span>
+                            </button>
+                          </td>
                         </tr>
                       );
                     })}
@@ -4550,15 +4627,59 @@ export default function ReceptionistPOSPanel({
 
               <div>
                 <label className="block font-bold text-slate-700 uppercase text-[10px] mb-1">
-                  Treatment / Package Name:
+                  Treatment / Package (From Clinic Catalog):
                 </label>
+                <select
+                  value=""
+                  onChange={(e) => {
+                    const chosen = treatmentCatalog.find((c) => c.id === e.target.value);
+                    if (chosen) {
+                      setEditTreatmentForm({
+                        ...editTreatmentForm,
+                        title: chosen.name,
+                        totalCost: String(chosen.defaultCost || 0),
+                        totalSessions: String(chosen.defaultSessions || 1)
+                      });
+                    }
+                  }}
+                  className="w-full px-3 py-2 rounded-xl border-2 border-teal/40 bg-teal/5 font-bold text-navy mb-1.5 outline-none text-xs cursor-pointer"
+                >
+                  <option value="">-- Or Choose Pre-Defined Treatment Package --</option>
+                  {treatmentCatalog.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name} — Rs. {Number(c.defaultCost).toLocaleString()} ({c.defaultSessions} Sessions)
+                    </option>
+                  ))}
+                </select>
                 <input
                   type="text"
                   required
+                  list="edit-treatment-catalog-list"
+                  placeholder="Or type/search package name to filter..."
                   value={editTreatmentForm.title}
-                  onChange={(e) => setEditTreatmentForm({ ...editTreatmentForm, title: e.target.value })}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    const match = treatmentCatalog.find(
+                      (c) => c.name.toLowerCase() === val.toLowerCase()
+                    );
+                    if (match) {
+                      setEditTreatmentForm({
+                        ...editTreatmentForm,
+                        title: match.name,
+                        totalCost: String(match.defaultCost || 0),
+                        totalSessions: String(match.defaultSessions || 1)
+                      });
+                    } else {
+                      setEditTreatmentForm({ ...editTreatmentForm, title: val });
+                    }
+                  }}
                   className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:border-teal outline-none font-bold text-xs"
                 />
+                <datalist id="edit-treatment-catalog-list">
+                  {treatmentCatalog.map((c) => (
+                    <option key={c.id} value={c.name} />
+                  ))}
+                </datalist>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -4606,12 +4727,11 @@ export default function ReceptionistPOSPanel({
 
               <div>
                 <label className="block font-bold text-slate-700 uppercase text-[10px] mb-1">
-                  Reason for Edit (Required for Admin Audit Log):
+                  Reason for Edit (Optional - Defaults to Staff correction):
                 </label>
                 <input
                   type="text"
-                  required
-                  placeholder="e.g. Typo in patient phone number / Agreed discount negotiation"
+                  placeholder="e.g. Typo in package cost / Agreed discount confirmation"
                   value={editTreatmentForm.reason}
                   onChange={(e) => setEditTreatmentForm({ ...editTreatmentForm, reason: e.target.value })}
                   className="w-full px-3 py-2 rounded-xl border-2 border-amber-300 focus:border-amber-500 outline-none font-bold text-xs text-slate-800"
@@ -4751,11 +4871,10 @@ export default function ReceptionistPOSPanel({
 
               <div>
                 <label className="block font-bold text-slate-700 uppercase text-[10px] mb-1">
-                  Reason for Edit (Required for Admin Audit Log):
+                  Reason for Edit (Optional - Defaults to Staff correction):
                 </label>
                 <input
                   type="text"
-                  required
                   placeholder="e.g. Phone number typo / Payment method correction / Bill amount adjusted"
                   value={editSaleForm.reason}
                   onChange={(e) => setEditSaleForm({ ...editSaleForm, reason: e.target.value })}
@@ -4775,6 +4894,162 @@ export default function ReceptionistPOSPanel({
                 <button
                   type="button"
                   onClick={() => setEditingSale(null)}
+                  className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs cursor-pointer"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* EDIT PRODUCT / STOCK ITEM MODAL IN POS */}
+      {editingStockItem && (
+        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-lg w-full border-2 border-navy shadow-2xl overflow-hidden my-6">
+            <div className="bg-navy text-white px-5 py-4 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-gold text-navy font-bold">
+                  <Edit2 className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-sm text-white">
+                    Edit Product / Stock Item
+                  </h3>
+                  <p className="text-[11px] text-ice/80">
+                    Update product name, retail price, cost or quantity
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditingStockItem(null)}
+                className="p-1.5 rounded-lg text-white/70 hover:text-white hover:bg-white/10"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEditStock} className="p-5 space-y-3.5 text-xs">
+              <div>
+                <label className="block font-bold text-slate-700 uppercase text-[10px] mb-1">
+                  Product / Item Name:
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editStockForm.name}
+                  onChange={(e) => setEditStockForm({ ...editStockForm, name: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:border-teal outline-none font-bold text-xs"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-slate-700 uppercase text-[10px] mb-1">
+                    Category:
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={editStockForm.category}
+                    onChange={(e) => setEditStockForm({ ...editStockForm, category: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:border-teal outline-none font-bold text-xs"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 uppercase text-[10px] mb-1">
+                    Barcode / SKU:
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={editStockForm.barcode}
+                    onChange={(e) => setEditStockForm({ ...editStockForm, barcode: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:border-teal outline-none font-bold text-xs font-mono"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 uppercase text-[10px] mb-1">
+                  Supplier / Vendor:
+                </label>
+                <input
+                  type="text"
+                  value={editStockForm.supplier}
+                  onChange={(e) => setEditStockForm({ ...editStockForm, supplier: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:border-teal outline-none font-bold text-xs"
+                />
+              </div>
+
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="block font-bold text-slate-700 uppercase text-[10px] mb-1">
+                    Cost (Rs.):
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    required
+                    value={editStockForm.purchasePrice}
+                    onChange={(e) => setEditStockForm({ ...editStockForm, purchasePrice: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:border-teal outline-none font-bold text-xs font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 uppercase text-[10px] mb-1">
+                    Selling (Rs.):
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    required
+                    value={editStockForm.sellingPrice}
+                    onChange={(e) => setEditStockForm({ ...editStockForm, sellingPrice: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:border-teal outline-none font-bold text-xs font-mono text-teal"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 uppercase text-[10px] mb-1">
+                    Quantity:
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    required
+                    value={editStockForm.quantity}
+                    onChange={(e) => setEditStockForm({ ...editStockForm, quantity: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:border-teal outline-none font-bold text-xs font-mono"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 uppercase text-[10px] mb-1">
+                  Expiry Date:
+                </label>
+                <input
+                  type="date"
+                  value={editStockForm.expiryDate}
+                  onChange={(e) => setEditStockForm({ ...editStockForm, expiryDate: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:border-teal outline-none font-bold text-xs"
+                />
+              </div>
+
+              <div className="flex items-center gap-2 pt-2 border-t border-slate-200">
+                <button
+                  type="submit"
+                  disabled={savingEditStock}
+                  className="flex-1 py-2.5 rounded-xl bg-teal hover:bg-teal-dark text-white font-extrabold text-xs flex items-center justify-center gap-1.5 shadow transition cursor-pointer disabled:opacity-50"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>{savingEditStock ? 'Saving...' : 'Update Product Stock'}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEditingStockItem(null)}
                   className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs cursor-pointer"
                 >
                   Cancel

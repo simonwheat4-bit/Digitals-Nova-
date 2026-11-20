@@ -1340,6 +1340,24 @@ app.delete('/api/treatment-catalog/:id', (req, res) => {
   res.json({ success: true });
 });
 
+app.put('/api/treatment-catalog/:id', (req, res) => {
+  const tenant = resolveTenant(req);
+  if (!db.treatmentCatalog) db.treatmentCatalog = [];
+  const cat = db.treatmentCatalog.find(
+    (c) => c.id === req.params.id && c.tenantId === tenant.id
+  );
+  if (!cat) return res.status(404).json({ error: 'Catalog treatment not found.' });
+
+  const { name, category, defaultCost, defaultSessions } = req.body;
+  if (name !== undefined) cat.name = name.trim();
+  if (category !== undefined) cat.category = category.trim();
+  if (defaultCost !== undefined && !isNaN(Number(defaultCost))) cat.defaultCost = Number(defaultCost);
+  if (defaultSessions !== undefined && !isNaN(Number(defaultSessions))) cat.defaultSessions = Math.max(1, Number(defaultSessions));
+
+  saveDB(db);
+  res.json({ success: true, item: cat });
+});
+
 // ============================================================================
 // 4. PATIENT PROFILE & MULTI-SESSION TREATMENT LEDGER
 // ============================================================================
