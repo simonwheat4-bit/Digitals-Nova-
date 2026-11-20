@@ -42,10 +42,16 @@ import {
   Wallet,
   Printer,
   Eye,
-  EyeOff
+  EyeOff,
+  UserPlus
 } from 'lucide-react';
 
 export default function ClinicAdminPanel({
+  patients = [],
+  onCreatePatient = null,
+  onCreateTreatment = null,
+  onPayTreatmentSession = null,
+  onUpdateTreatment = null,
   tenant,
   users,
   treatments,
@@ -99,7 +105,7 @@ export default function ClinicAdminPanel({
   const showPatientsModule = isClinic && (tenant?.enabledModules?.patientsLedger !== false);
   const [internalSection, setInternalSection] = useState('APPROVALS_AND_REPORTS');
   const rawSection = controlledSection || internalSection;
-  const activeSection = (rawSection === 'WHITE_LABEL' || (!isClinic && rawSection === 'TREATMENT_CATALOG'))
+  const activeSection = (rawSection === 'WHITE_LABEL' || (!isClinic && (rawSection === 'TREATMENT_CATALOG' || rawSection === 'PATIENTS_LEDGER')))
     ? 'APPROVALS_AND_REPORTS'
     : rawSection;
   const setActiveSection = (sec) => {
@@ -107,6 +113,161 @@ export default function ClinicAdminPanel({
     if (onSectionChange) onSectionChange(sec);
   };
   // 'APPROVALS_AND_REPORTS' | 'TREATMENT_CATALOG' | 'STAFF' | 'AUDIT_SMS' | 'SUBSCRIPTION'
+
+  // Clinic Admin Patient Ledgers state & helpers
+  const [adminPatientFilterQuery, setAdminPatientFilterQuery] = useState('');
+  const [adminPatientStatusFilter, setAdminPatientStatusFilter] = useState('ALL'); // 'ALL' | 'ACTIVE' | 'COMPLETED'
+  const [adminSessionPayModal, setAdminSessionPayModal] = useState(null);
+  const [adminSessionPayAmount, setAdminSessionPayAmount] = useState('');
+  const [adminSessionPayNotes, setAdminSessionPayNotes] = useState('');
+  const [adminSessionPayDate, setAdminSessionPayDate] = useState('');
+  const [adminSessionPaying, setAdminSessionPaying] = useState(false);
+  const [adminEditTrtModal, setAdminEditTrtModal] = useState(null);
+  const [adminEditTrtForm, setAdminEditTrtForm] = useState({
+    patientName: '',
+    patientPhone: '',
+    title: '',
+    totalCost: '',
+    totalSessions: '1',
+    reason: ''
+  });
+  const [adminSavingTrt, setAdminSavingTrt] = useState(false);
+  const [adminNewPatientModal, setAdminNewPatientModal] = useState(false);
+  const [adminNewPatientForm, setAdminNewPatientForm] = useState({
+    name: '',
+    phone: '',
+    gender: 'Female',
+    age: '28',
+    address: '',
+    medicalHistory: ''
+  });
+  const [adminCreatingPatient, setAdminCreatingPatient] = useState(false);
+
+  const isTrtActive = (t) => {
+    const remBal = Number(t.remainingBalance || 0);
+    const remSes = Math.max(0, Number(t.totalSessions || 1) - (t.sessions || []).length);
+    return remBal > 0 || remSes > 0;
+  };
+
+  const adminTotalLedgers = (treatments || []).length;
+  const adminActiveLedgersList = (treatments || []).filter(isTrtActive);
+  const adminActiveCount = adminActiveLedgersList.length;
+  const adminCompletedCount = adminTotalLedgers - adminActiveCount;
+  const adminTotalPendingDues = adminActiveLedgersList.reduce((acc, t) => acc + Number(t.remainingBalance || 0), 0);
+
+  const adminFilteredTreatments = (treatments || []).filter((t) => {
+    const active = isTrtActive(t);
+    if (adminPatientStatusFilter === 'ACTIVE' && !active) return false;
+    if (adminPatientStatusFilter === 'COMPLETED' && active) return false;
+
+    const q = adminPatientFilterQuery.toLowerCase().trim();
+    if (!q) return true;
+    return (
+      (t.patientName || '').toLowerCase().includes(q) ||
+      (t.patientPhone || '').toLowerCase().includes(q) ||
+      (t.patientCode || '').toLowerCase().includes(q) ||
+      (t.title || '').toLowerCase().includes(q)
+    );
+  });
+
+  const handleAdminRecordSessionPayment = async (e) => {
+    e.preventDefault();
+    if (!adminSessionPayModal) return;
+    const payAmt = Number(adminSessionPayAmount) || 0;
+    if (payAmt <= 0) {
+      alert('Please enter a valid payment amount.');
+      return;
+    }
+    setAdminSessionPaying(true);
+    try {
+      const payload = {
+        amount: payAmt,
+        paymentMethod: 'CASH',
+        notes: adminSessionPayNotes.trim() || `Session #${(adminSessionPayModal.sessions || []).length + 1} Installment (Admin)`,
+        date: adminSessionPayDate || new Date().toISOString()
+      };
+      if (onPayTreatmentSession) {
+        await onPayTreatmentSession(adminSessionPayModal.id, payload);
+      }
+      setToast(`Session payment of Rs. ${payAmt.toLocaleString()} recorded successfully!`);
+      setAdminSessionPayModal(null);
+    } catch (err) {
+      alert(`Payment Error: ${err.message}`);
+    } finally {
+      setAdminSessionPaying(false);
+    }
+  };
+
+  const handleAdminSaveEditTrt = async (e) => {
+    e.preventDefault();
+    if (!adminEditTrtModal) return;
+    const reasonText = adminEditTrtForm.reason.trim() || 'Ledger details updated by Clinic Admin';
+    setAdminSavingTrt(true);
+    try {
+      const newTotalCost = Number(adminEditTrtForm.totalCost) || 0;
+      const paid = Number(adminEditTrtModal.paidAmount) || 0;
+      const newRemaining = Math.max(0, newTotalCost - paid);
+      const updated = {
+        ...adminEditTrtModal,
+        patientName: adminEditTrtForm.patientName.trim(),
+        patientPhone: adminEditTrtForm.patientPhone.trim(),
+        title: adminEditTrtForm.title.trim(),
+        totalCost: newTotalCost,
+        remainingBalance: newRemaining,
+        totalSessions: Number(adminEditTrtForm.totalSessions) || 1,
+        isEdited: true,
+        editedAt: new Date().toISOString(),
+        editReason: reasonText,
+        status: newRemaining <= 0 ? 'COMPLETED' : 'IN_PROGRESS'
+      };
+      if (onUpdateTreatment) {
+        await onUpdateTreatment(updated, reasonText);
+      }
+      setToast('Patient ledger updated successfully with audit trail.');
+      setAdminEditTrtModal(null);
+    } catch (err) {
+      alert(`Update Error: ${err.message}`);
+    } finally {
+      setAdminSavingTrt(false);
+    }
+  };
+
+  const handleAdminCreatePatient = async (e) => {
+    e.preventDefault();
+    if (!adminNewPatientForm.name.trim() || !adminNewPatientForm.phone.trim()) {
+      alert('Patient name and phone number are required.');
+      return;
+    }
+    setAdminCreatingPatient(true);
+    try {
+      const payload = {
+        name: adminNewPatientForm.name.trim(),
+        phone: adminNewPatientForm.phone.trim(),
+        gender: adminNewPatientForm.gender,
+        age: adminNewPatientForm.age,
+        address: adminNewPatientForm.address.trim(),
+        medicalHistory: adminNewPatientForm.medicalHistory.trim()
+      };
+      if (onCreatePatient) {
+        await onCreatePatient(payload);
+      }
+      setToast(`Patient ${payload.name} registered successfully!`);
+      setAdminNewPatientForm({
+        name: '',
+        phone: '',
+        gender: 'Female',
+        age: '28',
+        address: '',
+        medicalHistory: ''
+      });
+      setAdminNewPatientModal(false);
+    } catch (err) {
+      alert(`Registration Error: ${err.message}`);
+    } finally {
+      setAdminCreatingPatient(false);
+    }
+  };
+
 
   // Online Card Checkout & Auto-Key Modal State (Image 1 & 2)
   const [cardModalPlan, setCardModalPlan] = useState(null);
@@ -560,6 +721,38 @@ export default function ClinicAdminPanel({
             </div>
           </div>
         </button>
+
+        {isClinic && showPatientsModule && (
+          <button
+            type="button"
+            onClick={() => setActiveSection('PATIENTS_LEDGER')}
+            className={`p-3.5 rounded-2xl border text-left transition flex items-center gap-3 cursor-pointer ${
+              activeSection === 'PATIENTS_LEDGER'
+                ? 'bg-teal text-white border-teal ring-2 ring-gold shadow-md'
+                : 'bg-white text-navy border-slate-200 hover:border-teal hover:shadow-sm'
+            }`}
+          >
+            <div
+              className={`p-2.5 rounded-xl shrink-0 ${
+                activeSection === 'PATIENTS_LEDGER'
+                  ? 'bg-white/15 text-gold-bright'
+                  : 'bg-ice text-teal'
+              }`}
+            >
+              <Users className="w-4 h-4" />
+            </div>
+            <div className="min-w-0">
+              <div className="font-extrabold text-xs truncate">Patients & Ledgers</div>
+              <div
+                className={`text-[10px] truncate mt-0.5 ${
+                  activeSection === 'PATIENTS_LEDGER' ? 'text-teal-light' : 'text-slate-500'
+                }`}
+              >
+                {treatments.length} Registered Ledgers
+              </div>
+            </div>
+          </button>
+        )}
 
         {isClinic && showPatientsModule && (
           <button
@@ -2493,6 +2686,623 @@ export default function ClinicAdminPanel({
       )}
 
       {/* =================================================================== */}
+      {/* =================================================================== */}
+      {/* SECTION 3B: PATIENTS DIRECTORY & TREATMENT LEDGERS (CLINIC ADMIN)   */}
+      {/* =================================================================== */}
+      {isClinic && showPatientsModule && activeSection === 'PATIENTS_LEDGER' && (
+        <div className="space-y-6">
+          {/* Top KPI Summary Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex items-center gap-3.5">
+              <div className="w-12 h-12 rounded-xl bg-navy/10 text-navy flex items-center justify-center shrink-0">
+                <Users className="w-6 h-6 text-navy" />
+              </div>
+              <div className="min-w-0">
+                <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Total Patients</div>
+                <div className="font-extrabold text-2xl text-navy">{adminTotalLedgers}</div>
+                <div className="text-[11px] text-slate-400 truncate">Total treatment ledgers on record</div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-2xl p-4 border border-amber-200 shadow-sm flex items-center gap-3.5">
+              <div className="w-12 h-12 rounded-xl bg-amber-500/15 text-amber-700 flex items-center justify-center shrink-0">
+                <Clock className="w-6 h-6 text-amber-600" />
+              </div>
+              <div className="min-w-0">
+                <div className="text-[11px] font-bold text-amber-700 uppercase tracking-wider">Active Treatments</div>
+                <div className="font-extrabold text-2xl text-amber-800">{adminActiveCount}</div>
+                <div className="text-[11px] font-bold text-amber-600 truncate">
+                  Rs. {adminTotalPendingDues.toLocaleString()} Pending Dues
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-2xl p-4 border border-emerald-200 shadow-sm flex items-center gap-3.5">
+              <div className="w-12 h-12 rounded-xl bg-emerald-500/15 text-emerald-700 flex items-center justify-center shrink-0">
+                <CheckCircle2 className="w-6 h-6 text-emerald-600" />
+              </div>
+              <div className="min-w-0">
+                <div className="text-[11px] font-bold text-emerald-700 uppercase tracking-wider">Completed Treatments</div>
+                <div className="font-extrabold text-2xl text-emerald-800">{adminCompletedCount}</div>
+                <div className="text-[11px] text-emerald-600 truncate">100% Paid & Finished</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Search, Filter & Actions Bar */}
+          <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h3 className="font-extrabold text-base text-navy flex items-center gap-2">
+                  <span>Patient Treatment Ledgers & Sessions</span>
+                  <span className="text-xs font-mono font-bold bg-navy/10 text-navy px-2.5 py-0.5 rounded-full">
+                    {adminFilteredTreatments.length} of {adminTotalLedgers}
+                  </span>
+                </h3>
+                <p className="text-xs text-slate-500">
+                  Full clinic treatment ledger with session timelines, balance management, and audit logs
+                </p>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                {/* Status Filter Pills */}
+                <div className="flex items-center bg-slate-100 p-0.5 rounded-xl border border-slate-200 text-xs">
+                  <button
+                    type="button"
+                    onClick={() => setAdminPatientStatusFilter('ALL')}
+                    className={`px-3 py-1.5 rounded-lg font-bold transition cursor-pointer ${
+                      adminPatientStatusFilter === 'ALL'
+                        ? 'bg-navy text-white shadow-xs'
+                        : 'text-slate-600 hover:text-navy'
+                    }`}
+                  >
+                    All ({adminTotalLedgers})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAdminPatientStatusFilter('ACTIVE')}
+                    className={`px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                      adminPatientStatusFilter === 'ACTIVE'
+                        ? 'bg-amber-500 text-white shadow-xs'
+                        : 'text-amber-700 hover:text-amber-900'
+                    }`}
+                  >
+                    <span>Active / Due</span>
+                    <span className="text-[10px] bg-amber-600/30 px-1.5 py-0.2 rounded-full font-mono">
+                      {adminActiveCount}
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAdminPatientStatusFilter('COMPLETED')}
+                    className={`px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                      adminPatientStatusFilter === 'COMPLETED'
+                        ? 'bg-emerald-600 text-white shadow-xs'
+                        : 'text-emerald-700 hover:text-emerald-900'
+                    }`}
+                  >
+                    <span>Completed</span>
+                    <span className="text-[10px] bg-emerald-700/30 px-1.5 py-0.2 rounded-full font-mono">
+                      {adminCompletedCount}
+                    </span>
+                  </button>
+                </div>
+
+                <div className="relative">
+                  <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    value={adminPatientFilterQuery}
+                    onChange={(e) => setAdminPatientFilterQuery(e.target.value)}
+                    placeholder="Search ledger by Phone / MR# / Name..."
+                    className="pl-8 pr-3 py-2 rounded-xl border border-slate-300 text-xs outline-none focus:border-navy w-64"
+                  />
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setAdminNewPatientModal(true)}
+                  className="px-3.5 py-2 rounded-xl bg-navy text-gold font-bold text-xs flex items-center gap-1.5 shadow-sm hover:bg-navy-light cursor-pointer transition"
+                >
+                  <UserPlus className="w-4 h-4" />
+                  <span>+ New Patient</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Patient Treatment Ledger Cards List */}
+            <div className="space-y-4 pt-2">
+              {adminFilteredTreatments.length === 0 ? (
+                <div className="p-8 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-300 text-slate-500 text-xs">
+                  No patient treatment ledgers match the selected filter.
+                </div>
+              ) : (
+                adminFilteredTreatments.map((trt) => {
+                  const active = isTrtActive(trt);
+                  return (
+                    <div
+                      key={trt.id}
+                      className="rounded-2xl border-2 border-slate-200 overflow-hidden bg-white shadow-xs hover:border-slate-300 transition"
+                    >
+                      <div className="p-4 flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-slate-50/50">
+                        <div>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="font-mono text-xs font-bold px-2 py-0.5 rounded bg-navy text-gold">
+                              {trt.patientCode || 'MR-PAT'}
+                            </span>
+                            <span className="font-extrabold text-sm text-navy">
+                              {trt.patientName}
+                            </span>
+                            <span className="text-xs font-mono text-slate-600 font-semibold">
+                              ({trt.patientPhone})
+                            </span>
+
+                            {active ? (
+                              <span className="text-[10px] bg-amber-100 text-amber-800 border border-amber-300 font-extrabold px-2 py-0.5 rounded-md flex items-center gap-1 shadow-xs">
+                                <Clock className="w-3 h-3 text-amber-600" />
+                                <span>ACTIVE • DUE</span>
+                              </span>
+                            ) : (
+                              <span className="text-[10px] bg-emerald-100 text-emerald-800 border border-emerald-300 font-extrabold px-2 py-0.5 rounded-md flex items-center gap-1 shadow-xs">
+                                <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                                <span>COMPLETED • PAID</span>
+                              </span>
+                            )}
+
+                            {trt.isEdited && (
+                              <span
+                                className="text-[10px] bg-amber-100 text-amber-800 border border-amber-300 font-extrabold px-2 py-0.5 rounded-md flex items-center gap-1 shadow-xs"
+                                title={`Edited on ${trt.editedAt ? new Date(trt.editedAt).toLocaleString() : ''}: ${trt.editReason || 'Details modified'}`}
+                              >
+                                <Edit2 className="w-3 h-3 text-amber-600" />
+                                <span>EDITED</span>
+                              </span>
+                            )}
+
+                            <span className="text-[11px] bg-ice px-2 py-0.5 rounded-md text-navy font-semibold flex items-center gap-1">
+                              <Calendar className="w-3 h-3 text-teal" />
+                              <span>Started: {new Date(trt.createdAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}</span>
+                            </span>
+                          </div>
+                          <div className="font-bold text-xs text-teal mt-1">{trt.title}</div>
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-3">
+                          <div className="text-right">
+                            <div className="text-[10px] text-slate-500 uppercase font-bold">Agreed Cost</div>
+                            <div className="font-mono font-bold text-xs text-slate-800">
+                              Rs. {Number(trt.totalCost || 0).toLocaleString()}
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-[10px] text-emerald-700 uppercase font-bold">Total Paid</div>
+                            <div className="font-mono font-bold text-xs text-emerald-700">
+                              Rs. {Number(trt.paidAmount || 0).toLocaleString()}
+                            </div>
+                          </div>
+                          <div className="text-right bg-teal text-white px-3 py-1.5 rounded-xl">
+                            <div className="text-[9px] uppercase font-bold text-gold-bright">Remaining Balance</div>
+                            <div className="font-mono font-extrabold text-sm">
+                              Rs. {Number(trt.remainingBalance || 0).toLocaleString()}
+                            </div>
+                          </div>
+
+                          {Number(trt.remainingBalance || 0) > 0 ? (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setAdminSessionPayModal(trt);
+                                setAdminSessionPayAmount(String(Math.min(Number(trt.remainingBalance || 0), 2000)));
+                                setAdminSessionPayNotes(`Session #${(trt.sessions || []).length + 1} Follow-up Installment`);
+                                setAdminSessionPayDate(new Date().toISOString().slice(0, 16));
+                              }}
+                              className="px-3.5 py-2 rounded-xl bg-navy hover:bg-navy-light text-gold font-extrabold text-xs flex items-center gap-1.5 shadow cursor-pointer transition"
+                            >
+                              <Wallet className="w-3.5 h-3.5" />
+                              <span>Record Session Payment</span>
+                            </button>
+                          ) : (
+                            <span className="px-3 py-1.5 rounded-xl bg-emerald-100 text-emerald-800 font-extrabold text-xs">
+                              FULLY PAID
+                            </span>
+                          )}
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setAdminEditTrtModal(trt);
+                              setAdminEditTrtForm({
+                                patientName: trt.patientName || '',
+                                patientPhone: trt.patientPhone || '',
+                                title: trt.title || '',
+                                totalCost: String(trt.totalCost || 0),
+                                totalSessions: String(trt.totalSessions || 1),
+                                reason: ''
+                              });
+                            }}
+                            className="px-3 py-2 rounded-xl border border-slate-300 hover:border-navy bg-white hover:bg-slate-50 text-navy font-bold text-xs flex items-center gap-1.5 shadow-xs transition cursor-pointer"
+                            title="Edit patient details or treatment ledger"
+                          >
+                            <Edit2 className="w-3.5 h-3.5 text-teal" />
+                            <span>Edit Ledger</span>
+                          </button>
+
+                          {onDeleteTreatment && (
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                if (window.confirm(`Delete ledger for ${trt.patientName}? This action cannot be undone.`)) {
+                                  await onDeleteTreatment(trt.id);
+                                  setToast('Treatment ledger deleted.');
+                                }
+                              }}
+                              className="p-2 rounded-xl border border-slate-300 hover:border-red-500 text-slate-400 hover:text-red-600 hover:bg-red-50 transition cursor-pointer"
+                              title="Delete ledger"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Session Payment History Table */}
+                      <div className="p-3 bg-slate-50/70 border-t border-slate-200">
+                        <div className="text-[10px] font-bold uppercase text-slate-500 mb-1.5">
+                          Session Visit & Payment Timeline ({(trt.sessions || []).length} / {trt.totalSessions || 1} Sessions)
+                        </div>
+                        <div className="space-y-1.5">
+                          {(trt.sessions || []).map((ses) => (
+                            <div
+                              key={ses.id}
+                              className="bg-white px-3 py-2 rounded-lg border border-slate-200 flex flex-wrap items-center justify-between text-xs gap-2"
+                            >
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span className="font-extrabold text-navy bg-gold/25 px-2 py-0.5 rounded">
+                                  Session #{ses.sessionNumber}
+                                </span>
+                                <span className="font-mono text-[11px] font-bold text-teal bg-teal/10 px-2 py-0.5 rounded flex items-center gap-1">
+                                  <Calendar className="w-3 h-3" />
+                                  {ses.date
+                                    ? new Date(ses.date).toLocaleString([], {
+                                        dateStyle: 'medium',
+                                        timeStyle: 'short'
+                                      })
+                                    : 'Date Recorded'}
+                                </span>
+                                <span className="text-slate-700 font-medium">• {ses.notes}</span>
+                                {ses.invoiceNumber && (
+                                  <span className="font-mono text-[10px] px-1.5 py-0.5 bg-slate-100 rounded text-slate-600">
+                                    {ses.invoiceNumber}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-4 font-mono text-xs">
+                                <span className="text-emerald-700 font-bold">
+                                  Paid: Rs. {Number(ses.amountPaid || 0).toLocaleString()}
+                                </span>
+                                <span className="text-teal font-bold">
+                                  Bal After: Rs. {Number(ses.balanceAfter || 0).toLocaleString()}
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Admin Record Session Payment Modal */}
+      {adminSessionPayModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden">
+            <div className="bg-navy p-4 text-white flex items-center justify-between">
+              <div>
+                <h3 className="font-extrabold text-sm text-gold">Record Session Payment</h3>
+                <p className="text-xs text-slate-300">
+                  {adminSessionPayModal.patientName} ({adminSessionPayModal.patientPhone})
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setAdminSessionPayModal(null)}
+                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <form onSubmit={handleAdminRecordSessionPayment} className="p-5 space-y-3.5 text-xs">
+              <div className="bg-ice p-3 rounded-xl border border-slate-200 flex justify-between items-center">
+                <span className="font-bold text-navy">Current Remaining Balance:</span>
+                <span className="font-mono font-extrabold text-sm text-teal">
+                  Rs. {Number(adminSessionPayModal.remainingBalance || 0).toLocaleString()}
+                </span>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Payment Amount (Rs.)</label>
+                <input
+                  type="number"
+                  required
+                  min="1"
+                  max={Number(adminSessionPayModal.remainingBalance || 0)}
+                  value={adminSessionPayAmount}
+                  onChange={(e) => setAdminSessionPayAmount(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-300 font-mono font-bold text-navy"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Session Date & Time</label>
+                <input
+                  type="datetime-local"
+                  required
+                  value={adminSessionPayDate}
+                  onChange={(e) => setAdminSessionPayDate(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-300 font-mono text-[11px]"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Session Clinical / Payment Note</label>
+                <input
+                  type="text"
+                  value={adminSessionPayNotes}
+                  onChange={(e) => setAdminSessionPayNotes(e.target.value)}
+                  placeholder="e.g. Session #2 Follow-up"
+                  className="w-full px-3 py-2 rounded-xl border border-slate-300"
+                />
+              </div>
+
+              <div className="flex items-center gap-2 pt-2">
+                <button
+                  type="submit"
+                  disabled={adminSessionPaying}
+                  className="flex-1 py-2.5 rounded-xl bg-teal hover:bg-teal-dark text-white font-extrabold text-xs shadow transition cursor-pointer disabled:opacity-50"
+                >
+                  {adminSessionPaying ? 'Recording...' : 'Record Payment & Save'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAdminSessionPayModal(null)}
+                  className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs cursor-pointer"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Admin Edit Treatment Ledger Modal */}
+      {adminEditTrtModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden">
+            <div className="bg-navy p-4 text-white flex items-center justify-between">
+              <div>
+                <h3 className="font-extrabold text-sm text-gold">Edit Patient Treatment Ledger</h3>
+                <p className="text-xs text-slate-300">
+                  MR# {adminEditTrtModal.patientCode} • Audit Trail Logged
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setAdminEditTrtModal(null)}
+                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <form onSubmit={handleAdminSaveEditTrt} className="p-5 space-y-3 text-xs">
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Patient Full Name</label>
+                <input
+                  type="text"
+                  required
+                  value={adminEditTrtForm.patientName}
+                  onChange={(e) => setAdminEditTrtForm({ ...adminEditTrtForm, patientName: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-300 font-semibold"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Patient Phone Number</label>
+                <input
+                  type="text"
+                  required
+                  value={adminEditTrtForm.patientPhone}
+                  onChange={(e) => setAdminEditTrtForm({ ...adminEditTrtForm, patientPhone: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-300 font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Treatment / Package Title</label>
+                <input
+                  type="text"
+                  required
+                  value={adminEditTrtForm.title}
+                  onChange={(e) => setAdminEditTrtForm({ ...adminEditTrtForm, title: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-300"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2.5">
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Agreed Total Cost (Rs.)</label>
+                  <input
+                    type="number"
+                    required
+                    min="0"
+                    value={adminEditTrtForm.totalCost}
+                    onChange={(e) => setAdminEditTrtForm({ ...adminEditTrtForm, totalCost: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-300 font-mono font-bold"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Total Planned Sessions</label>
+                  <input
+                    type="number"
+                    required
+                    min="1"
+                    max="50"
+                    value={adminEditTrtForm.totalSessions}
+                    onChange={(e) => setAdminEditTrtForm({ ...adminEditTrtForm, totalSessions: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-300 font-mono"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-bold text-amber-700 mb-1">Reason for Modification (Audit Log)</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Corrected spelled name, adjusted package cost"
+                  value={adminEditTrtForm.reason}
+                  onChange={(e) => setAdminEditTrtForm({ ...adminEditTrtForm, reason: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl border border-amber-300 bg-amber-50/50"
+                />
+              </div>
+
+              <div className="flex items-center gap-2 pt-2">
+                <button
+                  type="submit"
+                  disabled={adminSavingTrt}
+                  className="flex-1 py-2.5 rounded-xl bg-teal hover:bg-teal-dark text-white font-extrabold text-xs shadow transition cursor-pointer disabled:opacity-50"
+                >
+                  {adminSavingTrt ? 'Saving...' : 'Save Ledger Changes'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAdminEditTrtModal(null)}
+                  className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs cursor-pointer"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Admin New Patient Modal */}
+      {adminNewPatientModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden">
+            <div className="bg-navy p-4 text-white flex items-center justify-between">
+              <div>
+                <h3 className="font-extrabold text-sm text-gold">Register New Clinic Patient</h3>
+                <p className="text-xs text-slate-300">Create new patient MR# record</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setAdminNewPatientModal(false)}
+                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <form onSubmit={handleAdminCreatePatient} className="p-5 space-y-3 text-xs">
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Patient Full Name</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Ayesha Malik"
+                  value={adminNewPatientForm.name}
+                  onChange={(e) => setAdminNewPatientForm({ ...adminNewPatientForm, name: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-300 font-semibold"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Phone Number (WhatsApp)</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="03001234567"
+                  value={adminNewPatientForm.phone}
+                  onChange={(e) => setAdminNewPatientForm({ ...adminNewPatientForm, phone: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-300 font-mono"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2.5">
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Gender</label>
+                  <select
+                    value={adminNewPatientForm.gender}
+                    onChange={(e) => setAdminNewPatientForm({ ...adminNewPatientForm, gender: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-300"
+                  >
+                    <option value="Female">Female</option>
+                    <option value="Male">Male</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Age</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="120"
+                    value={adminNewPatientForm.age}
+                    onChange={(e) => setAdminNewPatientForm({ ...adminNewPatientForm, age: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-300 font-mono"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Address / City</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Gulberg III, Lahore"
+                  value={adminNewPatientForm.address}
+                  onChange={(e) => setAdminNewPatientForm({ ...adminNewPatientForm, address: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-300"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Medical Notes / Allergies</label>
+                <input
+                  type="text"
+                  placeholder="Optional medical notes"
+                  value={adminNewPatientForm.medicalHistory}
+                  onChange={(e) => setAdminNewPatientForm({ ...adminNewPatientForm, medicalHistory: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-300"
+                />
+              </div>
+
+              <div className="flex items-center gap-2 pt-2">
+                <button
+                  type="submit"
+                  disabled={adminCreatingPatient}
+                  className="flex-1 py-2.5 rounded-xl bg-teal hover:bg-teal-dark text-white font-extrabold text-xs shadow transition cursor-pointer disabled:opacity-50"
+                >
+                  {adminCreatingPatient ? 'Registering...' : 'Register Patient'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAdminNewPatientModal(false)}
+                  className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs cursor-pointer"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* SECTION 4: STAFF MANAGEMENT WITH LOGIN USERNAME & PASSWORD          */}
       {/* =================================================================== */}
       {activeSection === 'STAFF' && (
