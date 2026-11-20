@@ -548,6 +548,12 @@ export default function UserProfileModal({
                   />
                 </div>
 
+                <div className="md:col-span-2">
+                  <p className="text-xs text-slate-500 bg-ice/40 p-2.5 rounded-xl border border-teal/20 leading-relaxed">
+                    💡 <strong>Smart Dispatch:</strong> Leave blank to use direct WhatsApp chat link (<code className="text-teal font-bold">wa.me</code>) without an API key, or enter your Gateway / WhatsApp Bridge URL & Key for automatic background sending.
+                  </p>
+                </div>
+
                 <div className="md:col-span-2 flex items-center gap-2 pt-1">
                   <input
                     id="profileSmsEnabled"

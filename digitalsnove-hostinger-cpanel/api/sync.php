@@ -2761,12 +2761,23 @@ if (in_array($action, $wsActions, true)) {
             }
 
             $smsText = "Receipt {$invNo} ({$title} Session #1): Paid Rs. " . number_format($initialPaid) . ($rem > 0 ? ", Remaining Balance: Rs. " . number_format($rem) : ", Account Settled") . ". Thank you!";
+            $digitsOnly = preg_replace('/[^0-9]/', '', $patPhone);
+            if (strlen($digitsOnly) === 11 && strpos($digitsOnly, '03') === 0) {
+                $digitsOnly = '92' . substr($digitsOnly, 1);
+            } elseif (strlen($digitsOnly) === 10 && strpos($digitsOnly, '3') === 0) {
+                $digitsOnly = '92' . $digitsOnly;
+            }
+            $sessionWaLink = ($digitsOnly !== '' && strlen($digitsOnly) >= 10)
+                ? ('https://wa.me/' . $digitsOnly . '?text=' . rawurlencode($smsText))
+                : '';
+
             $smsLog = [
                 'id' => 'sms_' . time() . '_' . rand(10, 99),
                 'to' => $patPhone,
                 'recipientPhone' => $patPhone,
                 'patientName' => $patName,
                 'message' => $smsText,
+                'whatsappLink' => $sessionWaLink,
                 'status' => 'QUEUED',
                 'timestamp' => date('c'),
                 'createdAt' => date('c')

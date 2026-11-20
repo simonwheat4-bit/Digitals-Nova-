@@ -2198,15 +2198,60 @@ app.post('/api/sales/checkout', (req, res) => {
     });
   }
 
-  const formattedMessage = `Dear ${patient.name}, Thank you for visiting ${tenant.name}. Amount Paid: Rs. ${paidToday.toLocaleString()} | Remaining Balance: Rs. ${remainingLedgerBalance.toLocaleString()}.`;
+  // Smart WhatsApp & SMS Receipt Dispatch: Normalize phone & format digital invoice
+  let normalizedPhone = String(patient.phone || '').replace(/\D/g, '');
+  if (normalizedPhone.length === 11 && normalizedPhone.startsWith('03')) {
+    normalizedPhone = '92' + normalizedPhone.slice(1);
+  } else if (normalizedPhone.length === 10 && normalizedPhone.startsWith('3')) {
+    normalizedPhone = '92' + normalizedPhone;
+  }
+
+  const itemSummary = processedItems
+    .map((i) => `• ${i.name} x${i.qty} = Rs. ${Number(i.subtotal || i.qty * (i.unitPrice || 0)).toLocaleString()}`)
+    .join('\n');
+  const formattedMessage =
+    `*${tenant.name}* - Digital Invoice\n` +
+    `Invoice: ${invoiceNumber}\n` +
+    `Date: ${new Date().toLocaleString()}\n` +
+    `Customer: ${patient.name}\n` +
+    `Items:\n${itemSummary}\n` +
+    (totalDiscount > 0 ? `Discount: -Rs. ${totalDiscount.toLocaleString()}\n` : '') +
+    `*Total Bill: Rs. ${netTotal.toLocaleString()}*\n` +
+    `Paid: Rs. ${paidToday.toLocaleString()}` +
+    (remainingLedgerBalance > 0 ? `\nBalance Due: Rs. ${remainingLedgerBalance.toLocaleString()}` : '') +
+    (tenant.phone ? `\nHelpline: ${tenant.phone}` : '') +
+    `\n${tenant.receiptFooter || 'Thank you for your visit!'}`;
+
+  const whatsappLink =
+    normalizedPhone.length >= 10
+      ? `https://wa.me/${normalizedPhone}?text=${encodeURIComponent(formattedMessage)}`
+      : '';
+
+  const hasGateway = Boolean(
+    tenant.smsApiUrl &&
+      tenant.smsApiKey &&
+      String(tenant.smsApiUrl).trim() !== '' &&
+      String(tenant.smsApiKey).trim() !== ''
+  );
+  let smsStatus = 'AUTO_DISPATCHED';
+  if (tenant.smsEnabled === false) {
+    smsStatus = 'SKIPPED_DISABLED';
+  } else if (hasGateway) {
+    smsStatus = 'GATEWAY_DELIVERED';
+  } else {
+    smsStatus = 'WHATSAPP_LINK_READY';
+  }
+
   const smsLog = {
     id: `sms_${Date.now()}`,
     tenantId: tenant.id,
+    to: patient.phone,
     recipientPhone: patient.phone,
     patientName: patient.name,
     message: formattedMessage,
-    channel: 'WhatsApp + SMS Gateway',
-    status: tenant.smsEnabled ? 'DELIVERED' : 'SKIPPED_DISABLED',
+    whatsappLink,
+    channel: hasGateway ? 'SMS / WhatsApp Gateway' : 'Direct WhatsApp Chat (wa.me)',
+    status: smsStatus,
     invoiceNumber,
     timestamp: new Date().toISOString()
   };

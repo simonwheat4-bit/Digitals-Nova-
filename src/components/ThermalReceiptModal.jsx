@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Printer, X, MessageSquare, CheckCircle2, Usb, FileText } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Printer, X, MessageSquare, CheckCircle2, Usb, FileText, Send, Copy } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 
 export default function ThermalReceiptModal({
@@ -10,8 +10,82 @@ export default function ThermalReceiptModal({
 }) {
   const [paperSize, setPaperSize] = useState('80mm'); // '58mm' or '80mm'
   const [escPosStatus, setEscPosStatus] = useState(null);
+  const [copySuccess, setCopySuccess] = useState(false);
 
   if (!sale || !tenant) return null;
+
+  // Phone Normalizer (Pakistan 03xx -> 923xx default)
+  const normalizePhone = (phone) => {
+    if (!phone) return '';
+    let digits = String(phone).replace(/\D/g, '');
+    if (digits.length === 11 && digits.startsWith('03')) {
+      digits = '92' + digits.slice(1);
+    } else if (digits.length === 10 && digits.startsWith('3')) {
+      digits = '92' + digits;
+    }
+    return digits;
+  };
+
+  const formattedItems = (sale.items || [])
+    .map(
+      (i) =>
+        `• ${i.name} x${i.qty} = Rs. ${Number(
+          i.subtotal != null && !isNaN(Number(i.subtotal))
+            ? i.subtotal
+            : Number(i.qty || 1) * Number(i.unitPrice || 0)
+        ).toLocaleString()}`
+    )
+    .join('\n');
+
+  const waReceiptText =
+    smsLog?.message ||
+    `*${tenant.name}* - Digital Invoice & Receipt\n` +
+      `Invoice: ${sale.invoiceNumber}\n` +
+      `Date: ${new Date(sale.createdAt).toLocaleString()}\n` +
+      `Customer: ${sale.patientName} (${sale.patientCode || 'POS'})\n` +
+      `Items:\n${formattedItems}\n` +
+      (sale.discountAmount > 0
+        ? `Discount: -Rs. ${Number(sale.discountAmount).toLocaleString()}\n`
+        : '') +
+      `*Net Total: Rs. ${Number(sale.netTotal).toLocaleString()}*\n` +
+      `Paid Today: Rs. ${Number(sale.amountPaidToday).toLocaleString()}\n` +
+      (sale.remainingLedgerBalance > 0
+        ? `Remaining Balance: Rs. ${Number(sale.remainingLedgerBalance).toLocaleString()}\n`
+        : '') +
+      (tenant.phone ? `Helpline: ${tenant.phone}\n` : '') +
+      (tenant.receiptFooter || 'Thank you for your visit!');
+
+  const normalizedPhone = normalizePhone(
+    sale.patientPhone || smsLog?.recipientPhone || smsLog?.to
+  );
+  const waDirectLink =
+    smsLog?.whatsappLink ||
+    (normalizedPhone.length >= 10
+      ? `https://wa.me/${normalizedPhone}?text=${encodeURIComponent(waReceiptText)}`
+      : '');
+
+  const hasGateway = Boolean(
+    tenant.smsApiUrl &&
+      tenant.smsApiKey &&
+      String(tenant.smsApiUrl).trim() !== '' &&
+      String(tenant.smsApiKey).trim() !== ''
+  );
+  const autoDispatchActive =
+    (tenant.whatsappAutoDispatch ?? tenant.smsEnabled) !== false;
+
+  // Smart Auto-Open: If Gateway is empty, attempt opening wa.me fallback once
+  useEffect(() => {
+    if (autoDispatchActive && !hasGateway && waDirectLink) {
+      try {
+        const popup = window.open(waDirectLink, '_blank');
+        if (!popup || popup.closed || typeof popup.closed === 'undefined') {
+          setEscPosStatus('💡 Pop-up blocked: Click the green WhatsApp button below to send receipt.');
+        }
+      } catch (_) {
+        setEscPosStatus('💡 Click the green WhatsApp button below to send receipt.');
+      }
+    }
+  }, [autoDispatchActive, hasGateway, waDirectLink]);
 
   const handlePrint = () => {
     document.documentElement.style.setProperty('--thermal-width', paperSize);
@@ -270,21 +344,80 @@ export default function ThermalReceiptModal({
           <div className="md:col-span-5 flex flex-col justify-between space-y-4">
             <div className="space-y-4">
               {/* Auto SMS / WhatsApp Notification Confirmation Box */}
-              <div className="bg-emerald-50 border border-emerald-300 rounded-xl p-4">
-                <div className="flex items-center gap-2 text-emerald-900 font-bold text-sm mb-1.5">
-                  <MessageSquare className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>Auto SMS / WhatsApp Dispatched</span>
+              <div className="bg-emerald-50 border border-emerald-300 rounded-2xl p-4 space-y-2.5 shadow-sm">
+                <div className="flex items-center justify-between gap-2 text-emerald-950 font-black text-xs">
+                  <div className="flex items-center gap-1.5">
+                    <MessageSquare className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span>WhatsApp Digital Receipt</span>
+                  </div>
+                  <span
+                    className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold tracking-wide ${
+                      hasGateway
+                        ? 'bg-emerald-700 text-white'
+                        : autoDispatchActive
+                        ? 'bg-emerald-600 text-white'
+                        : 'bg-slate-200 text-slate-700'
+                    }`}
+                  >
+                    {hasGateway
+                      ? '🟢 GATEWAY API SENT'
+                      : autoDispatchActive
+                      ? '📲 DIRECT WA.ME LINK'
+                      : 'STANDBY'}
+                  </span>
                 </div>
-                <p className="text-xs text-emerald-800 mb-2">
-                  Sent to <span className="font-mono font-bold">{sale.patientPhone}</span>:
-                </p>
-                <div className="bg-white p-2.5 rounded-lg border border-emerald-200 text-xs font-mono text-slate-800 leading-relaxed">
-                  {smsLog?.message ||
-                    `"Dear ${sale.patientName}, Thank you for visiting ${tenant.name}. Amount Paid: Rs. ${Number(
-                      sale.amountPaidToday
-                    ).toLocaleString()} | Remaining Balance: Rs. ${Number(
-                      sale.remainingLedgerBalance
-                    ).toLocaleString()}."`}
+
+                <div className="text-[11px] text-emerald-900 grid grid-cols-2 gap-2 bg-white/70 p-2 rounded-xl border border-emerald-200">
+                  <div>
+                    <span className="text-[9px] uppercase font-bold text-slate-500 block">
+                      Store Helpline
+                    </span>
+                    <span className="font-mono font-bold text-emerald-900 text-xs">
+                      {tenant.phone || tenant.whatsappNumber || 'Official Store'}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-[9px] uppercase font-bold text-slate-500 block">
+                      Customer Phone
+                    </span>
+                    <span className="font-mono font-bold text-emerald-900 text-xs">
+                      {sale.patientPhone || 'Walk-in'}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="bg-white p-2.5 rounded-xl border border-emerald-200 text-[11px] font-mono text-slate-800 leading-relaxed max-h-32 overflow-y-auto whitespace-pre-wrap select-all">
+                  {waReceiptText}
+                </div>
+
+                <div className="flex items-center gap-2 pt-1">
+                  {waDirectLink && (
+                    <a
+                      href={waDirectLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-1 py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs flex items-center justify-center gap-1.5 shadow transition cursor-pointer"
+                    >
+                      <Send className="w-3.5 h-3.5" />
+                      <span>Send / Open on WhatsApp (wa.me)</span>
+                    </a>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      try {
+                        if (navigator.clipboard) {
+                          navigator.clipboard.writeText(waReceiptText);
+                          setCopySuccess(true);
+                          setTimeout(() => setCopySuccess(false), 2000);
+                        }
+                      } catch (_) {}
+                    }}
+                    className="px-3 py-2 rounded-xl bg-white hover:bg-emerald-100 border border-emerald-300 text-emerald-900 font-bold text-xs cursor-pointer transition flex items-center gap-1"
+                  >
+                    <Copy className="w-3.5 h-3.5" />
+                    <span>{copySuccess ? 'Copied!' : 'Copy'}</span>
+                  </button>
                 </div>
               </div>
 
