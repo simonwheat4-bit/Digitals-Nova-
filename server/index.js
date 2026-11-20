@@ -1502,14 +1502,46 @@ app.post('/api/treatments', (req, res) => {
     };
     db.sales.unshift(createdSale);
 
+    let cleanPhone = (patient.phone || '').replace(/\D/g, '');
+    if (cleanPhone.startsWith('00')) cleanPhone = cleanPhone.slice(2);
+    const normalizedPhone = (cleanPhone.length === 11 && cleanPhone.startsWith('03'))
+      ? '92' + cleanPhone.slice(1)
+      : (cleanPhone.length === 10 && cleanPhone.startsWith('3'))
+      ? '92' + cleanPhone
+      : cleanPhone;
+
+    const formattedMessage =
+      `*${tenant.name}* - Treatment Receipt\n` +
+      `Receipt: ${invoiceNumber}\n` +
+      `Date: ${new Date().toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}\n` +
+      `Patient: ${patient.name} (${patient.code || ''})\n` +
+      `Treatment: ${title} (Session #1 of ${totalSessions})\n` +
+      `Total Agreed Cost: Rs. ${Number(totalCost).toLocaleString()}\n` +
+      `Paid Today: Rs. ${paidToday.toLocaleString()}\n` +
+      (remaining > 0 ? `Remaining Balance: Rs. ${remaining.toLocaleString()}\n` : `Status: Account Fully Settled\n`) +
+      (tenant.phone ? `Helpline / WhatsApp: ${tenant.phone}\n` : '') +
+      `${tenant.receiptFooter || 'Thank you for choosing us!'}`;
+
+    const whatsappLink = normalizedPhone.length >= 10
+      ? `https://wa.me/${normalizedPhone}?text=${encodeURIComponent(formattedMessage)}`
+      : '';
+
+    const hasGateway = Boolean(
+      tenant.smsApiUrl &&
+        tenant.smsApiKey &&
+        String(tenant.smsApiUrl).trim() !== '' &&
+        String(tenant.smsApiKey).trim() !== ''
+    );
+
     smsRecord = {
       id: `sms_${Date.now()}`,
       tenantId: tenant.id,
       recipientPhone: patient.phone,
       patientName: patient.name,
-      message: `Dear ${patient.name}, Thank you for visiting ${tenant.name}. Amount Paid: Rs. ${paidToday.toLocaleString()} | Remaining Balance: Rs. ${remaining.toLocaleString()}.`,
-      channel: 'WhatsApp + SMS',
-      status: 'DELIVERED',
+      message: formattedMessage,
+      whatsappLink,
+      channel: hasGateway ? 'SMS / WhatsApp Gateway' : 'Direct WhatsApp Chat (wa.me)',
+      status: hasGateway ? 'GATEWAY_DELIVERED' : 'WHATSAPP_LINK_READY',
       invoiceNumber,
       timestamp
     };
@@ -1673,14 +1705,46 @@ app.post('/api/treatments/:id/pay-session', (req, res) => {
 
   db.sales.unshift(sale);
 
+  let cleanPhone = (treatment.patientPhone || '').replace(/\D/g, '');
+  if (cleanPhone.startsWith('00')) cleanPhone = cleanPhone.slice(2);
+  const normalizedPhone = (cleanPhone.length === 11 && cleanPhone.startsWith('03'))
+    ? '92' + cleanPhone.slice(1)
+    : (cleanPhone.length === 10 && cleanPhone.startsWith('3'))
+    ? '92' + cleanPhone
+    : cleanPhone;
+
+  const formattedMessage =
+    `*${tenant.name}* - Treatment Installment Receipt\n` +
+    `Receipt: ${invoiceNumber}\n` +
+    `Date: ${new Date().toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}\n` +
+    `Patient: ${treatment.patientName} (${treatment.patientCode || ''})\n` +
+    `Treatment: ${treatment.title} (Session #${nextSessionNum} of ${treatment.totalSessions || 1})\n` +
+    `Total Agreed Cost: Rs. ${Number(treatment.totalCost || 0).toLocaleString()}\n` +
+    `Paid Today: Rs. ${paid.toLocaleString()}\n` +
+    (newRemaining > 0 ? `Remaining Balance: Rs. ${newRemaining.toLocaleString()}\n` : `Status: Account Fully Settled\n`) +
+    (tenant.phone ? `Helpline / WhatsApp: ${tenant.phone}\n` : '') +
+    `${tenant.receiptFooter || 'Thank you for choosing us!'}`;
+
+  const whatsappLink = normalizedPhone.length >= 10
+    ? `https://wa.me/${normalizedPhone}?text=${encodeURIComponent(formattedMessage)}`
+    : '';
+
+  const hasGateway = Boolean(
+    tenant.smsApiUrl &&
+      tenant.smsApiKey &&
+      String(tenant.smsApiUrl).trim() !== '' &&
+      String(tenant.smsApiKey).trim() !== ''
+  );
+
   const smsLog = {
     id: `sms_${Date.now()}`,
     tenantId: tenant.id,
     recipientPhone: treatment.patientPhone,
     patientName: treatment.patientName,
-    message: `Dear ${treatment.patientName}, Thank you for visiting ${tenant.name}. Amount Paid: Rs. ${paid.toLocaleString()} | Remaining Balance: Rs. ${newRemaining.toLocaleString()}.`,
-    channel: 'WhatsApp + SMS',
-    status: 'DELIVERED',
+    message: formattedMessage,
+    whatsappLink,
+    channel: hasGateway ? 'SMS / WhatsApp Gateway' : 'Direct WhatsApp Chat (wa.me)',
+    status: hasGateway ? 'GATEWAY_DELIVERED' : 'WHATSAPP_LINK_READY',
     invoiceNumber,
     timestamp
   };

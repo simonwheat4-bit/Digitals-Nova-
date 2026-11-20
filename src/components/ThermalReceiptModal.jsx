@@ -18,6 +18,7 @@ export default function ThermalReceiptModal({
   const normalizePhone = (phone) => {
     if (!phone) return '';
     let digits = String(phone).replace(/\D/g, '');
+    if (digits.startsWith('00')) digits = digits.slice(2);
     if (digits.length === 11 && digits.startsWith('03')) {
       digits = '92' + digits.slice(1);
     } else if (digits.length === 10 && digits.startsWith('3')) {
@@ -26,24 +27,28 @@ export default function ThermalReceiptModal({
     return digits;
   };
 
-  const formattedItems = (sale.items || [])
-    .map(
-      (i) =>
-        `• ${i.name} x${i.qty} = Rs. ${Number(
-          i.subtotal != null && !isNaN(Number(i.subtotal))
-            ? i.subtotal
-            : Number(i.qty || 1) * Number(i.unitPrice || 0)
-        ).toLocaleString()}`
-    )
-    .join('\n');
+  const formattedItems = (sale.items && sale.items.length > 0)
+    ? sale.items
+        .map(
+          (i) =>
+            `• ${i.name} x${i.qty} = Rs. ${Number(
+              i.subtotal != null && !isNaN(Number(i.subtotal))
+                ? i.subtotal
+                : Number(i.qty || 1) * Number(i.unitPrice || 0)
+            ).toLocaleString()}`
+        )
+        .join('\n')
+    : `• ${sale.treatmentTitle || sale.title || 'Service / Item'} = Rs. ${Number(sale.netTotal || sale.amountPaidToday || 0).toLocaleString()}`;
+
+  const receiptDate = new Date(sale.createdAt || Date.now()).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' });
 
   const waReceiptText =
     smsLog?.message ||
     `*${tenant.name}* - Digital Invoice & Receipt\n` +
       `Invoice: ${sale.invoiceNumber}\n` +
-      `Date: ${new Date(sale.createdAt).toLocaleString()}\n` +
+      `Date: ${receiptDate}\n` +
       `Customer: ${sale.patientName} (${sale.patientCode || 'POS'})\n` +
-      `Items:\n${formattedItems}\n` +
+      `Items / Service:\n${formattedItems}\n` +
       (sale.discountAmount > 0
         ? `Discount: -Rs. ${Number(sale.discountAmount).toLocaleString()}\n`
         : '') +
@@ -52,7 +57,7 @@ export default function ThermalReceiptModal({
       (sale.remainingLedgerBalance > 0
         ? `Remaining Balance: Rs. ${Number(sale.remainingLedgerBalance).toLocaleString()}\n`
         : '') +
-      (tenant.phone ? `Helpline: ${tenant.phone}\n` : '') +
+      (tenant.phone ? `Helpline / WhatsApp: ${tenant.phone}\n` : '') +
       (tenant.receiptFooter || 'Thank you for your visit!');
 
   const normalizedPhone = normalizePhone(
@@ -399,7 +404,7 @@ export default function ThermalReceiptModal({
                       className="flex-1 py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs flex items-center justify-center gap-1.5 shadow transition cursor-pointer"
                     >
                       <Send className="w-3.5 h-3.5" />
-                      <span>Send / Open on WhatsApp (wa.me)</span>
+                      <span>Send Receipt on WhatsApp (wa.me)</span>
                     </a>
                   )}
                   <button

@@ -2372,10 +2372,13 @@ if (in_array($action, $wsActions, true)) {
             $iSub = number_format(floatval($ni['subtotal'] ?? 0));
             $itemLines[] = "• {$iName} x{$iQty} = Rs. {$iSub}";
         }
-        $waText = "*{$storeDisplayName}* - Digital Invoice\n"
+        $itemSummaryLines = count($itemLines) > 0 ? implode("\n", $itemLines) : "• POS Sale / Service = Rs. " . number_format($netTotal);
+        $waDate = date('d/m/Y, h:i A');
+        $waText = "*{$storeDisplayName}* - Digital Invoice & Receipt\n"
             . "Invoice: {$saleRecord['invoiceNumber']}\n"
+            . "Date: {$waDate}\n"
             . "Customer: {$saleRecord['patientName']}\n"
-            . "Items:\n" . implode("\n", $itemLines) . "\n"
+            . "Items / Service:\n{$itemSummaryLines}\n"
             . ($discAmt > 0 ? "Discount: -Rs. " . number_format($discAmt) . "\n" : '')
             . "*Total Bill: Rs. " . number_format($netTotal) . "*\n"
             . "Paid: Rs. " . number_format($paidToday)
@@ -2384,6 +2387,9 @@ if (in_array($action, $wsActions, true)) {
             . "\n" . (!empty($tenant['receiptFooter']) ? (string)$tenant['receiptFooter'] : 'Thank you for your business!');
 
         $digitsOnly = preg_replace('/[^0-9]/', '', $custPhone);
+        if (strpos($digitsOnly, '00') === 0) {
+            $digitsOnly = substr($digitsOnly, 2);
+        }
         if (strlen($digitsOnly) === 11 && strpos($digitsOnly, '03') === 0) {
             $digitsOnly = '92' . substr($digitsOnly, 1);
         } elseif (strlen($digitsOnly) === 10 && strpos($digitsOnly, '3') === 0) {
@@ -2760,25 +2766,52 @@ if (in_array($action, $wsActions, true)) {
                 }
             }
 
-            $smsText = "Receipt {$invNo} ({$title} Session #1): Paid Rs. " . number_format($initialPaid) . ($rem > 0 ? ", Remaining Balance: Rs. " . number_format($rem) : ", Account Settled") . ". Thank you!";
+            $storeDisplayName = !empty($tenant['name']) ? (string)$tenant['name'] : strtoupper($sub);
+            $bizWhatsapp = trim((string)($tenant['whatsappNumber'] ?? ($tenant['phone'] ?? '')));
+            $waDate = date('d/m/Y, h:i A');
             $digitsOnly = preg_replace('/[^0-9]/', '', $patPhone);
+            if (strpos($digitsOnly, '00') === 0) {
+                $digitsOnly = substr($digitsOnly, 2);
+            }
             if (strlen($digitsOnly) === 11 && strpos($digitsOnly, '03') === 0) {
                 $digitsOnly = '92' . substr($digitsOnly, 1);
             } elseif (strlen($digitsOnly) === 10 && strpos($digitsOnly, '3') === 0) {
                 $digitsOnly = '92' . $digitsOnly;
             }
+
+            $waTreatmentText = "*{$storeDisplayName}* - Treatment Receipt\n"
+                . "Receipt: {$invNo}\n"
+                . "Date: {$waDate}\n"
+                . "Patient: {$patName} ({$patCode})\n"
+                . "Treatment: {$title} (Session #1 of {$totalSessions})\n"
+                . "Total Agreed Cost: Rs. " . number_format($totalCost) . "\n"
+                . "Paid Today: Rs. " . number_format($initialPaid) . "\n"
+                . ($rem > 0 ? "Remaining Balance: Rs. " . number_format($rem) : "Status: Account Fully Settled")
+                . ($bizWhatsapp !== '' ? "\nHelpline / WhatsApp: {$bizWhatsapp}" : '')
+                . "\n" . (!empty($tenant['receiptFooter']) ? (string)$tenant['receiptFooter'] : 'Thank you for choosing us!');
+
             $sessionWaLink = ($digitsOnly !== '' && strlen($digitsOnly) >= 10)
-                ? ('https://wa.me/' . $digitsOnly . '?text=' . rawurlencode($smsText))
+                ? ('https://wa.me/' . $digitsOnly . '?text=' . rawurlencode($waTreatmentText))
                 : '';
 
+            $gwUrl = trim((string)($tenant['smsApiUrl'] ?? ''));
+            $gwKey = trim((string)($tenant['smsApiKey'] ?? ''));
+            $hasGw = ($gwUrl !== '' && preg_match('#^https?://#i', $gwUrl) && $gwKey !== '');
+            $smsStatus = $hasGw ? 'GATEWAY_SENT' : 'WHATSAPP_LINK_READY';
+
+            $smsText = "Receipt {$invNo} ({$title} Session #1): Paid Rs. " . number_format($initialPaid) . ($rem > 0 ? ", Remaining Balance: Rs. " . number_format($rem) : ", Account Settled") . ". Thank you!";
             $smsLog = [
                 'id' => 'sms_' . time() . '_' . rand(10, 99),
                 'to' => $patPhone,
                 'recipientPhone' => $patPhone,
+                'fromWhatsapp' => $bizWhatsapp,
                 'patientName' => $patName,
-                'message' => $smsText,
+                'invoiceNumber' => $invNo,
+                'message' => $waTreatmentText,
+                'shortMessage' => $smsText,
                 'whatsappLink' => $sessionWaLink,
-                'status' => 'QUEUED',
+                'channel' => $hasGw ? 'SMS / WhatsApp Gateway' : 'Direct WhatsApp Chat (wa.me)',
+                'status' => $smsStatus,
                 'timestamp' => date('c'),
                 'createdAt' => date('c')
             ];
@@ -2913,14 +2946,52 @@ if (in_array($action, $wsActions, true)) {
                 }
             }
 
+            $storeDisplayName = !empty($tenant['name']) ? (string)$tenant['name'] : strtoupper($sub);
+            $bizWhatsapp = trim((string)($tenant['whatsappNumber'] ?? ($tenant['phone'] ?? '')));
+            $waDate = date('d/m/Y, h:i A');
+            $digitsOnly = preg_replace('/[^0-9]/', '', $patPhone);
+            if (strpos($digitsOnly, '00') === 0) {
+                $digitsOnly = substr($digitsOnly, 2);
+            }
+            if (strlen($digitsOnly) === 11 && strpos($digitsOnly, '03') === 0) {
+                $digitsOnly = '92' . substr($digitsOnly, 1);
+            } elseif (strlen($digitsOnly) === 10 && strpos($digitsOnly, '3') === 0) {
+                $digitsOnly = '92' . $digitsOnly;
+            }
+
+            $waSessionText = "*{$storeDisplayName}* - Treatment Installment Receipt\n"
+                . "Receipt: {$invNo}\n"
+                . "Date: {$waDate}\n"
+                . "Patient: {$patName} ({$patCode})\n"
+                . "Treatment: {$updated['title']} (Session #{$sesNum} of {$updated['totalSessions']})\n"
+                . "Total Agreed Cost: Rs. " . number_format($updated['totalCost']) . "\n"
+                . "Paid Today: Rs. " . number_format($amt) . "\n"
+                . ($rem > 0 ? "Remaining Balance: Rs. " . number_format($rem) : "Status: Account Fully Settled")
+                . ($bizWhatsapp !== '' ? "\nHelpline / WhatsApp: {$bizWhatsapp}" : '')
+                . "\n" . (!empty($tenant['receiptFooter']) ? (string)$tenant['receiptFooter'] : 'Thank you for choosing us!');
+
+            $sessionWaLink = ($digitsOnly !== '' && strlen($digitsOnly) >= 10)
+                ? ('https://wa.me/' . $digitsOnly . '?text=' . rawurlencode($waSessionText))
+                : '';
+
+            $gwUrl = trim((string)($tenant['smsApiUrl'] ?? ''));
+            $gwKey = trim((string)($tenant['smsApiKey'] ?? ''));
+            $hasGw = ($gwUrl !== '' && preg_match('#^https?://#i', $gwUrl) && $gwKey !== '');
+            $smsStatus = $hasGw ? 'GATEWAY_SENT' : 'WHATSAPP_LINK_READY';
+
             $smsText = "Receipt {$invNo} ({$updated['title']} Session #{$sesNum}): Paid Rs. " . number_format($amt) . ($rem > 0 ? ", Remaining Balance: Rs. " . number_format($rem) : ", Account Settled") . ". Thank you!";
             $smsLog = [
                 'id' => 'sms_' . time() . '_' . rand(10, 99),
                 'to' => $patPhone,
                 'recipientPhone' => $patPhone,
+                'fromWhatsapp' => $bizWhatsapp,
                 'patientName' => $patName,
-                'message' => $smsText,
-                'status' => 'QUEUED',
+                'invoiceNumber' => $invNo,
+                'message' => $waSessionText,
+                'shortMessage' => $smsText,
+                'whatsappLink' => $sessionWaLink,
+                'channel' => $hasGw ? 'SMS / WhatsApp Gateway' : 'Direct WhatsApp Chat (wa.me)',
+                'status' => $smsStatus,
                 'timestamp' => date('c'),
                 'createdAt' => date('c')
             ];
