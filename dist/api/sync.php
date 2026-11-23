@@ -101,6 +101,24 @@ function dnResolveWorkspaceContext($body, $tenants) {
     if ($cleanSub === '' && $rawTid !== '') {
         $cleanSub = dnSanitizeSubdomain($rawTid);
     }
+    // Resilient Fallback: If cleanSub is still empty, look across tenants or search by body ID
+    if ($cleanSub === '' && !empty($tenants)) {
+        if (count($tenants) === 1) {
+            $tenant = $tenants[0];
+            $cleanSub = dnSanitizeSubdomain($tenant['subdomain'] ?? 'default');
+        } else {
+            foreach ($tenants as $t) {
+                if (($t['status'] ?? 'ACTIVE') === 'ACTIVE') {
+                    $tenant = $t;
+                    $cleanSub = dnSanitizeSubdomain($t['subdomain'] ?? 'default');
+                    break;
+                }
+            }
+        }
+    }
+    if ($cleanSub === '') {
+        $cleanSub = 'default';
+    }
     return [
         'subdomain' => $cleanSub,
         'tenantId' => $tenant ? ($tenant['id'] ?? $rawTid) : $rawTid,
@@ -2862,7 +2880,7 @@ if (in_array($action, $wsActions, true)) {
         $updated = null;
         $sesNum = 1;
         foreach ($ws['treatments'] as &$tr) {
-            if (($tr['id'] ?? '') === $trId) {
+            if (($tr['id'] ?? '') === $trId || (!empty($body['patientCode']) && ($tr['patientCode'] ?? '') === ($body['patientCode'] ?? ''))) {
                 if (!isset($tr['sessions']) || !is_array($tr['sessions'])) $tr['sessions'] = [];
                 $sesNum = count($tr['sessions']) + 1;
                 $tr['paidAmount'] = floatval($tr['paidAmount'] ?? 0) + $amt;
@@ -3042,7 +3060,7 @@ if (in_array($action, $wsActions, true)) {
         $updated = null;
         $prevSnapshot = null;
         foreach ($ws['treatments'] as &$tr) {
-            if (($tr['id'] ?? '') === $trId) {
+            if (($tr['id'] ?? '') === $trId || (!empty($body['patientCode']) && ($tr['patientCode'] ?? '') === ($body['patientCode'] ?? ''))) {
                 $prevSnapshot = [
                     'patientName' => $tr['patientName'] ?? '',
                     'patientPhone' => $tr['patientPhone'] ?? '',
