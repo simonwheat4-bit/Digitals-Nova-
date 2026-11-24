@@ -3064,15 +3064,34 @@ if (in_array($action, $wsActions, true)) {
     }
 
     if ($action === 'edit_treatment') {
-        $trId = trim((string)($body['id'] ?? ($_GET['id'] ?? '')));
+        $trId = trim((string)($body['id'] ?? ($body['treatmentId'] ?? ($_GET['id'] ?? ''))));
         $actor = trim((string)($body['actorName'] ?? ($body['actor'] ?? 'Staff/Admin')));
         $reason = trim((string)($body['reason'] ?? ($body['editReason'] ?? 'Ledger details corrected by Staff/Admin')));
         if ($reason === '') $reason = 'Ledger details corrected by Staff/Admin';
 
+        if (!isset($ws['treatments']) || !is_array($ws['treatments'])) {
+            $ws['treatments'] = [];
+        }
+        if (!isset($ws['patients']) || !is_array($ws['patients'])) {
+            $ws['patients'] = [];
+        }
+
+        $pCode = trim((string)($body['patientCode'] ?? ($body['code'] ?? '')));
+        $pPhone = preg_replace('/[^0-9]/', '', (string)($body['patientPhone'] ?? ''));
+
         $updated = null;
         $prevSnapshot = null;
         foreach ($ws['treatments'] as &$tr) {
-            if (($tr['id'] ?? '') === $trId || (!empty($body['patientCode']) && ($tr['patientCode'] ?? '') === ($body['patientCode'] ?? ''))) {
+            $isMatch = false;
+            if ($trId !== '' && (($tr['id'] ?? '') === $trId || ($tr['treatmentId'] ?? '') === $trId)) {
+                $isMatch = true;
+            } else if ($pCode !== '' && (($tr['patientCode'] ?? '') === $pCode || ($tr['code'] ?? '') === $pCode)) {
+                $isMatch = true;
+            } else if ($pPhone !== '' && preg_replace('/[^0-9]/', '', (string)($tr['patientPhone'] ?? '')) === $pPhone) {
+                $isMatch = true;
+            }
+
+            if ($isMatch) {
                 $prevSnapshot = [
                     'patientName' => $tr['patientName'] ?? '',
                     'patientPhone' => $tr['patientPhone'] ?? '',
@@ -3082,10 +3101,18 @@ if (in_array($action, $wsActions, true)) {
                     'remainingBalance' => floatval($tr['remainingBalance'] ?? 0)
                 ];
 
-                if (isset($body['patientName'])) $tr['patientName'] = trim((string)$body['patientName']);
-                if (isset($body['patientPhone'])) $tr['patientPhone'] = trim((string)$body['patientPhone']);
-                if (isset($body['title'])) $tr['title'] = trim((string)$body['title']);
-                if (isset($body['notes'])) $tr['notes'] = trim((string)$body['notes']);
+                if (isset($body['patientName']) && trim((string)$body['patientName']) !== '') {
+                    $tr['patientName'] = trim((string)$body['patientName']);
+                }
+                if (isset($body['patientPhone']) && trim((string)$body['patientPhone']) !== '') {
+                    $tr['patientPhone'] = trim((string)$body['patientPhone']);
+                }
+                if (isset($body['title']) && trim((string)$body['title']) !== '') {
+                    $tr['title'] = trim((string)$body['title']);
+                }
+                if (isset($body['notes'])) {
+                    $tr['notes'] = trim((string)$body['notes']);
+                }
                 if (isset($body['totalCost']) && is_numeric($body['totalCost'])) {
                     $tr['totalCost'] = max(0, floatval($body['totalCost']));
                 }
@@ -3093,8 +3120,17 @@ if (in_array($action, $wsActions, true)) {
                     $tr['totalSessions'] = max(1, intval($body['totalSessions']));
                 }
 
-                $paid = floatval($tr['paidAmount'] ?? 0);
-                $tr['remainingBalance'] = max(0, round(floatval($tr['totalCost'] ?? 0) - $paid, 2));
+                // Sum up paid amounts across all recorded session visits
+                $paidFromSessions = 0;
+                if (!empty($tr['sessions']) && is_array($tr['sessions'])) {
+                    foreach ($tr['sessions'] as $sSes) {
+                        $paidFromSessions += floatval($sSes['amountPaid'] ?? ($sSes['paid'] ?? 0));
+                    }
+                }
+                $existingPaid = floatval($tr['paidAmount'] ?? 0);
+                $actualPaid = max($existingPaid, $paidFromSessions);
+                $tr['paidAmount'] = $actualPaid;
+                $tr['remainingBalance'] = max(0, round(floatval($tr['totalCost'] ?? 0) - $actualPaid, 2));
                 $tr['status'] = ($tr['remainingBalance'] <= 0) ? 'COMPLETED' : 'IN_PROGRESS';
                 $tr['isEdited'] = true;
                 $tr['lastEditedAt'] = date('c');
@@ -3131,9 +3167,10 @@ if (in_array($action, $wsActions, true)) {
         }
 
         // Also update linked patient name/phone in ws['patients']
-        if (!empty($updated['patientId'])) {
+        if (!empty($updated['patientId']) || !empty($updated['patientCode'])) {
             foreach ($ws['patients'] as &$p) {
-                if (($p['id'] ?? '') === $updated['patientId'] || ($p['code'] ?? '') === ($updated['patientCode'] ?? '')) {
+                if ((!empty($updated['patientId']) && ($p['id'] ?? '') === $updated['patientId']) || 
+                    (!empty($updated['patientCode']) && (($p['code'] ?? '') === $updated['patientCode'] || ($p['patientCode'] ?? '') === $updated['patientCode']))) {
                     if (!empty($updated['patientName'])) $p['name'] = $updated['patientName'];
                     if (!empty($updated['patientPhone'])) $p['phone'] = $updated['patientPhone'];
                     break;
