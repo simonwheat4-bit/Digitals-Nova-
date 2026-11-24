@@ -553,20 +553,44 @@ function dnNormalizeTenantState(&$t, $effectivePlans) {
     if (!empty($t['email'])) $t['adminUser']['email'] = $t['email'];
     if (!empty($t['phone'])) $t['adminUser']['phone'] = $t['phone'];
 
-    $totalDays = intval($t['cycleDays']);
+    $totalDays = intval($t['cycleDays'] ?? 30);
     if ($totalDays <= 0) $totalDays = 30;
-    $cycleDay = intval($t['billingCycleDay'] ?? ($t['subscription']['billingCycleDay'] ?? 1));
-    if ($cycleDay < 1) $cycleDay = 1;
 
-    $isManualBlocked = !empty($t['manualBlocked']) || strtoupper($t['status'] ?? '') === 'BLOCKED';
-    if (!$isManualBlocked && $cycleDay <= $totalDays && !empty($t['subscriptionExpiry'])) {
+    $isTrial = ($curPlanType === 'TRIAL_3_DAYS' || stripos($curPlanType, 'TRIAL') !== false || stripos($t['planName'] ?? '', 'Trial') !== false);
+    if ($isTrial && $totalDays > 7) {
+        $totalDays = 3;
+        $t['cycleDays'] = 3;
+        $dirty = true;
+    }
+
+    // Determine start timestamp
+    $startTs = !empty($t['lastPaymentDate']) ? strtotime($t['lastPaymentDate']) : (!empty($t['createdAt']) ? strtotime($t['createdAt']) : time());
+    if ($startTs === false || $startTs <= 0) {
+        $startTs = time();
+    }
+
+    // Determine expiry timestamp
+    if (!empty($t['subscriptionExpiry'])) {
         $expTs = strtotime($t['subscriptionExpiry']);
-        if ($expTs !== false && time() > ($expTs + (3 * 86400))) {
-            $cycleDay = $totalDays + 4;
-            $t['billingCycleDay'] = $cycleDay;
+        if ($expTs === false) {
+            $expTs = $startTs + ($totalDays * 86400);
+            $t['subscriptionExpiry'] = date('c', $expTs);
             $dirty = true;
         }
+    } else {
+        $expTs = $startTs + ($totalDays * 86400);
+        $t['subscriptionExpiry'] = date('c', $expTs);
+        $dirty = true;
     }
+
+    // Dynamic elapsed day calculation (real-time elapsed billing day)
+    $now = time();
+    $elapsedSecs = max(0, $now - $startTs);
+    $dynamicCycleDay = intval(floor($elapsedSecs / 86400)) + 1;
+    $storedCycleDay = intval($t['billingCycleDay'] ?? ($t['subscription']['billingCycleDay'] ?? 1));
+    $cycleDay = max($dynamicCycleDay, $storedCycleDay);
+
+    $isManualBlocked = !empty($t['manualBlocked']) || strtoupper((string)($t['status'] ?? '')) === 'BLOCKED';
 
     if ($isManualBlocked) {
         $subState = 'LOCKED';
@@ -575,46 +599,74 @@ function dnNormalizeTenantState(&$t, $effectivePlans) {
         $graceRem = 0;
         $daysRem = 0;
         $bannerMsg = 'Access manually suspended by DigitalsNova Super Admin.';
-    } elseif ($cycleDay > ($totalDays + 3)) {
-        $subState = 'LOCKED';
-        $t['manualBlocked'] = false;
-        $t['status'] = 'LOCKED';
-        $graceRem = 0;
-        $daysRem = 0;
-        $bannerMsg = 'Subscription expired after Day ' . ($totalDays + 3) . " (Billing Day {$cycleDay}).";
-    } elseif ($cycleDay > $totalDays) {
-        $subState = 'GRACE_PERIOD';
-        $t['manualBlocked'] = false;
-        $t['status'] = 'ACTIVE';
-        $graceRem = max(1, ($totalDays + 3) - $cycleDay + 1);
-        $daysRem = 0;
-        $bannerMsg = "Grace Period Active (Day {$cycleDay}/" . ($totalDays + 3) . "). Renew within {$graceRem} day(s).";
+    } elseif ($isTrial) {
+        // TRIAL LOGIC: ZERO GRACE PERIOD! If time() >= expTs or cycleDay > totalDays, LOCK IMMEDIATELY!
+        if ($now >= $expTs || $cycleDay > $totalDays) {
+            $subState = 'LOCKED';
+            $t['manualBlocked'] = false;
+            $t['status'] = 'LOCKED';
+            $graceRem = 0;
+            $daysRem = 0;
+            $cycleDay = max($cycleDay, $totalDays + 1);
+            $bannerMsg = '3-Day Free Trial expired on ' . date('d M Y, h:i A', $expTs) . '. Please subscribe to a plan to continue access.';
+        } else {
+            $subState = 'ACTIVE';
+            $t['manualBlocked'] = false;
+            $t['status'] = 'ACTIVE';
+            $graceRem = 0;
+            $daysRem = max(0, ceil(($expTs - $now) / 86400));
+            $bannerMsg = "Free Trial active ({$daysRem} day" . ($daysRem === 1 ? '' : 's') . " remaining).";
+        }
     } else {
-        $subState = 'ACTIVE';
-        $t['manualBlocked'] = false;
-        $t['status'] = 'ACTIVE';
-        $graceRem = 3;
-        $daysRem = max(0, $totalDays - $cycleDay + 1);
-        $bannerMsg = '';
+        // REGULAR PAID PLAN LOGIC: 3-Day Grace Period
+        $graceEndTs = $expTs + (3 * 86400);
+        if ($now >= $graceEndTs || $cycleDay > ($totalDays + 3)) {
+            $subState = 'LOCKED';
+            $t['manualBlocked'] = false;
+            $t['status'] = 'LOCKED';
+            $graceRem = 0;
+            $daysRem = 0;
+            $cycleDay = max($cycleDay, $totalDays + 4);
+            $bannerMsg = 'Subscription expired after Day ' . ($totalDays + 3) . " (Billing Day {$cycleDay}).";
+        } elseif ($now >= $expTs || $cycleDay > $totalDays) {
+            $subState = 'GRACE_PERIOD';
+            $t['manualBlocked'] = false;
+            $t['status'] = 'ACTIVE';
+            $graceRem = max(1, ceil(($graceEndTs - $now) / 86400));
+            $daysRem = 0;
+            $bannerMsg = "Grace Period Active (Day {$cycleDay}/" . ($totalDays + 3) . "). Renew within {$graceRem} day(s).";
+        } else {
+            $subState = 'ACTIVE';
+            $t['manualBlocked'] = false;
+            $t['status'] = 'ACTIVE';
+            $graceRem = 3;
+            $daysRem = max(0, ceil(($expTs - $now) / 86400));
+            $bannerMsg = '';
+        }
     }
 
-    $t['billingCycleDay'] = $cycleDay;
-    if (!isset($t['subscription']) || !is_array($t['subscription'])) $t['subscription'] = [];
-    $t['subscription']['state'] = $subState;
-    $t['subscription']['plan'] = $curPlanType;
-    $t['subscription']['planName'] = $t['planName'];
-    $t['subscription']['billingCycleDay'] = $cycleDay;
-    $t['subscription']['totalDays'] = $totalDays;
-    $t['subscription']['graceDaysRemaining'] = $graceRem;
-    $t['subscription']['daysRemainingInCycle'] = $daysRem;
-    $t['subscription']['monthlyFee'] = floatval($t['monthlyFee']);
-    if (!empty($bannerMsg)) {
-        $t['subscription']['bannerMessage'] = $bannerMsg;
-    } else {
-        unset($t['subscription']['bannerMessage']);
+    if (($t['billingCycleDay'] ?? 0) !== $cycleDay) {
+        $t['billingCycleDay'] = $cycleDay;
+        $dirty = true;
     }
-    if (empty($t['subscription']['validUntil']) && !empty($t['subscriptionExpiry'])) {
-        $t['subscription']['validUntil'] = $t['subscriptionExpiry'];
+    if (!isset($t['subscription']) || !is_array($t['subscription'])) $t['subscription'] = [];
+    if (($t['subscription']['state'] ?? '') !== $subState) { $t['subscription']['state'] = $subState; $dirty = true; }
+    if (($t['subscription']['plan'] ?? '') !== $curPlanType) { $t['subscription']['plan'] = $curPlanType; $dirty = true; }
+    if (($t['subscription']['planName'] ?? '') !== $t['planName']) { $t['subscription']['planName'] = $t['planName']; $dirty = true; }
+    if (($t['subscription']['billingCycleDay'] ?? 0) !== $cycleDay) { $t['subscription']['billingCycleDay'] = $cycleDay; $dirty = true; }
+    if (($t['subscription']['totalDays'] ?? 0) !== $totalDays) { $t['subscription']['totalDays'] = $totalDays; $dirty = true; }
+    if (($t['subscription']['graceDaysRemaining'] ?? -1) !== $graceRem) { $t['subscription']['graceDaysRemaining'] = $graceRem; $dirty = true; }
+    if (($t['subscription']['daysRemainingInCycle'] ?? -1) !== $daysRem) { $t['subscription']['daysRemainingInCycle'] = $daysRem; $dirty = true; }
+    if (($t['subscription']['monthlyFee'] ?? null) !== floatval($t['monthlyFee'])) { $t['subscription']['monthlyFee'] = floatval($t['monthlyFee']); $dirty = true; }
+    if (!empty($bannerMsg)) {
+        if (($t['subscription']['bannerMessage'] ?? '') !== $bannerMsg) { $t['subscription']['bannerMessage'] = $bannerMsg; $dirty = true; }
+    } else {
+        if (isset($t['subscription']['bannerMessage'])) { unset($t['subscription']['bannerMessage']); $dirty = true; }
+    }
+    if (empty($t['subscription']['validUntil']) || $t['subscription']['validUntil'] !== date('c', $expTs)) {
+        $t['subscription']['validUntil'] = date('c', $expTs);
+        $t['subscription']['validUntilFormatted'] = date('d M Y, h:i A', $expTs);
+        $dirty = true;
     }
     return $dirty;
 }

@@ -465,7 +465,7 @@ if ($action === 'register_tenant' || $action === 'register') {
             'planName' => $planName,
             'billingCycleDay' => 1,
             'totalDays' => $cycleDays,
-            'graceDaysRemaining' => 3,
+            'graceDaysRemaining' => ($planType === 'TRIAL_3_DAYS' || stripos($planType, 'TRIAL') !== false ? 0 : 3),
             'monthlyFee' => $monthlyFee,
             'validUntil' => $subscriptionExpiry,
             'validUntilFormatted' => $expiryFormatted
@@ -907,9 +907,9 @@ if ($action === 'login') {
             }
             if ($staffTenant) {
                 dnNormalizeTenantState($staffTenant, $effectivePlans);
-                if (!empty($staffTenant['manualBlocked']) || strtoupper((string)($staffTenant['status'] ?? '')) === 'BLOCKED') {
+                if (!empty($staffTenant['manualBlocked']) || strtoupper((string)($staffTenant['status'] ?? '')) === 'BLOCKED' || strtoupper((string)($staffTenant['status'] ?? '')) === 'LOCKED' || (($staffTenant['subscription']['state'] ?? '') === 'LOCKED')) {
                     http_response_code(403);
-                    echo json_encode(['success' => false, 'error' => 'Parent store account is suspended by platform administrator.']);
+                    echo json_encode(['success' => false, 'error' => 'Parent store subscription or 3-Day Free Trial has expired. Please contact your Clinic / Store Administrator.']);
                     exit();
                 }
             }
@@ -2222,6 +2222,18 @@ if (in_array($action, $wsActions, true)) {
         exit();
     }
     $tenant = $ctx['tenant'];
+    if ($tenant) {
+        $effectivePlans = dnGetEffectivePricingPlans($dataDir);
+        dnNormalizeTenantState($tenant, $effectivePlans);
+        $isManualBlocked = !empty($tenant['manualBlocked']) || strtoupper((string)($tenant['status'] ?? '')) === 'BLOCKED';
+        $isSubLocked = (($tenant['subscription']['state'] ?? '') === 'LOCKED') || strtoupper((string)($tenant['status'] ?? '')) === 'LOCKED';
+        if ($isManualBlocked || $isSubLocked) {
+            http_response_code(403);
+            $msg = $isManualBlocked ? 'Store account suspended by platform administrator.' : 'Subscription or 3-Day Free Trial has expired. Please renew your plan to continue transactions.';
+            echo json_encode(['success' => false, 'error' => $msg, 'locked' => true, 'tenant' => $tenant]);
+            exit();
+        }
+    }
     $ws = dnLoadWorkspace($dataDir, $sub);
 
     // ----- POS CHECKOUT -----
