@@ -2498,6 +2498,7 @@ if (in_array($action, $wsActions, true)) {
             'createdAt' => date('c')
         ]);
         $ws['auditLogs'] = array_slice($ws['auditLogs'], 0, 300);
+        $ws['treatments'] = dnDeduplicateTreatmentsArray($ws['treatments'] ?? []);
 
         dnSaveWorkspace($dataDir, $sub, $ws);
 
@@ -3063,6 +3064,33 @@ if (in_array($action, $wsActions, true)) {
         exit();
     }
 
+function dnDeduplicateTreatmentsArray($treatments) {
+    if (!is_array($treatments)) return [];
+    $deduped = [];
+    $seen = [];
+    foreach ($treatments as $tr) {
+        if (!is_array($tr)) continue;
+        $id = trim((string)($tr['id'] ?? ($tr['treatmentId'] ?? '')));
+        $pCode = trim((string)($tr['patientCode'] ?? ($tr['code'] ?? '')));
+        $s1Inv = '';
+        if (!empty($tr['sessions']) && is_array($tr['sessions']) && isset($tr['sessions'][0])) {
+            $s1Inv = trim((string)($tr['sessions'][0]['invoiceNumber'] ?? ($tr['sessions'][0]['id'] ?? '')));
+        }
+        $key = ($pCode !== '' && $s1Inv !== '') ? "code_{$pCode}_inv_{$s1Inv}" : ($id !== '' ? "id_{$id}" : ('rand_' . uniqid()));
+        if (!isset($seen[$key])) {
+            $seen[$key] = count($deduped);
+            $deduped[] = $tr;
+        } else {
+            $prevIdx = $seen[$key];
+            $prev = $deduped[$prevIdx];
+            $preferCurrent = (!empty($tr['isEdited']) && empty($prev['isEdited'])) ||
+                (!empty($tr['editedAt']) && (empty($prev['editedAt']) || strtotime($tr['editedAt']) >= strtotime($prev['editedAt'])));
+            $deduped[$prevIdx] = $preferCurrent ? array_merge($prev, $tr) : array_merge($tr, $prev);
+        }
+    }
+    return array_values($deduped);
+}
+
     if ($action === 'edit_treatment') {
         $trId = trim((string)($body['id'] ?? ($body['treatmentId'] ?? ($_GET['id'] ?? ''))));
         $actor = trim((string)($body['actorName'] ?? ($body['actor'] ?? 'Staff/Admin')));
@@ -3191,6 +3219,7 @@ if (in_array($action, $wsActions, true)) {
             'createdAt' => date('c')
         ]);
         $ws['auditLogs'] = array_slice($ws['auditLogs'], 0, 300);
+        $ws['treatments'] = dnDeduplicateTreatmentsArray($ws['treatments'] ?? []);
 
         dnSaveWorkspace($dataDir, $sub, $ws);
         echo json_encode(['success' => true, 'treatment' => $updated]);
@@ -3233,6 +3262,7 @@ if (in_array($action, $wsActions, true)) {
             'createdAt' => date('c')
         ]);
         $ws['auditLogs'] = array_slice($ws['auditLogs'], 0, 300);
+        $ws['treatments'] = dnDeduplicateTreatmentsArray($ws['treatments'] ?? []);
 
         dnSaveWorkspace($dataDir, $sub, $ws);
         echo json_encode(['success' => true, 'sale' => $updated]);
