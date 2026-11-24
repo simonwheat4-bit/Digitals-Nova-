@@ -2209,7 +2209,8 @@ $wsActions = [
     'create_patient', 'delete_patient', 'create_treatment', 'edit_treatment', 'pay_treatment_session', 'delete_treatment',
     'add_stock', 'update_stock', 'delete_stock', 'bulk_inventory', 'bulk_treatments',
     'add_catalog_treatment', 'update_catalog_treatment', 'delete_catalog_treatment', 'bulk_delete_catalog_treatments',
-    'verify_pin_discount', 'request_remote_discount', 'respond_discount_request'
+    'verify_pin_discount', 'request_remote_discount', 'respond_discount_request',
+    'delete_audit_log', 'clear_audit_logs', 'delete_sms_log', 'clear_sms_logs'
 ];
 
 if (in_array($action, $wsActions, true)) {
@@ -3867,6 +3868,44 @@ function dnDeduplicateTreatmentsArray($treatments) {
             dnSaveWorkspace($dataDir, $sub, $ws);
         }
         echo json_encode(['success' => true, 'deletedIds' => $ids]);
+        exit();
+    }
+
+    // ----- DELETE / CLEAR AUDIT LOGS -----
+    if ($action === 'delete_audit_log') {
+        $logId = trim((string)($body['id'] ?? ($_GET['id'] ?? '')));
+        if (!isset($ws['auditLogs']) || !is_array($ws['auditLogs'])) $ws['auditLogs'] = [];
+        $ws['auditLogs'] = array_values(array_filter($ws['auditLogs'], function($l) use ($logId) {
+            return ($l['id'] ?? '') !== $logId;
+        }));
+        dnSaveWorkspace($dataDir, $sub, $ws);
+        echo json_encode(['success' => true, 'id' => $logId]);
+        exit();
+    }
+
+    if ($action === 'clear_audit_logs') {
+        $ws['auditLogs'] = [];
+        dnSaveWorkspace($dataDir, $sub, $ws);
+        echo json_encode(['success' => true]);
+        exit();
+    }
+
+    // ----- DELETE / CLEAR SMS & WHATSAPP DISPATCH LOGS -----
+    if ($action === 'delete_sms_log') {
+        $logId = trim((string)($body['id'] ?? ($_GET['id'] ?? '')));
+        if (!isset($ws['smsLogs']) || !is_array($ws['smsLogs'])) $ws['smsLogs'] = [];
+        $ws['smsLogs'] = array_values(array_filter($ws['smsLogs'], function($l) use ($logId) {
+            return ($l['id'] ?? '') !== $logId;
+        }));
+        dnSaveWorkspace($dataDir, $sub, $ws);
+        echo json_encode(['success' => true, 'id' => $logId]);
+        exit();
+    }
+
+    if ($action === 'clear_sms_logs') {
+        $ws['smsLogs'] = [];
+        dnSaveWorkspace($dataDir, $sub, $ws);
+        echo json_encode(['success' => true]);
         exit();
     }
 }
