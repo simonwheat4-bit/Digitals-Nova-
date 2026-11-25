@@ -1218,6 +1218,8 @@ if ($action === 'save_staff') {
         'username' => $cleanUser,
         'password' => (string)($staffItem['password'] ?? '123'),
         'role' => !empty($staffItem['role']) ? strtoupper((string)$staffItem['role']) : 'STAFF',
+        'branchId' => !empty($staffItem['branchId']) ? (string)$staffItem['branchId'] : null,
+        'branchName' => !empty($staffItem['branchName']) ? (string)$staffItem['branchName'] : null,
         'active' => isset($staffItem['active']) ? (bool)$staffItem['active'] : true,
         'createdAt' => $existingCreated ?: (!empty($staffItem['createdAt']) ? $staffItem['createdAt'] : date('c'))
     ];
@@ -1558,6 +1560,15 @@ if ($action === 'update_tenant') {
         }
     }
     if (isset($updates['name']) && !isset($updates['businessName'])) $t['businessName'] = $updates['name'];
+    if (isset($updates['branches']) && is_array($updates['branches'])) {
+        $t['branches'] = array_values($updates['branches']);
+        $subKey = strtolower(trim((string)($t['subdomain'] ?? '')));
+        if ($subKey !== '') {
+            $subWs = dnLoadWorkspace($dataDir, $subKey);
+            $subWs['branches'] = $t['branches'];
+            dnSaveWorkspace($dataDir, $subKey, $subWs);
+        }
+    }
     if (array_key_exists('smsEnabled', $updates)) $t['smsEnabled'] = (bool)$updates['smsEnabled'];
     if (array_key_exists('whatsappAutoDispatch', $updates)) $t['whatsappAutoDispatch'] = (bool)$updates['whatsappAutoDispatch'];
     if (isset($updates['cycleDays']) && is_numeric($updates['cycleDays']) && intval($updates['cycleDays']) > 0) {
@@ -2210,7 +2221,8 @@ $wsActions = [
     'add_stock', 'update_stock', 'delete_stock', 'bulk_inventory', 'bulk_treatments',
     'add_catalog_treatment', 'update_catalog_treatment', 'delete_catalog_treatment', 'bulk_delete_catalog_treatments',
     'verify_pin_discount', 'request_remote_discount', 'respond_discount_request',
-    'delete_audit_log', 'clear_audit_logs', 'delete_sms_log', 'clear_sms_logs'
+    'delete_audit_log', 'clear_audit_logs', 'delete_sms_log', 'clear_sms_logs',
+    'save_branch', 'delete_branch'
 ];
 
 if (in_array($action, $wsActions, true)) {
@@ -2335,6 +2347,8 @@ if (in_array($action, $wsActions, true)) {
             'waiterName' => $body['waiterName'] ?? null,
             'orderType' => $body['orderType'] ?? 'RETAIL',
             'treatmentId' => $body['treatmentId'] ?? null,
+            'branchId' => !empty($body['branchId']) ? (string)$body['branchId'] : 'branch_main',
+            'branchName' => !empty($body['branchName']) ? (string)$body['branchName'] : '',
             'status' => 'COMPLETED',
             'offlineQueued' => false,
             'createdAt' => date('c')
@@ -2566,6 +2580,8 @@ if (in_array($action, $wsActions, true)) {
             'subdomain' => $sub,
             'cashierId' => $body['cashierId'] ?? 'u_staff',
             'cashierName' => $body['cashierName'] ?? 'POS Cashier',
+            'branchId' => !empty($body['branchId']) ? (string)$body['branchId'] : 'branch_main',
+            'branchName' => !empty($body['branchName']) ? (string)$body['branchName'] : '',
             'openingFloat' => floatval($body['openingFloat'] ?? 0),
             'openedAt' => date('c'),
             'status' => 'ACTIVE',
@@ -3906,6 +3922,73 @@ function dnDeduplicateTreatmentsArray($treatments) {
         $ws['smsLogs'] = [];
         dnSaveWorkspace($dataDir, $sub, $ws);
         echo json_encode(['success' => true]);
+        exit();
+    }
+
+    // ----- MULTI-BRANCH SELF-SERVICE ENDPOINTS -----
+    if ($action === 'save_branch') {
+        $branch = isset($body['branch']) && is_array($body['branch']) ? $body['branch'] : $body;
+        $bId = trim((string)($branch['id'] ?? ''));
+        if ($bId === '') {
+            $bId = 'branch_' . time() . '_' . rand(10, 99);
+            $branch['id'] = $bId;
+        }
+        $branch['name'] = trim((string)($branch['name'] ?? 'Branch'));
+        $branch['code'] = strtoupper(trim((string)($branch['code'] ?? substr(preg_replace('/[^a-zA-Z0-9]/', '', $branch['name']), 0, 4))));
+        $branch['address'] = trim((string)($branch['address'] ?? ''));
+        $branch['phone'] = trim((string)($branch['phone'] ?? ''));
+        $branch['isActive'] = !array_key_exists('isActive', $branch) || (bool)$branch['isActive'];
+        $branch['isDefault'] = !empty($branch['isDefault']);
+
+        if (!isset($ws['branches']) || !is_array($ws['branches'])) {
+            $ws['branches'] = [];
+        }
+        $bFound = false;
+        foreach ($ws['branches'] as &$exB) {
+            if (($exB['id'] ?? '') === $bId) {
+                $exB = array_merge($exB, $branch);
+                $bFound = true;
+                break;
+            }
+        }
+        unset($exB);
+        if (!$bFound) {
+            $ws['branches'][] = $branch;
+        }
+        dnSaveWorkspace($dataDir, $sub, $ws);
+
+        // Also update in unified tenants.json
+        $tenants = dnGetUnifiedTenants($dataDir);
+        $matchedIndex = dnFindTenantMatch($tenants, $tenant['id'] ?? '', $sub);
+        if ($matchedIndex !== -1) {
+            $tenants[$matchedIndex]['branches'] = $ws['branches'];
+            dnWriteJsonFile($tenantsFile, $tenants);
+            syncToSecondaryDataDirs('tenants.json', $tenants);
+        }
+
+        echo json_encode(['success' => true, 'branch' => $branch, 'branches' => $ws['branches']]);
+        exit();
+    }
+
+    if ($action === 'delete_branch') {
+        $bId = trim((string)($body['id'] ?? ($_GET['id'] ?? '')));
+        if (!isset($ws['branches']) || !is_array($ws['branches'])) {
+            $ws['branches'] = [];
+        }
+        $ws['branches'] = array_values(array_filter($ws['branches'], function($b) use ($bId) {
+            return ($b['id'] ?? '') !== $bId;
+        }));
+        dnSaveWorkspace($dataDir, $sub, $ws);
+
+        $tenants = dnGetUnifiedTenants($dataDir);
+        $matchedIndex = dnFindTenantMatch($tenants, $tenant['id'] ?? '', $sub);
+        if ($matchedIndex !== -1) {
+            $tenants[$matchedIndex]['branches'] = $ws['branches'];
+            dnWriteJsonFile($tenantsFile, $tenants);
+            syncToSecondaryDataDirs('tenants.json', $tenants);
+        }
+
+        echo json_encode(['success' => true, 'deletedId' => $bId, 'branches' => $ws['branches']]);
         exit();
     }
 }
