@@ -2616,8 +2616,14 @@ if (in_array($action, $wsActions, true)) {
             'BANK_TRANSFER' => 0
         ];
 
+        $shiftBranchId = !empty($active['branchId']) ? (string)$active['branchId'] : (!empty($body['branchId']) ? (string)$body['branchId'] : null);
+
         foreach ($ws['sales'] as $s) {
             if (strtoupper((string)($s['status'] ?? '')) === 'REFUNDED') continue;
+            if ($shiftBranchId && $shiftBranchId !== 'ALL') {
+                $sBranch = !empty($s['branchId']) ? (string)$s['branchId'] : 'branch_main';
+                if ($sBranch !== $shiftBranchId) continue;
+            }
             $sTs = strtotime((string)($s['createdAt'] ?? '0')) ?: 0;
             if ($sTs >= ($openTs - 5)) {
                 $salesCount++;
@@ -2691,8 +2697,12 @@ if (in_array($action, $wsActions, true)) {
             echo json_encode(['success' => false, 'error' => 'Patient name is required.']);
             exit();
         }
+        $patBranchId = !empty($body['branchId']) ? trim((string)$body['branchId']) : 'branch_main';
+        $patBranchName = !empty($body['branchName']) ? trim((string)$body['branchName']) : 'Main Branch';
         $pat = [
             'id' => 'pat_' . time() . '_' . rand(100, 999),
+            'branchId' => $patBranchId,
+            'branchName' => $patBranchName,
             'patientCode' => 'PAT-' . rand(1000, 9999),
             'name' => $name,
             'phone' => $phone,
@@ -2734,9 +2744,13 @@ if (in_array($action, $wsActions, true)) {
         $title = trim((string)($body['title'] ?? 'Clinical Treatment'));
         $cashierName = trim((string)($body['cashierName'] ?? 'Receptionist POS'));
         $payMethod = strtoupper((string)($body['paymentMethod'] ?? 'CASH'));
+        $branchId = !empty($body['branchId']) ? trim((string)$body['branchId']) : 'branch_main';
+        $branchName = !empty($body['branchName']) ? trim((string)$body['branchName']) : 'Main Branch';
 
         $tr = [
             'id' => $trId,
+            'branchId' => $branchId,
+            'branchName' => $branchName,
             'patientId' => $patId,
             'patientName' => $patName,
             'patientPhone' => $patPhone,
@@ -2766,6 +2780,8 @@ if (in_array($action, $wsActions, true)) {
             $saleId = 'sale_' . time() . '_' . rand(100, 999);
             $saleRecord = [
                 'id' => $saleId,
+                'branchId' => $branchId,
+                'branchName' => $branchName,
                 'tenantId' => $ctx['tenantId'] ?: ('tenant_' . $sub),
                 'subdomain' => $sub,
                 'invoiceNumber' => $invNo,
@@ -2936,6 +2952,13 @@ if (in_array($action, $wsActions, true)) {
             exit();
         }
 
+        $sesBranchId = !empty($body['branchId']) ? trim((string)$body['branchId']) : (!empty($updated['branchId']) ? (string)$updated['branchId'] : 'branch_main');
+        $sesBranchName = !empty($body['branchName']) ? trim((string)$body['branchName']) : (!empty($updated['branchName']) ? (string)$updated['branchName'] : 'Main Branch');
+        if (empty($updated['branchId'])) {
+            $updated['branchId'] = $sesBranchId;
+            $updated['branchName'] = $sesBranchName;
+        }
+
         $saleRecord = null;
         $smsLog = null;
         if ($amt > 0) {
@@ -2946,6 +2969,8 @@ if (in_array($action, $wsActions, true)) {
             $rem = floatval($updated['remainingBalance'] ?? 0);
             $saleRecord = [
                 'id' => $saleId,
+                'branchId' => $sesBranchId,
+                'branchName' => $sesBranchName,
                 'tenantId' => $ctx['tenantId'] ?: ('tenant_' . $sub),
                 'subdomain' => $sub,
                 'invoiceNumber' => $invNo,
@@ -3298,10 +3323,14 @@ function dnDeduplicateTreatmentsArray($treatments) {
 
     // ----- INVENTORY & TREATMENT CATALOG -----
     if ($action === 'add_stock') {
+        $stkBranchId = !empty($body['branchId']) ? trim((string)$body['branchId']) : 'branch_main';
+        $stkBranchName = !empty($body['branchName']) ? trim((string)$body['branchName']) : 'Main Branch';
         $item = [
             'id' => !empty($body['id']) ? $body['id'] : ('inv_' . time() . '_' . rand(10, 99)),
             'tenantId' => $ctx['tenantId'] ?: ('tenant_' . $sub),
             'subdomain' => $sub,
+            'branchId' => $stkBranchId,
+            'branchName' => $stkBranchName,
             'barcode' => trim((string)($body['barcode'] ?? (string)rand(100000000, 999999999))),
             'name' => trim((string)($body['name'] ?? 'Product')),
             'category' => trim((string)($body['category'] ?? 'General')),

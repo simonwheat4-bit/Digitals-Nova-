@@ -732,6 +732,7 @@ function dnWorkspacePath($dataDir, $subdomain) {
 
 function dnEmptyWorkspace() {
     return [
+        'branches' => [],
         'patients' => [],
         'treatments' => [],
         'treatmentCatalog' => [],
@@ -756,6 +757,17 @@ function dnLoadWorkspace($dataDir, $subdomain) {
                 ? (is_array($raw[$k]) ? $raw[$k] : null)
                 : (is_array($raw[$k]) ? $raw[$k] : []);
         }
+    }
+    if (empty($base['branches'])) {
+        $base['branches'] = [[
+            'id' => 'branch_main',
+            'name' => 'Main Branch',
+            'code' => 'MAIN',
+            'address' => 'Primary Location',
+            'phone' => '',
+            'status' => 'ACTIVE',
+            'isDefault' => true
+        ]];
     }
     return $base;
 }
