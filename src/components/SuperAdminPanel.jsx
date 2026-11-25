@@ -1092,7 +1092,7 @@ export default function SuperAdminPanel({
                             <span className="underline decoration-navy/30">{t.name}</span>
                             <Eye className="w-3.5 h-3.5 text-teal shrink-0" />
                           </div>
-                          <div className="text-[11px] text-teal font-semibold mt-0.5">{t.domain}</div>
+                          <div className="text-[11px] text-teal font-semibold mt-0.5">{t.subdomain || t.domain}</div>
                         </button>
                       </td>
                       <td className="py-3.5 px-3.5">
@@ -1887,7 +1887,7 @@ export default function SuperAdminPanel({
                               )}
                             </div>
                             <div className="text-[11px] text-teal font-semibold mt-0.5">
-                              {t.domain} • Rs. {Number(t.monthlyFee || t.monthly_fee || 0).toLocaleString()}/mo
+                              {t.subdomain || t.domain} • Rs. {Number(t.monthlyFee || t.monthly_fee || 0).toLocaleString()}/mo
                             </div>
                             {/* Direct Admin Login Credentials Badge */}
                             <div className="mt-1.5 inline-flex flex-wrap items-center gap-2 px-2.5 py-1 rounded-lg bg-navy/5 border border-navy/15 text-[11px]">
@@ -2198,7 +2198,7 @@ export default function SuperAdminPanel({
                               onClick={async () => {
                                 if (
                                   window.confirm(
-                                    `⚠️ PERMANENT TENANT DELETION CONFIRMATION\n\nAre you sure you want to permanently delete "${t.name}" (${t.domain})?\n\nThis will remove all associated database records, cash registers, patient files, and staff logins. This action cannot be undone.`
+                                    `⚠️ PERMANENT TENANT DELETION CONFIRMATION\n\nAre you sure you want to permanently delete "${t.name}" (${t.subdomain || t.domain})?\n\nThis will remove all associated database records, cash registers, patient files, and staff logins. This action cannot be undone.`
                                   )
                                 ) {
                                   await onDeleteTenant(t.id);
@@ -2443,8 +2443,8 @@ export default function SuperAdminPanel({
                     const res = await onCreateTenant(newClinic);
                     if (res?.tenant) {
                       setFeedback(
-                        `Provisioned "${res.tenant.name}" (${res.tenant.domain}) with Admin Login: @${
-                          newClinic.adminUsername || `admin.${res.tenant.subdomain}`
+                        `Provisioned "${res.tenant.name}" (${res.tenant.subdomain || res.tenant.domain}) with Admin Login: @${
+                          newClinic.adminUsername || `admin.${res.tenant.subdomain || res.tenant.domain}`
                         }`
                       );
                       setNewClinic({
@@ -2833,7 +2833,7 @@ export default function SuperAdminPanel({
                     {inspectedTenant.name} — Client Details & Login Credentials
                   </h3>
                   <p className="text-[11px] text-gold-bright">
-                    Subdomain: {inspectedTenant.domain} • Status: {inspectedTenant.subscription?.state} (Day{' '}
+                    Subdomain: {inspectedTenant.subdomain || inspectedTenant.domain || 'active'} • Status: {inspectedTenant.subscription?.state} (Day{' '}
                     {inspectedTenant.billingCycleDay})
                   </p>
                 </div>

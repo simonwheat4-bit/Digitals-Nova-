@@ -91,7 +91,7 @@ export function SubscriptionLockModal({
             Account Suspended - Contact DigitalsNova to Renew Access
           </h2>
           <p className="text-xs text-red-100 mt-1">
-            Tenant Domain: <span className="font-mono font-bold underline">{tenant.domain}</span> ({tenant.name})
+            Tenant Domain: <span className="font-mono font-bold underline">{tenant.subdomain || tenant.domain}</span> ({tenant.name})
           </p>
         </div>
 

@@ -1933,7 +1933,7 @@ export default function ReceptionistPOSPanel({
                           <Eye className="w-3 h-3" />
                           <span>Full History</span>
                         </button>
-                        <QRCodeSVG value={`${tenant.domain}|${selectedPatient.patientCode}`} size={28} />
+                        <QRCodeSVG value={`${tenant.subdomain || tenant.domain || ''}|${selectedPatient.patientCode}`} size={28} />
                       </div>
                     </div>
                   )}

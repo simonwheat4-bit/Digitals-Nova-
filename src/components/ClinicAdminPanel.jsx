@@ -3581,7 +3581,7 @@ export default function ClinicAdminPanel({
                 </div>
                 <p className="text-xs text-slate-500 mt-0.5">
                   {isClinic ? 'Clinic: ' : 'Store / Business: '}<strong className="text-navy">{tenant?.name}</strong> • Subdomain:{' '}
-                  <span className="font-mono text-teal font-bold">{tenant?.domain}</span>
+                  <span className="font-mono text-teal font-bold">{tenant?.subdomain || tenant?.domain}</span>
                 </p>
               </div>
 
@@ -3693,7 +3693,7 @@ export default function ClinicAdminPanel({
 
               <a
                 href={`https://wa.me/923131094557?text=${encodeURIComponent(
-                  `Hello Digital Snove Support, I want to renew/subscribe to a package for my clinic "${tenant?.name}" (${tenant?.domain}). Please send banking details and Activation Key.`
+                  `Hello Digital Snove Support, I want to renew/subscribe to a package for my clinic "${tenant?.name}" (${tenant?.subdomain || tenant?.domain}). Please send banking details and Activation Key.`
                 )}`}
                 target="_blank"
                 rel="noreferrer"
@@ -3895,7 +3895,7 @@ export default function ClinicAdminPanel({
                   Danger Zone: Permanent Facility Account & Subdomain Deletion
                 </h3>
                 <p className="text-xs text-red-800">
-                  Permanently delete <strong>{tenant?.name}</strong> ({tenant?.domain}), all staff logins, patient session ledgers, stock catalog, and transaction history.
+                  Permanently delete <strong>{tenant?.name}</strong> ({tenant?.subdomain || tenant?.domain}), all staff logins, patient session ledgers, stock catalog, and transaction history.
                 </p>
               </div>
             </div>

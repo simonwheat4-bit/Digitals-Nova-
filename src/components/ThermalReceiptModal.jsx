@@ -331,7 +331,7 @@ export default function ThermalReceiptModal({
               <div className="text-center pt-1 space-y-1.5">
                 <div className="flex justify-center my-1">
                   <QRCodeSVG
-                    value={`${tenant.domain}|${sale.invoiceNumber}|${sale.patientCode}|PAID:${sale.amountPaidToday}|BAL:${sale.remainingLedgerBalance}`}
+                    value={`${tenant.subdomain || tenant.domain || ''}|${sale.invoiceNumber}|${sale.patientCode}|PAID:${sale.amountPaidToday}|BAL:${sale.remainingLedgerBalance}`}
                     size={68}
                   />
                 </div>
@@ -339,7 +339,7 @@ export default function ThermalReceiptModal({
                   {tenant.receiptFooter}
                 </div>
                 <div className="text-[9px] text-neutral-500 pt-1">
-                  Powered by {tenant.domain}
+                  Powered by {tenant.subdomain || tenant.domain || ''}
                 </div>
               </div>
             </div>

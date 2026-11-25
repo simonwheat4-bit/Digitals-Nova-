@@ -109,7 +109,7 @@ export default function HostingerSidebar({
                   {platformBrand?.name || 'DigitalsNova'}
                 </div>
                 <div className="text-[10px] text-blue-400 font-mono truncate">
-                  {isSuperAdminView ? 'cloud.digitalsnova.com' : (currentTenant?.domain || 'portal.digitalsnova.com')}
+                  {isSuperAdminView ? 'cloud.digitalsnova.com' : (currentTenant?.subdomain || currentTenant?.domain || 'portal.digitalsnova.com')}
                 </div>
               </div>
             </button>
