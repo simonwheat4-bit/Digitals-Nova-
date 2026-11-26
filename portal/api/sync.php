@@ -986,6 +986,53 @@ if ($action === 'login') {
     }
 
     $allStaff = dnReadUnifiedJson($staffFile, 'staff.json', []);
+
+    // 1. Auto-migrate legacy un-scoped staff records in staff.json
+    $needsStaffRewrite = false;
+    foreach ($allStaff as &$stf) {
+        $stfUser = strtolower(trim((string)($stf['username'] ?? '')));
+        if ($stfUser !== '' && strpos($stfUser, '.') === false) {
+            $sSub = dnSanitizeSubdomain((string)($stf['subdomain'] ?? ''));
+            if ($sSub === '' && !empty($stf['tenantId'])) {
+                foreach ($tenants as $t) {
+                    if (($t['id'] ?? '') === $stf['tenantId']) {
+                        $sSub = dnSanitizeSubdomain($t['subdomain'] ?? ($t['name'] ?? ''));
+                        break;
+                    }
+                }
+            }
+            if ($sSub !== '') {
+                $stf['username'] = $stfUser . '.' . $sSub;
+                $stf['subdomain'] = $sSub;
+                $needsStaffRewrite = true;
+            }
+        }
+        $stf['role'] = 'STAFF';
+    }
+    unset($stf);
+    if ($needsStaffRewrite) {
+        dnWriteJsonFile($staffFile, $allStaff);
+        syncToSecondaryDataDirs('staff.json', $allStaff);
+    }
+
+    // 2. Block un-scoped staff usernames with helpful instruction
+    if (strpos($identifier, '.') === false && strpos($identifier, '@') === false) {
+        foreach ($allStaff as $stf) {
+            $stfUser = strtolower(trim((string)($stf['username'] ?? '')));
+            $parts = explode('.', $stfUser, 2);
+            $prefix = $parts[0] ?? '';
+            $stfSub = $parts[1] ?? ($stf['subdomain'] ?? 'company');
+            if ($prefix !== '' && $prefix === $identifier) {
+                http_response_code(400);
+                echo json_encode([
+                    'success' => false,
+                    'error' => "Staff accounts must use your company staff username format: {$identifier}.{$stfSub} (e.g. {$stfUser}). Please enter your full username."
+                ]);
+                exit();
+            }
+        }
+    }
+
     $idCleanPhone = $cleanPhone !== '' ? $cleanPhone : preg_replace('/[^0-9]/', '', $identifier);
     $idNoStaffPrefix = preg_replace('/^(staff|user)\./i', '', $identifier);
     foreach ($allStaff as $s) {
@@ -1038,6 +1085,9 @@ if ($action === 'login') {
                     exit();
                 }
             }
+
+            $s['role'] = 'STAFF';
+
             echo json_encode([
                 'success' => true,
                 'user' => $s,
@@ -1051,7 +1101,10 @@ if ($action === 'login') {
     }
 
     http_response_code(404);
-    echo json_encode(['success' => false, 'error' => 'Account not found with this username, email, or phone.']);
+    echo json_encode([
+        'success' => false,
+        'error' => 'Account not found with this username, email, or phone. (Note: Staff accounts must use the company format: username.companyname)'
+    ]);
     exit();
 }
 
@@ -1306,14 +1359,58 @@ if ($action === 'verify_recovery_otp') {
 // ==============================================================================
 if ($action === 'save_staff') {
     $staffItem = isset($body['staff']) && is_array($body['staff']) ? $body['staff'] : $body;
-    $cleanUser = strtolower(trim((string)($staffItem['username'] ?? '')));
-    if ($cleanUser === '' || dnIsReservedName($cleanUser)) {
+    $rawUser = strtolower(trim((string)($staffItem['username'] ?? '')));
+    $tId = (string)($staffItem['tenantId'] ?? '');
+    $tSub = dnSanitizeSubdomain($staffItem['subdomain'] ?? ($_GET['subdomain'] ?? ''));
+
+    $tenants = dnGetUnifiedTenants($dataDir);
+    if ($tSub === '' && $tId !== '') {
+        foreach ($tenants as $t) {
+            if (($t['id'] ?? '') === $tId) {
+                $tSub = dnSanitizeSubdomain($t['subdomain'] ?? ($t['name'] ?? ''));
+                break;
+            }
+        }
+    }
+    if ($tId === '' && $tSub !== '') {
+        foreach ($tenants as $t) {
+            if (dnSanitizeSubdomain($t['subdomain'] ?? '') === $tSub) {
+                $tId = $t['id'] ?? '';
+                break;
+            }
+        }
+    }
+    if ($tSub === '') {
+        $tSub = 'store';
+    }
+
+    $suffix = '.' . $tSub;
+    $cleanUser = $rawUser;
+
+    // Mandatory company suffix enforcement
+    if (strpos($cleanUser, '.') !== false) {
+        if (substr($cleanUser, -strlen($suffix)) === $suffix) {
+            // Valid matching suffix
+        } else {
+            http_response_code(400);
+            echo json_encode([
+                'success' => false,
+                'error' => "Staff username must end with your company name suffix: .{$tSub} (e.g. name.{$tSub})"
+            ]);
+            exit();
+        }
+    } else {
+        // Auto-append company suffix
+        $cleanUser = $cleanUser . $suffix;
+    }
+
+    $prefixOnly = explode('.', $cleanUser)[0] ?? '';
+    if ($cleanUser === '' || $prefixOnly === '' || dnIsReservedName($cleanUser) || dnIsReservedName($prefixOnly)) {
         http_response_code(400);
         echo json_encode(['success' => false, 'error' => 'Invalid or reserved staff username.']);
         exit();
     }
 
-    $tenants = dnGetUnifiedTenants($dataDir);
     foreach ($tenants as $t) {
         $tUser = strtolower(trim((string)($t['adminUsername'] ?? ($t['adminUser']['username'] ?? ''))));
         if ($tUser !== '' && $tUser === $cleanUser) {
@@ -1345,12 +1442,12 @@ if ($action === 'save_staff') {
 
     $newStaff = [
         'id' => $incomingId !== '' ? $incomingId : ('staff_' . time()),
-        'tenantId' => $staffItem['tenantId'] ?? '',
-        'subdomain' => dnSanitizeSubdomain($staffItem['subdomain'] ?? ''),
+        'tenantId' => $tId,
+        'subdomain' => $tSub,
         'name' => trim((string)($staffItem['name'] ?? 'POS Cashier')),
         'username' => $cleanUser,
         'password' => (string)($staffItem['password'] ?? '123'),
-        'role' => !empty($staffItem['role']) ? strtoupper((string)$staffItem['role']) : 'STAFF',
+        'role' => 'STAFF',
         'branchId' => !empty($staffItem['branchId']) ? (string)$staffItem['branchId'] : null,
         'branchName' => !empty($staffItem['branchName']) ? (string)$staffItem['branchName'] : null,
         'active' => isset($staffItem['active']) ? (bool)$staffItem['active'] : true,

@@ -3316,7 +3316,17 @@ export default function ClinicAdminPanel({
               onSubmit={async (e) => {
                 e.preventDefault();
                 try {
-                  const payload = { ...staffForm };
+                  const companySlug = (tenant?.subdomain || tenant?.domain || tenant?.name || 'store').toLowerCase().replace(/[^a-z0-9]/g, '');
+                  let cleanU = staffForm.username.toLowerCase().trim();
+                  const sfx = '.' + companySlug;
+                  if (!cleanU.endsWith(sfx)) {
+                    if (cleanU.includes('.')) {
+                      setToast(`Error: Staff username must end with your company name suffix: ${sfx}`);
+                      return;
+                    }
+                    cleanU = cleanU + sfx;
+                  }
+                  const payload = { ...staffForm, username: cleanU, subdomain: companySlug };
                   await onCreateStaff(payload);
                   setStaffForm({ name: '', username: '', password: '123', role: 'STAFF' });
                   setToast(`Staff Account @${payload.username} created & saved successfully!`);
@@ -3339,15 +3349,27 @@ export default function ClinicAdminPanel({
                 />
               </div>
               <div>
-                <label className="block font-bold text-slate-700 mb-1">Login Username</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. hina.pos"
-                  value={staffForm.username}
-                  onChange={(e) => setStaffForm({ ...staffForm, username: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-300 font-mono"
-                />
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block font-bold text-slate-700">Login Username</label>
+                  <span className="text-[10px] font-mono text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
+                    Suffix: .{((tenant?.subdomain || tenant?.domain || tenant?.name || 'store').toLowerCase().replace(/[^a-z0-9]/g, ''))}
+                  </span>
+                </div>
+                <div className="relative">
+                  <input
+                    type="text"
+                    required
+                    placeholder={`e.g. salman.${(tenant?.subdomain || tenant?.domain || tenant?.name || 'store').toLowerCase().replace(/[^a-z0-9]/g, '')}`}
+                    value={staffForm.username}
+                    onChange={(e) => setStaffForm({ ...staffForm, username: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-300 font-mono text-xs"
+                  />
+                </div>
+                <p className="text-[10px] text-slate-500 mt-1">
+                  Staff sign-in username: <span className="font-mono font-bold text-blue-700">
+                    {staffForm.username ? (staffForm.username.toLowerCase().endsWith('.' + ((tenant?.subdomain || tenant?.domain || tenant?.name || 'store').toLowerCase().replace(/[^a-z0-9]/g, ''))) ? staffForm.username.toLowerCase() : `${staffForm.username.toLowerCase().replace(/\..*$/, '')}.${(tenant?.subdomain || tenant?.domain || tenant?.name || 'store').toLowerCase().replace(/[^a-z0-9]/g, '')}`) : `username.${(tenant?.subdomain || tenant?.domain || tenant?.name || 'store').toLowerCase().replace(/[^a-z0-9]/g, '')}`}
+                  </span>
+                </p>
               </div>
               <div>
                 <label className="block font-bold text-slate-700 mb-1">Login Password</label>
