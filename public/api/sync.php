@@ -2458,7 +2458,7 @@ if ($action === 'sync_offline_inventory') {
 // ==============================================================================
 $wsActions = [
     'checkout_sale', 'edit_sale', 'refund_sale', 'delete_sale', 'park_cart', 'unpark_cart', 'open_shift', 'close_shift',
-    'create_patient', 'delete_patient', 'clear_all_patients', 'create_treatment', 'edit_treatment', 'pay_treatment_session', 'delete_treatment',
+    'create_patient', 'delete_patient', 'clear_all_patients', 'purge_inactive_patients', 'create_treatment', 'edit_treatment', 'pay_treatment_session', 'delete_treatment',
     'add_stock', 'update_stock', 'delete_stock', 'bulk_inventory', 'bulk_treatments',
     'add_catalog_treatment', 'update_catalog_treatment', 'delete_catalog_treatment', 'bulk_delete_catalog_treatments',
     'verify_pin_discount', 'request_remote_discount', 'respond_discount_request',
@@ -2960,21 +2960,61 @@ if (in_array($action, $wsActions, true)) {
 
     if ($action === 'delete_patient') {
         $patId = trim((string)($body['id'] ?? ($_GET['id'] ?? '')));
+        $patCode = trim((string)($body['patientCode'] ?? ($_GET['patientCode'] ?? '')));
+        $altCode = trim((string)($body['code'] ?? ($_GET['code'] ?? '')));
         if (!isset($ws['patients']) || !is_array($ws['patients'])) {
             $ws['patients'] = [];
         }
-        $ws['patients'] = array_values(array_filter($ws['patients'], function($p) use ($patId) {
-            return ($p['id'] ?? '') !== $patId && ($p['patientCode'] ?? '') !== $patId && ($p['code'] ?? '') !== $patId;
-        }));
+        $targetIds = array_filter(array_map('strtolower', [$patId, $patCode, $altCode]));
+        if (!empty($targetIds)) {
+            $targetSet = array_flip($targetIds);
+            $ws['patients'] = array_values(array_filter($ws['patients'], function($p) use ($targetSet) {
+                $id = strtolower(trim((string)($p['id'] ?? '')));
+                $c1 = strtolower(trim((string)($p['patientCode'] ?? '')));
+                $c2 = strtolower(trim((string)($p['code'] ?? '')));
+                if ($id !== '' && isset($targetSet[$id])) return false;
+                if ($c1 !== '' && isset($targetSet[$c1])) return false;
+                if ($c2 !== '' && isset($targetSet[$c2])) return false;
+                return true;
+            }));
+            if (isset($ws['treatments']) && is_array($ws['treatments'])) {
+                $ws['treatments'] = array_values(array_filter($ws['treatments'], function($t) use ($targetSet) {
+                    $tId = strtolower(trim((string)($t['patientId'] ?? '')));
+                    $tCode = strtolower(trim((string)($t['patientCode'] ?? '')));
+                    if ($tId !== '' && isset($targetSet[$tId])) return false;
+                    if ($tCode !== '' && isset($targetSet[$tCode])) return false;
+                    return true;
+                }));
+            }
+        }
         dnSaveWorkspace($dataDir, $sub, $ws);
         echo json_encode(['success' => true, 'deletedId' => $patId, 'remainingPatients' => count($ws['patients'])]);
         exit();
     }
 
-    if ($action === 'clear_all_patients') {
-        $ws['patients'] = [];
+    if ($action === 'clear_all_patients' || $action === 'purge_inactive_patients') {
+        if ($action === 'purge_inactive_patients') {
+            $activeTrts = isset($ws['treatments']) && is_array($ws['treatments']) ? $ws['treatments'] : [];
+            $activeIds = [];
+            foreach ($activeTrts as $t) {
+                $pId = strtolower(trim((string)($t['patientId'] ?? '')));
+                $pCode = strtolower(trim((string)($t['patientCode'] ?? '')));
+                if ($pId !== '') $activeIds[$pId] = true;
+                if ($pCode !== '') $activeIds[$pCode] = true;
+            }
+            if (isset($ws['patients']) && is_array($ws['patients'])) {
+                $ws['patients'] = array_values(array_filter($ws['patients'], function($p) use ($activeIds) {
+                    $pId = strtolower(trim((string)($p['id'] ?? '')));
+                    $pCode = strtolower(trim((string)($p['code'] ?? '')));
+                    $pPatCode = strtolower(trim((string)($p['patientCode'] ?? '')));
+                    return isset($activeIds[$pId]) || isset($activeIds[$pCode]) || isset($activeIds[$pPatCode]);
+                }));
+            }
+        } else {
+            $ws['patients'] = [];
+        }
         dnSaveWorkspace($dataDir, $sub, $ws);
-        echo json_encode(['success' => true, 'cleared' => true]);
+        echo json_encode(['success' => true, 'cleared' => true, 'remainingPatients' => count($ws['patients'] ?? [])]);
         exit();
     }
 
