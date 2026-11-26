@@ -115,6 +115,9 @@ export default function ClinicAdminPanel({
   // 'APPROVALS_AND_REPORTS' | 'TREATMENT_CATALOG' | 'STAFF' | 'AUDIT_SMS' | 'SUBSCRIPTION'
 
   // Clinic Admin Patient Ledgers state & helpers
+  const [adminPatSubTab, setAdminPatSubTab] = useState('LEDGERS'); // 'LEDGERS' | 'DIRECTORY'
+  const [adminPatDirQuery, setAdminPatDirQuery] = useState('');
+  const [adminDeletingPatientId, setAdminDeletingPatientId] = useState(null);
   const [adminPatientFilterQuery, setAdminPatientFilterQuery] = useState('');
   const [adminPatientStatusFilter, setAdminPatientStatusFilter] = useState('ALL'); // 'ALL' | 'ACTIVE' | 'COMPLETED'
   const [adminSessionPayModal, setAdminSessionPayModal] = useState(null);

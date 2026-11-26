@@ -48,6 +48,8 @@ export default function ReceptionistPOSPanel({
   patients,
   treatments,
   treatmentCatalog = [],
+  onAddCatalogTreatment = null,
+  onDeletePatient = null,
   inventory,
   sales,
   discountRequests,
@@ -162,6 +164,10 @@ export default function ReceptionistPOSPanel({
   const [ledgerFilterQuery, setLedgerFilterQuery] = useState('');
   const [patientStatusFilter, setPatientStatusFilter] = useState('ALL'); // 'ALL' | 'ACTIVE' | 'COMPLETED'
 
+  const [showAddTrtInPos, setShowAddTrtInPos] = useState(false);
+  const [posNewTrtName, setPosNewTrtName] = useState('');
+  const [posNewTrtCost, setPosNewTrtCost] = useState('');
+  const [posNewTrtSessions, setPosNewTrtSessions] = useState('3');
   const [newTreatmentForm, setNewTreatmentForm] = useState({
     patientId: patients[0]?.id || '',
     title: treatmentCatalog[0]?.name || '',
@@ -2225,24 +2231,44 @@ export default function ReceptionistPOSPanel({
                         </button>
                       </div>
                       {matchingPatientsForLedger.map((p) => (
-                        <button
+                        <div
                           key={p.id}
-                          type="button"
+                          className="w-full text-left px-3 py-2 hover:bg-ice/60 flex justify-between items-center text-xs transition group cursor-pointer"
                           onClick={() => {
                             setNewTreatmentForm({ ...newTreatmentForm, patientId: p.id });
                             setLedgerPatientSearch(`${p.name} (${p.patientCode}) • ${p.phone}`);
                             setShowLedgerPatientList(false);
                           }}
-                          className="w-full text-left px-3 py-2 hover:bg-ice/60 flex justify-between items-center text-xs"
                         >
                           <div>
                             <div className="font-bold text-navy">{p.name}</div>
                             <div className="font-mono text-[10px] text-teal">{p.phone}</div>
                           </div>
-                          <span className="font-mono text-[10px] bg-slate-100 px-1.5 py-0.5 rounded font-bold">
-                            {p.patientCode}
-                          </span>
-                        </button>
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-mono text-[10px] bg-slate-100 px-1.5 py-0.5 rounded font-bold">
+                              {p.patientCode}
+                            </span>
+                            {onDeletePatient && (
+                              <button
+                                type="button"
+                                title="Delete registered patient"
+                                onClick={async (ev) => {
+                                  ev.stopPropagation();
+                                  if (window.confirm(`Permanently delete registered patient "${p.name}" (${p.patientCode})?`)) {
+                                    await onDeletePatient(p.id);
+                                    if (newTreatmentForm.patientId === p.id) {
+                                      setNewTreatmentForm(prev => ({ ...prev, patientId: '' }));
+                                      setLedgerPatientSearch('');
+                                    }
+                                  }
+                                }}
+                                className="p-1 rounded text-slate-300 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer"
+                              >
+                                🗑️
+                              </button>
+                            )}
+                          </div>
+                        </div>
                       ))}
                     </div>
                   )}
@@ -2262,9 +2288,93 @@ export default function ReceptionistPOSPanel({
 
                 {/* Pre-configured Backend Treatment Dropdown + Searchable Typeahead */}
                 <div>
-                  <label className="block font-bold text-navy mb-1">
-                    Select Treatment Package (From Clinic Catalog)
-                  </label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block font-bold text-navy">
+                      Select Treatment Package (From Clinic Catalog)
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setShowAddTrtInPos(!showAddTrtInPos)}
+                      className="px-2 py-0.5 rounded-lg bg-teal hover:bg-teal-dark text-white font-bold text-[11px] flex items-center gap-1 shadow-xs transition cursor-pointer"
+                    >
+                      <span>+</span>
+                      <span>Add Treatment</span>
+                    </button>
+                  </div>
+
+                  {showAddTrtInPos && (
+                    <div className="p-3 bg-teal/10 border-2 border-teal rounded-2xl space-y-2 mb-2 animate-in fade-in duration-150">
+                      <div className="flex items-center justify-between">
+                        <div className="font-black text-xs text-navy">+ Add New Treatment to Catalog</div>
+                        <button
+                          type="button"
+                          onClick={() => setShowAddTrtInPos(false)}
+                          className="text-slate-400 hover:text-slate-700 font-bold text-xs cursor-pointer"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                      <input
+                        type="text"
+                        value={posNewTrtName}
+                        onChange={(ev) => setPosNewTrtName(ev.target.value)}
+                        placeholder="Treatment Name (e.g. HydraFacial Deluxe, PRP Hair)"
+                        className="w-full px-3 py-1.5 rounded-xl border border-slate-300 text-xs font-bold bg-white outline-none focus:border-teal"
+                      />
+                      <div className="grid grid-cols-2 gap-2">
+                        <input
+                          type="number"
+                          value={posNewTrtCost}
+                          onChange={(ev) => setPosNewTrtCost(ev.target.value)}
+                          placeholder="Default Cost (Rs.)"
+                          className="w-full px-3 py-1.5 rounded-xl border border-slate-300 text-xs font-mono font-bold bg-white outline-none focus:border-teal"
+                        />
+                        <input
+                          type="number"
+                          value={posNewTrtSessions}
+                          onChange={(ev) => setPosNewTrtSessions(ev.target.value)}
+                          placeholder="Sessions (e.g. 3)"
+                          className="w-full px-3 py-1.5 rounded-xl border border-slate-300 text-xs font-mono font-bold bg-white outline-none focus:border-teal"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          if (!posNewTrtName.trim()) {
+                            alert('Please enter treatment name.');
+                            return;
+                          }
+                          const item = {
+                            id: 'cat_' + Date.now(),
+                            name: posNewTrtName.trim(),
+                            defaultCost: Number(posNewTrtCost) || 5000,
+                            defaultSessions: Number(posNewTrtSessions) || 1,
+                            category: 'Clinical Treatment'
+                          };
+                          if (onAddCatalogTreatment) {
+                            await onAddCatalogTreatment(item);
+                          }
+                          setNewTreatmentForm(prev => ({
+                            ...prev,
+                            title: item.name,
+                            totalCost: item.defaultCost,
+                            totalSessions: item.defaultSessions
+                          }));
+                          setShowAddTrtInPos(false);
+                          setPosNewTrtName('');
+                          setPosNewTrtCost('');
+                          setPosNewTrtSessions('3');
+                          setStatusBanner({
+                            type: 'success',
+                            text: `Treatment "${item.name}" added to catalog and selected!`
+                          });
+                        }}
+                        className="w-full py-1.5 rounded-xl bg-teal hover:bg-teal-dark text-white font-extrabold text-xs shadow-xs transition cursor-pointer"
+                      >
+                        Save to Catalog & Select
+                      </button>
+                    </div>
+                  )}
                   <select
                     value=""
                     onChange={(e) => {

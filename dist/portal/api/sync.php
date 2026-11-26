@@ -2458,7 +2458,7 @@ if ($action === 'sync_offline_inventory') {
 // ==============================================================================
 $wsActions = [
     'checkout_sale', 'edit_sale', 'refund_sale', 'delete_sale', 'park_cart', 'unpark_cart', 'open_shift', 'close_shift',
-    'create_patient', 'delete_patient', 'create_treatment', 'edit_treatment', 'pay_treatment_session', 'delete_treatment',
+    'create_patient', 'delete_patient', 'clear_all_patients', 'create_treatment', 'edit_treatment', 'pay_treatment_session', 'delete_treatment',
     'add_stock', 'update_stock', 'delete_stock', 'bulk_inventory', 'bulk_treatments',
     'add_catalog_treatment', 'update_catalog_treatment', 'delete_catalog_treatment', 'bulk_delete_catalog_treatments',
     'verify_pin_discount', 'request_remote_discount', 'respond_discount_request',
@@ -2960,11 +2960,21 @@ if (in_array($action, $wsActions, true)) {
 
     if ($action === 'delete_patient') {
         $patId = trim((string)($body['id'] ?? ($_GET['id'] ?? '')));
+        if (!isset($ws['patients']) || !is_array($ws['patients'])) {
+            $ws['patients'] = [];
+        }
         $ws['patients'] = array_values(array_filter($ws['patients'], function($p) use ($patId) {
-            return ($p['id'] ?? '') !== $patId;
+            return ($p['id'] ?? '') !== $patId && ($p['patientCode'] ?? '') !== $patId && ($p['code'] ?? '') !== $patId;
         }));
         dnSaveWorkspace($dataDir, $sub, $ws);
-        echo json_encode(['success' => true, 'deletedId' => $patId]);
+        echo json_encode(['success' => true, 'deletedId' => $patId, 'remainingPatients' => count($ws['patients'])]);
+        exit();
+    }
+
+    if ($action === 'clear_all_patients') {
+        $ws['patients'] = [];
+        dnSaveWorkspace($dataDir, $sub, $ws);
+        echo json_encode(['success' => true, 'cleared' => true]);
         exit();
     }
 
@@ -4225,6 +4235,14 @@ function dnDeduplicateTreatmentsArray($treatments) {
         if (!$bFound) {
             $ws['branches'][] = $branch;
         }
+        if (!empty($branch['isDefault'])) {
+            foreach ($ws['branches'] as &$otherB) {
+                if (($otherB['id'] ?? '') !== $bId) {
+                    $otherB['isDefault'] = false;
+                }
+            }
+            unset($otherB);
+        }
         dnSaveWorkspace($dataDir, $sub, $ws);
 
         // Also update in unified tenants.json
@@ -4245,9 +4263,19 @@ function dnDeduplicateTreatmentsArray($treatments) {
         if (!isset($ws['branches']) || !is_array($ws['branches'])) {
             $ws['branches'] = [];
         }
+        $deletedWasDefault = false;
+        foreach ($ws['branches'] as $b) {
+            if (($b['id'] ?? '') === $bId && !empty($b['isDefault'])) {
+                $deletedWasDefault = true;
+                break;
+            }
+        }
         $ws['branches'] = array_values(array_filter($ws['branches'], function($b) use ($bId) {
             return ($b['id'] ?? '') !== $bId;
         }));
+        if ($deletedWasDefault && count($ws['branches']) > 0) {
+            $ws['branches'][0]['isDefault'] = true;
+        }
         dnSaveWorkspace($dataDir, $sub, $ws);
 
         $tenants = dnGetUnifiedTenants($dataDir);
