@@ -1098,6 +1098,10 @@ if ($action === 'login') {
             }
 
             $s['role'] = 'STAFF';
+            if (empty($s['branchId'])) {
+                $s['branchId'] = 'ALL';
+                $s['branchName'] = 'All Branches (Combined)';
+            }
 
             echo json_encode([
                 'success' => true,
@@ -1496,6 +1500,29 @@ if ($action === 'toggle_staff') {
     dnWriteJsonFile($staffFile, $allStaff);
     syncToSecondaryDataDirs('staff.json', $allStaff);
     echo json_encode(['success' => true, 'staff' => $updated]);
+    exit();
+}
+
+if ($action === 'update_staff_branch') {
+    $staffId = trim((string)($body['id'] ?? ''));
+    $bId = trim((string)($body['branchId'] ?? 'ALL'));
+    $bName = trim((string)($body['branchName'] ?? 'All Branches'));
+    $allStaff = dnReadUnifiedJson($staffFile, 'staff.json', []);
+    $found = false;
+    foreach ($allStaff as &$st) {
+        if (($st['id'] ?? '') === $staffId) {
+            $st['branchId'] = $bId;
+            $st['branchName'] = $bName;
+            $found = true;
+            break;
+        }
+    }
+    unset($st);
+    if ($found) {
+        dnWriteJsonFile($staffFile, $allStaff);
+        syncToSecondaryDataDirs('staff.json', $allStaff);
+    }
+    echo json_encode(['success' => true, 'id' => $staffId, 'branchId' => $bId, 'branchName' => $bName]);
     exit();
 }
 
@@ -2938,8 +2965,16 @@ if (in_array($action, $wsActions, true)) {
             echo json_encode(['success' => false, 'error' => 'Patient name is required.']);
             exit();
         }
-        $patBranchId = !empty($body['branchId']) ? trim((string)$body['branchId']) : 'branch_main';
-        $patBranchName = !empty($body['branchName']) ? trim((string)$body['branchName']) : 'Main Branch';
+        $branches = $ws['branches'] ?? ($tenant['branches'] ?? []);
+        $defaultB = null;
+        foreach ($branches as $b) {
+            if (!empty($b['isDefault'])) { $defaultB = $b; break; }
+        }
+        if (!$defaultB && !empty($branches[0])) { $defaultB = $branches[0]; }
+        $defBranchId = $defaultB['id'] ?? 'branch_main';
+        $defBranchName = $defaultB['name'] ?? 'Main Branch';
+        $patBranchId = !empty($body['branchId']) && $body['branchId'] !== 'ALL' ? trim((string)$body['branchId']) : $defBranchId;
+        $patBranchName = !empty($body['branchName']) && $body['branchName'] !== 'All Branches' ? trim((string)$body['branchName']) : $defBranchName;
         $pat = [
             'id' => 'pat_' . time() . '_' . rand(100, 999),
             'branchId' => $patBranchId,

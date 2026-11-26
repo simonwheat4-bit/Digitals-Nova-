@@ -3401,16 +3401,40 @@ export default function ClinicAdminPanel({
             <div className="space-y-2">
               {users
                 .filter((u) => u.role !== 'SUPER_ADMIN')
-                .map((u) => (
+                .map((u) => {
+                  const staffBranch = (tenant?.branches || []).find(b => b.id === u.branchId);
+                  const bName = staffBranch?.name || u.branchName || (u.branchId === 'ALL' ? 'All Branches (Combined)' : 'Main Branch');
+                  const isBranchLocked = u.branchId && u.branchId !== 'ALL';
+                  return (
                   <div
                     key={u.id}
-                    className="p-3 rounded-xl border border-slate-200 flex flex-wrap items-center justify-between gap-2 text-xs"
+                    className="p-3.5 rounded-xl border border-slate-200 bg-white hover:border-teal/40 transition flex flex-wrap items-center justify-between gap-3 text-xs shadow-2xs"
                   >
-                    <div>
-                      <div className="font-bold text-navy">{u.name}</div>
-                      <div className="font-mono text-[11px] text-slate-500">
-                        Username: <strong>{u.username}</strong> • Pass: <strong>{u.password || '123'}</strong> • Role:{' '}
-                        <strong>{u.role === 'CLINIC_ADMIN' ? 'ADMIN' : u.role}</strong>
+                    <div className="space-y-1.5">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="font-extrabold text-sm text-navy">{u.name}</span>
+                        {isBranchLocked ? (
+                          <span className="px-2.5 py-0.5 rounded-full bg-teal/15 text-teal-dark font-extrabold text-[10px] border border-teal/30 flex items-center gap-1">
+                            <span>🏢</span>
+                            <span>{bName}</span>
+                          </span>
+                        ) : (
+                          <span className="px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 font-extrabold text-[10px] border border-blue-200 flex items-center gap-1">
+                            <span>🌐</span>
+                            <span>All Branches</span>
+                          </span>
+                        )}
+                      </div>
+                      <div className="font-mono text-[11px] text-slate-500 flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                        <span>Username: <strong className="text-navy">{u.username}</strong></span>
+                        <span>•</span>
+                        <span>Pass: <strong className="text-slate-700">{u.password || '123'}</strong></span>
+                        <span>•</span>
+                        <span>Role: <strong className="text-teal font-extrabold">{u.role === 'CLINIC_ADMIN' ? 'ADMIN' : u.role}</strong></span>
+                      </div>
+                      <div className="text-[10px] font-bold text-slate-600 flex flex-wrap items-center gap-1.5 pt-0.5">
+                        <span className="text-slate-400 font-semibold">Assigned Location:</span>
+                        <span className="font-extrabold text-navy">{bName}</span>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
