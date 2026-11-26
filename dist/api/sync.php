@@ -71,11 +71,12 @@ function getUnifiedNotifications($dataDir) {
     return is_array($notifs) ? $notifs : [];
 }
 
-function dnMatchTenantForLogin($t, $identifier, $cleanPhone = '') {
+function dnMatchTenantForLogin($t, $identifier, $cleanPhone = '', $scopedSub = '') {
     if (!is_array($t)) {
         return false;
     }
-    $idLower = strtolower(trim((string)$identifier));
+    // Clean and strip leading @ symbol
+    $idLower = ltrim(strtolower(trim((string)$identifier)), '@');
     if ($idLower === '') {
         return false;
     }
@@ -83,9 +84,17 @@ function dnMatchTenantForLogin($t, $identifier, $cleanPhone = '') {
     $cleanIdPhone = ($cleanPhone !== '') ? $cleanPhone : preg_replace('/[^0-9]/', '', $idLower);
 
     $tSub = strtolower(trim((string)($t['subdomain'] ?? '')));
-    $tUser1 = strtolower(trim((string)($t['adminUsername'] ?? '')));
-    $tUser2 = strtolower(trim((string)($t['adminUser']['username'] ?? '')));
+    $tUser1 = ltrim(strtolower(trim((string)($t['adminUsername'] ?? ''))), '@');
+    $tUser2 = ltrim(strtolower(trim((string)($t['adminUser']['username'] ?? ''))), '@');
     $tId = strtolower(trim((string)($t['id'] ?? '')));
+
+    // Direct store-scoped login when typing 'admin' or 'owner'
+    if (($idLower === 'admin' || $idLower === 'owner') && $scopedSub !== '') {
+        $cleanScoped = strtolower(trim($scopedSub));
+        if ($tSub !== '' && $tSub === $cleanScoped) {
+            return true;
+        }
+    }
 
     // 1. Direct equality
     if ($idLower === $tSub || $idLower === $tUser1 || $idLower === $tUser2 || $idLower === $tId) {
@@ -101,7 +110,7 @@ function dnMatchTenantForLogin($t, $identifier, $cleanPhone = '') {
         return true;
     }
 
-    // 3. Slug / alphanumeric match
+    // 3. Slug / alphanumeric match (>= 6 chars so altahir matches altahirskincarecenter)
     $idSlug = preg_replace('/[^a-z0-9]/i', '', $idLower);
     $idNoPrefixSlug = preg_replace('/^(admin|owner)/i', '', $idSlug);
     $tNameSlug = preg_replace('/[^a-z0-9]/i', '', strtolower((string)($t['name'] ?? '')));
@@ -113,11 +122,11 @@ function dnMatchTenantForLogin($t, $identifier, $cleanPhone = '') {
         if ($idNoPrefixSlug === $tNameSlug || $idNoPrefixSlug === $tSubSlug || $idNoPrefixSlug === $tUser1Slug || $idNoPrefixSlug === $tIdSlug) {
             return true;
         }
-        // Prefix / truncation match (>= 8 chars)
-        if (strlen($idNoPrefixSlug) >= 8 && strlen($tNameSlug) >= 8 && (strpos($tNameSlug, $idNoPrefixSlug) === 0 || strpos($idNoPrefixSlug, $tNameSlug) === 0)) {
+        // Prefix / truncation match (>= 6 chars)
+        if (strlen($idNoPrefixSlug) >= 6 && strlen($tNameSlug) >= 6 && (strpos($tNameSlug, $idNoPrefixSlug) === 0 || strpos($idNoPrefixSlug, $tNameSlug) === 0)) {
             return true;
         }
-        if (strlen($idNoPrefixSlug) >= 8 && strlen($tSubSlug) >= 8 && (strpos($tSubSlug, $idNoPrefixSlug) === 0 || strpos($idNoPrefixSlug, $tSubSlug) === 0)) {
+        if (strlen($idNoPrefixSlug) >= 6 && strlen($tSubSlug) >= 6 && (strpos($tSubSlug, $idNoPrefixSlug) === 0 || strpos($idNoPrefixSlug, $tSubSlug) === 0)) {
             return true;
         }
     }
@@ -859,8 +868,10 @@ if ($action === 'get_workspace') {
 // 6. UNIVERSAL LOGIN, OTP RECOVERY & PROFILE MANAGEMENT
 // ==============================================================================
 if ($action === 'login') {
-    $identifier = trim(strtolower((string)($body['identifier'] ?? ($body['username'] ?? ''))));
+    $rawIdent = trim((string)($body['identifier'] ?? ($body['username'] ?? '')));
+    $identifier = trim(strtolower(ltrim($rawIdent, '@')));
     $password = trim((string)($body['password'] ?? ''));
+    $scopedSub = strtolower(trim((string)($_GET['subdomain'] ?? ($body['subdomain'] ?? ($_SERVER['HTTP_X_TENANT_SUBDOMAIN'] ?? '')))));
 
     if ($identifier === '' || $password === '') {
         http_response_code(400);
@@ -919,7 +930,7 @@ if ($action === 'login') {
     $matchedTenant = null;
 
     foreach ($tenants as $t) {
-        if (dnMatchTenantForLogin($t, $identifier, $cleanPhone)) {
+        if (dnMatchTenantForLogin($t, $identifier, $cleanPhone, $scopedSub)) {
             $matchedTenant = $t;
             break;
         }

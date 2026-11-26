@@ -132,5 +132,64 @@
       "phone": "03012200230",
       "role": "CLINIC_ADMIN"
     }
+  },
+  {
+    "id": "tenant_altahirskincarecenter",
+    "name": "Al Tahir Skin Care Center",
+    "clinicName": "Al Tahir Skin Care Center",
+    "businessName": "Al Tahir Skin Care Center",
+    "subdomain": "altahirskincarecenter",
+    "domain": "altahirskincarecenter.digitalsnova.com",
+    "portalUrl": "https://digitalsnova.com/portal/?store=altahirskincarecenter",
+    "phone": "03012200230",
+    "email": "altahirskincarecenter@gmail.com",
+    "businessType": "Clinic / Hospital",
+    "business_type": "Clinic / Hospital",
+    "vertical": "CLINIC_HMS",
+    "sector": "CLINIC_HMS",
+    "storeType": "CLINIC_HMS",
+    "planType": "TRIAL_3_DAYS",
+    "planName": "Clinic & Hospital HMS (3-Day Free Trial • Rs. 0)",
+    "monthlyFee": 0,
+    "monthly_fee": 0,
+    "billingCycleDay": 1,
+    "cycleDays": 3,
+    "adminName": "Al Tahir Admin",
+    "adminUsername": "admin.altahirskincarecenter",
+    "adminPassword": "123",
+    "adminPin": "1234",
+    "status": "ACTIVE",
+    "manualBlocked": false,
+    "enabledModules": {
+      "pos": true,
+      "inventory": true,
+      "patientsLedger": true
+    },
+    "subscription": {
+      "state": "ACTIVE",
+      "plan": "TRIAL_3_DAYS",
+      "planName": "Clinic & Hospital HMS (3-Day Free Trial • Rs. 0)",
+      "billingCycleDay": 1,
+      "totalDays": 3,
+      "graceDaysRemaining": 3,
+      "monthlyFee": 0
+    },
+    "adminUser": {
+      "name": "Al Tahir Admin",
+      "username": "admin.altahirskincarecenter",
+      "password": "123",
+      "phone": "03012200230",
+      "email": "altahirskincarecenter@gmail.com",
+      "role": "CLINIC_ADMIN"
+    },
+    "branches": [
+      {
+        "id": "br_main",
+        "name": "Main Branch",
+        "code": "MAIN",
+        "isMain": true,
+        "active": true
+      }
+    ]
   }
 ]
