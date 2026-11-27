@@ -690,7 +690,7 @@ const[dnBranchModalOpen,setDnBranchModalOpen]=w.useState(!1);
 const[dnEditingBranch,setDnEditingBranch]=w.useState(null);
 const[dnBranchSaving,setDnBranchSaving]=w.useState(!1);
 const[dnBranchFormData,setDnBranchFormData]=w.useState({name:"",code:"",address:"",phone:"",isActive:true,isDefault:false});
-const[dnAdminActiveBranch,setDnAdminActiveBranch]=w.useState(()=>dnGetActiveBranch(e&&e.subdomain,null));const dnAdminDefBranch=(dnBranchesList.find(b=>b.isDefault)||dnBranchesList[0]||{id:"branch_main",name:"Main Branch"});const dnAdminDefBranchId=dnAdminDefBranch.id||"branch_main";const dnAdminIsBranchMatch=(patBranchId)=>{if(!dnAdminActiveBranch||dnAdminActiveBranch==="ALL")return true;if(!patBranchId||patBranchId==="branch_main"){return dnAdminActiveBranch===dnAdminDefBranchId||dnAdminActiveBranch==="branch_main";}return patBranchId===dnAdminActiveBranch;};const dnAdminScopedPatients=(dnPatientsLocal||[]).filter(p=>dnAdminIsBranchMatch(p.branchId));const n=(dnAdminActiveBranch&&dnAdminActiveBranch!=="ALL")?(rawAdminTrts||[]).filter(x=>(x.branchId||"branch_main")===dnAdminActiveBranch):(rawAdminTrts||[]);const l=(dnAdminActiveBranch&&dnAdminActiveBranch!=="ALL")?(rawAdminSales||[]).filter(x=>(x.branchId||"branch_main")===dnAdminActiveBranch):(rawAdminSales||[]);const a=(dnAdminActiveBranch&&dnAdminActiveBranch!=="ALL")?(rawAdminInv||[]).filter(x=>(x.branchId||"branch_main")===dnAdminActiveBranch):(rawAdminInv||[]);
+const[dnAdminActiveBranch,setDnAdminActiveBranch]=w.useState(()=>dnGetActiveBranch(e&&e.subdomain,null));const dnAdminDefBranch=(dnBranchesList.find(b=>b.isDefault)||dnBranchesList[0]||{id:"branch_main",name:"Main Branch"});const dnAdminDefBranchId=dnAdminDefBranch.id||"branch_main";const dnAdminIsBranchMatch=(patBranchId)=>{if(!dnAdminActiveBranch||dnAdminActiveBranch==="ALL")return true;if(!patBranchId||patBranchId==="branch_main"){return dnAdminActiveBranch===dnAdminDefBranchId||dnAdminActiveBranch==="branch_main";}return patBranchId===dnAdminActiveBranch;};const n=(dnAdminActiveBranch&&dnAdminActiveBranch!=="ALL")?(rawAdminTrts||[]).filter(x=>(x.branchId||"branch_main")===dnAdminActiveBranch):(rawAdminTrts||[]);const l=(dnAdminActiveBranch&&dnAdminActiveBranch!=="ALL")?(rawAdminSales||[]).filter(x=>(x.branchId||"branch_main")===dnAdminActiveBranch):(rawAdminSales||[]);const a=(dnAdminActiveBranch&&dnAdminActiveBranch!=="ALL")?(rawAdminInv||[]).filter(x=>(x.branchId||"branch_main")===dnAdminActiveBranch):(rawAdminInv||[]);
 w.useEffect(()=>{
   const _h=()=>{
     setDnAdminActiveBranch(dnGetActiveBranch(e&&e.subdomain,null));
@@ -704,7 +704,7 @@ w.useEffect(()=>{
   };
 },[e]);
 
-const[dnAdmPatSubTab,setDnAdmPatSubTab]=w.useState("LEDGERS"),[dnAdmPatDirQuery,setDnAdmPatDirQuery]=w.useState(""),[dnPatientsLocal,setDnPatientsLocal]=w.useState(()=>dnPatList||[]);
+const[dnAdmPatSubTab,setDnAdmPatSubTab]=w.useState("LEDGERS"),[dnAdmPatDirQuery,setDnAdmPatDirQuery]=w.useState(""),[dnPatientsLocal,setDnPatientsLocal]=w.useState(()=>dnPatList||[]);const dnAdminScopedPatients=(dnPatientsLocal||[]).filter(p=>dnAdminIsBranchMatch(p.branchId));
 w.useEffect(()=>{setDnPatientsLocal(dnPatList||[])},[dnPatList]);
 const dnHandleDeletePatient=async(patId,patName)=>{
   if(!window.confirm("Permanently delete patient record \""+(patName||patId)+"\"? This will remove this patient from the directory and POS counter."))return;
